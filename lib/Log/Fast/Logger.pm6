@@ -1,22 +1,13 @@
 class Log::Fast::Logger {
 	has Str:D $.regex is required;
-	has Str:D $.name;
+	has Str $.name;
 	has Positional $.entry;
 
-	method debug(Log::Fast::Logger:D:) {
+	method debug(Log::Fast::Logger:D: Str:D $msg, Str:D :$mark) {
 
 	}
 
-	method minus-writers($writers) {
-		return self without $writers;
-		my List $new-writers;
-		if $writers ~~ Positional {
-			$new-writers = $!writers (-) $writers;
-		} else {
-			$new-writers = $!writers (-) ($writers).List;
-		}
-		return self.clone(writers => $new-writers);
-	}
+
 }
 
 sub EXPORT($short-name?) {

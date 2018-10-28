@@ -38,4 +38,49 @@ say so 'Foo::Bar' ~~ /$arg/;
 #foo({ say $:info, $:log;});
 #foo(sub (:$info, :$log) { say $info, $log; });
 
+sub f(:$ff, :$pp) {
+	say $ff, $pp;
+}
+
+sub fd(%args) {
+	say %args;
+}
+
+my %r = ff => 1, pp => 2, dd => 12;
+
+fd(%r);
+
+#f(|%r);
+
+#CATCH {
+#	default {
+#		say .^name, ': ', .Str;
+#	}
+#}
+
+my class R {
+	has $.boom;
+
+	submethod BUILD(:$boom) {
+		$!boom = $boom;
+	}
+
+	method f(:$ff, :$pp) {
+		say $ff, $pp, 3;
+	}
+}
+my R $e = R.new(:boom<4>, :noo<2>);
+$e.f(|%r);
+
+my @w = <ff dd>;
+say %r{@w};
+
+sub g() {
+	say 'rr';
+}
+
+my %t = %();
+
+g(|%t);
+
 done-testing;

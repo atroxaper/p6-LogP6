@@ -1,13 +1,14 @@
 {
     "license": "Artistic-2.0",
     "source-url": "Write me!",
-    "depends": [],
+    "depends": ["UUID"],
     "provides": {
         "Log::Fast": "lib/Log/Fast.pm6",
         "Log::Fast::Decider": "lib/Log/Fast/Decider.pm6",
         "Log::Fast::Level": "lib/Log/Fast/Level.pm6",
         "Log::Fast::Layout": "lib/Log/Fast/Layout.pm6",
         "Log::Fast::Context": "lib/Log/Fast/Context.pm6",
+        "LogP6": "lib/LogP6.pm6",
         "Log::Fast::Writer": "lib/Log/Fast/Writer.pm6",
         "Log::Fast::Logger": "lib/Log/Fast/Logger.pm6"
     },
