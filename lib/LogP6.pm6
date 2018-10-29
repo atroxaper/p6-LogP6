@@ -4,80 +4,229 @@ use UUID;
 
 # filters
 
+my %fc = %();
+my %wc = %();
+my @cliches = [];
+my $clishes-names = SetHash.new;
+my %loggers = %();
+my %clishes-to-loggers = %();
+my Lock \lock .= new;
+
+my \default-pattern = "default %s";
+my \default-level = 2;
+
+enum Level (trace => 1, debug => 2, info => 3, warn => 4, error => 5);
+
 class FilterConf {
 	has Str $.name;
-	has Int $.level;
+	has Level $.level;
 }
-
-my %fc = %();
-
-proto filter(| --> FilterConf:D) is export { * }
-
-multi sub filter(Str :$name, Int :$level --> FilterConf:D) {
-	filter(:$name, :$level, :create);
-}
-
-multi sub filter(Str :$name, Int :$level, Bool:D :$create where *.so
-		--> FilterConf:D) {
-	with $name {
-		return %fc{$name} = FilterConf.new: :$name, :$level if $name;
-	} else {
-		return FilterConf.new: :$level;
-	}
-}
-
-sub get-filter($name --> FilterConf) is export {
-	%fc{$name};
-}
-
-# writers
 
 class WriterConf {
 	has Str $.name;
 	has Str $.pattern is required;
 }
 
-my %wc = %();
+proto filter(| --> FilterConf:D) is export { * }
+
+sub level(Level:D $level --> FilterConf:D) is export {
+	filter(:$level, :create);
+}
+
+multi sub filter(Str :$name, Level :$level --> FilterConf:D) {
+	lock.protect({ filter(:$name, :$level, :create) });
+}
+
+multi sub filter(Str :$name, Level :$level, Bool:D :$create! where *.so
+		--> FilterConf:D) {
+		with $name {
+			return lock.protect({
+				die "filter with name $name already exists" with %fc{$name};
+				%fc{$name} = FilterConf.new: :$name, :$level;
+			});
+		} else {
+			return FilterConf.new: :$level;
+		}
+
+}
+
+multi sub filter(Str:D :$name!, Level :$level, Bool:D :$update! where *.so
+		--> FilterConf:D) {
+	lock.protect({
+		die "there is no filter with name $name" without %fc{$name};
+		my $old = %fc{$name}:delete;
+		my $new = filter(:$name, level => $level // $old.level, :create);
+		update-loggers(find-cliche-with($name, :filter));
+		return $old;
+	});
+}
+
+multi sub filter(Str:D :$name!, Level :$level, Bool:D :$replace! where *.so
+		--> FilterConf) {
+	lock.protect({
+		my $old = %fc{$name}:delete;
+		my $new = filter(:$name, level => $level, :create);
+		update-loggers(find-cliche-with($name, :filter));
+		return $old;
+	});
+}
+
+multi sub filter(Str:D :$name!, Bool:D :$delete! where *.so --> FilterConf) {
+	lock.protect({
+		my $old = %fc{$name}:delete;
+		with $old {
+			my $new-name = filter(name => UUID.new.Str, :create).name;
+			my @found := find-cliche-with($old.name, :filter);
+			for @found -> $old-cliche {
+				my $new-cliche = $old-cliche
+						.copy-with-new($old.name, $new-name, :filter);
+				change-cliche($old-cliche, $new-cliche);
+			}
+			update-loggers(@found);
+		}
+		return $old;
+	});
+}
+
+sub get-filter($name --> FilterConf) is export {
+	lock.protect({ %fc{$name} // FilterConf });
+}
+
+sub find-cliche-with(Str:D $name, Bool :$writer, Bool :$filter --> List:D) {
+	my @result;
+	if $writer {
+		@result.push: @cliches.grep(-> $c { $c.has-writer($name) }).list;
+	}
+	if $filter {
+		@result.push: @cliches.grep(-> $c { $c.has-filter($name) }).list;
+	}
+	@result.unique.list;
+}
+
+sub update-loggers(Positional:D $cliches) {
+	for |$cliches -> $cliche {
+		for %clishes-to-loggers{$cliche.name} -> $trait {
+			%loggers{$trait} = create-logger($trait, $cliche);
+		}
+	}
+}
+
+sub change-cliche($old-cliche, $new-cliche) {
+	for @cliches.kv -> $i, $cliche {
+		if $cliche.name eq $old-cliche.name {
+			@cliches[$i] = $new-cliche;
+			return;
+		}
+	}
+	die "can not chnage cliche with name $($old-cliche.name)";
+}
 
 proto writer(| --> WriterConf:D) is export { * }
 
-multi sub writer(Str :$name, Str:D :$pattern! --> WriterConf:D) {
-	writer(:$name, :$pattern, :create);
+multi sub writer(Str :$name, Str :$pattern --> WriterConf:D) {
+	lock.protect({ writer(:$name, :$pattern, :create) });
 }
 
-multi sub writer(Str :$name, Str:D :$pattern!, Bool:D :$create where *.so
+multi sub writer(Str :$name, Str :$pattern, Bool:D :$create where *.so
 		--> WriterConf:D) {
 	with $name {
-		return %wc{$name} = WriterConf.new: :$name, :$pattern if $name;
+		return lock.protect({
+			die "writer with name $name already exists" with %wc{$name};
+			return %wc{$name} = WriterConf.new: :$name, :$pattern;
+		});
 	} else {
 		return WriterConf.new: :$pattern;
 	}
 }
 
+multi sub writer(Str:D :$name!, Str :$pattern, Bool:D :$update! where *.so
+		--> WriterConf:D) {
+	lock.protect({
+		die "there is no writer with name $name" without %wc{$name};
+		my $old = %wc{$name}:delete;
+		my $new = writer(:$name, pattern => $pattern // $old.pattern, :create);
+		update-loggers(find-cliche-with($name, :writer));
+		return $old;
+	});
+}
+
+multi sub writer(Str:D :$name!, Str :$pattern, Bool:D :$replace! where *.so
+		--> WriterConf) {
+	lock.protect({
+		my $old = %wc{$name}:delete;
+		my $new = writer(:$name, pattern => $pattern, :create);
+		update-loggers(find-cliche-with($name, :writer));
+		return $old;
+	});
+}
+
+multi sub writer(Str:D :$name!, Bool:D :$delete! where *.so --> WriterConf) {
+	lock.protect({
+		my $old = %wc{$name}:delete;
+		with $old {
+			my $new-name = writer(name => UUID.new.Str, :create).name;
+			my @found := find-cliche-with($old.name, :writer);
+			for @found -> $old-cliche {
+				my $new-cliche = $old-cliche
+						.copy-with-new($old.name, $new-name, :writer);
+				change-cliche($old-cliche, $new-cliche);
+			}
+			update-loggers(@found);
+		}
+		return $old;
+	});
+}
+
 sub get-writer($name --> WriterConf) is export {
-	%wc{$name};
+	lock.protect({ %wc{$name} });
 }
 
 # cliches
 
-my @cliches;
-my $clishes-names = SetHash.new;
-
 class Cliche {
 	has Str:D $.name is required;
 	has $.matcher is required;
-	has Int:D $.default-level is required;
-	has Positional:D $.parts is required;
+	has Int $.default-level;
+	has Str $.default-pattern;
+	has Positional $.parts;
+
+	method has-writer(Cliche:D: $name --> Bool:D) {
+		self!has-part($name, 0);
+	}
+
+	method has-filter(Cliche:D: $name --> Bool:D) {
+		self!has-part($name, 1);
+	}
+
+	method !has-part(Cliche:D: $name, $index where $index == any(0, 1)
+	) {
+		for $!parts -> $p {
+				return True if $[$index].name eq $name;
+		}
+		return False;
+	}
+
+	method copy-with-new($old-name, $new-name, Bool :$writer, Bool :$filter) {
+		my &change = -> $part {
+			my ($w, $f) = |$part;
+			my $ww = $writer && $w eq $old-name ?? $new-name !! $w;
+			my $ff = $filter && $f eq $old-name ?? $new-name !! $f;
+			($ww, $ff);
+		}
+		my $good-parts = $!parts.map(-> $p { change($p) }).list;
+		Cliche.new(name => $!name, default-level => $!default-level,
+				default-pattern => $!default-pattern, matcher => $!matcher,
+				parts => $good-parts);
+	}
 }
 
 proto cliche(| --> Nil) is export { * }
 
 multi sub cliche(
 	Str:D :$name!, :$matcher! where $matcher ~~ Str:D || $matcher ~~ Regex:D,
-	Int:D :$default-level = 3, Positional:D :$parts
+	Level :$default-level, Str :$default-pattern, Positional :$parts
 ) {
 	die "cliche with name $name already exists" if $clishes-names{$name};
-	die "need more parts" if $parts.elems < 1;
 	for |$parts -> $part {
 		die "one or more parts are empty" if $part.elems < 1;
 		die "one or more parts has more then two elems" if $part.elems > 2;
@@ -107,10 +256,9 @@ multi sub cliche(
 		}
 	}
 
-
 	$clishes-names<$name> = True;
-	@cliches.push: Cliche.new(:$name, :$default-level,
-		matcher => $good-matcher, parts => $good-parts);
+	@cliches.push: Cliche.new(:$name, :$default-level, :$default-pattern,
+			matcher => $good-matcher, parts => $good-parts);
 }
 
 sub check-cliche-writer($writer) {
@@ -165,9 +313,9 @@ sub get-cliche-filter-name($filter) {
 # loggers
 
 class Filter {
-	has Int:D $.level is required;
+	has Level:D $.level is required;
 
-	only method new(FilterConf $conf, $default-level) {
+	only method new(FilterConf:D $conf, Level:D $default-level) {
 		self.bless(
 			level => $conf.level // $default-level,
 		);
@@ -179,11 +327,11 @@ class Filter {
 }
 
 class Writer {
-	has Str $.pattern;
+	has Str:D $.pattern is required;
 
-	only method new(WriterConf:D $conf) {
+	only method new(WriterConf:D $conf, Str:D $default-pattern) {
 		self.bless(
-			pattern => $conf.pattern,
+			pattern => $conf.pattern // $default-pattern,
 		);
 	}
 
@@ -197,23 +345,35 @@ class Logger {
 	has List:D $.parts is required;
 }
 
-my %loggers = %();
+
 
 sub create-logger($trait, $cliche) {
-	my $level = $cliche.default-level;
+	my $level = $cliche.default-level // default-level;
+	my $pattern = $cliche.default-pattern // default-pattern;
 	my $parts = $cliche.parts
-		.map(-> $p { (Writer.new(get-writer($p[0])), Filter.new(get-filter($p[1]), $level)) }).List;
+			.map(-> $p { (
+					Writer.new(get-writer($p[0]), $pattern),
+					Filter.new(get-filter($p[1]), $level)
+			) }).List;
 	Logger.new(:$trait, :$parts);
+}
+
+sub find-cliche-for-trait($trait) {
+	for @cliches.reverse -> $cliche {
+		return $cliche if $trait ~~ $cliche.matcher;
+	}
+
+	die "create default cliche";
 }
 
 sub get-logger(Str:D $trait --> Logger:D) is export {
 	return $_ with %loggers{$trait};
 
-	for @cliches.reverse -> $cliche {
-		if $trait ~~ $cliche.matcher {
-			return %loggers{$trait} = create-logger($trait, $cliche);
-		}
-	}
+	my $cliche = find-cliche-for-trait($trait);
+	my $logger = create-logger($trait, $cliche);
 
-	die "create default cliche";
+	%loggers{$trait} = $logger;
+	(%clishes-to-loggers{$trait} //= []).push: $trait;
+
+	return $logger;
 }
