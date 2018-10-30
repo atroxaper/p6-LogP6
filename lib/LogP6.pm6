@@ -1,6 +1,5 @@
 unit module LogP6;
 
-
 # TODO
 # (1). add support of "" (default) writers and filters (create them at start)
 # (2). add START support (create default)
@@ -8,30 +7,29 @@ unit module LogP6;
 
 use UUID;
 
+use LogP6::Logger;
+use LogP6::Writer;
+use LogP6::Filter;
+use LogP6::Level;
+
 my @cliches = [];
 my $clishes-names = SetHash.new;
 my %loggers = %();
 my %clishes-to-loggers = %();
+
+our $trace is export = trace;
+our $debug is export = debug;
+our $info  is export = info;
+our $warn  is export = Level::warn;
+our $error is export = error;
+
 my Lock \lock .= new;
-
-enum Level is export (trace => 1, debug => 2, info => 3, warn => 4, error => 5);
-
-my \default-pattern = "default %s";
-my \default-level = info;
+my Str \default-pattern = "default %s";
+my Level \default-level = info;
 
 sub initialize() {
 	cliche(name => '', matcher => /.*/,
 			grooves => (writer(name => ''), filter(name => '')));
-}
-
-class FilterConf {
-	has Str $.name;
-	has Level $.level;
-}
-
-class WriterConf {
-	has Str $.name;
-	has Str $.pattern is required;
 }
 
 my role GroovesPartsManager[$lock, $part-name, ::Type] {
@@ -134,7 +132,9 @@ multi sub filter(Str:D :$name!, Level :$level, Bool:D :$replace! where *.so
 	$filter-manager.replace(:$name, :$level);
 }
 
-multi sub filter(Str:D :$name!, Bool:D :$remove! where *.so --> FilterConf) {
+multi sub filter(Str:D :$name!, Bool:D :$remove! where *.so
+		--> FilterConf
+) {
 	$filter-manager.remove(:$name);
 }
 
@@ -166,7 +166,9 @@ multi sub writer(Str:D :$name!, Str :$pattern, Bool:D :$replace! where *.so
 	$writer-manager.replace(:$name, :$pattern);
 }
 
-multi sub writer(Str:D :$name!, Bool:D :$remove! where *.so --> WriterConf) {
+multi sub writer(Str:D :$name!, Bool:D :$remove! where *.so
+		--> WriterConf
+) {
 	$writer-manager.remove(:$name);
 }
 
@@ -196,35 +198,7 @@ sub change-cliche($old-cliche, $new-cliche) {
 	die "can not chnage cliche with name $($old-cliche.name)";
 }
 
-class Cliche {
-	has Str:D $.name is required;
-	has $.matcher is required;
-	has Int $.default-level;
-	has Str $.default-pattern;
-	has Positional $.writers;
-	has Positional $.filters;
-
-	method has(Cliche:D: $name, Str:D $type where * ~~ any('writer', 'filter')
-			--> Bool:D
-	) {
-		my $iter = $type eq 'writer' ?? $!writers !! $!filters;
-		so $iter.grep(* eq $name);
-	}
-
-	method copy-with-new($old, $new,
-			Str:D $type where * ~~ any('writer', 'filter')
-	) {
-		my $new-writers = $!writers;
-		my $new-filters = $!filters;
-		$new-writers = $new-writers.map(-> $w { $w eq $old ?? $new !! $w }).list
-				if $type eq 'writer';
-		$new-filters = $new-filters.map(-> $f { $f eq $old ?? $new !! $f }).list
-				if $type eq 'filter';
-		self.clone(writers => $new-writers, filters => $new-filters);
-	}
-}
-
-proto cliche(| --> Nil) is export { * }
+proto cliche(| --> Cliche) is export { * }
 
 multi sub cliche(
 	Str:D :$name!, :$matcher! where $matcher ~~ any(Str:D, Regex:D),
@@ -264,41 +238,6 @@ sub check-part(::T, $type, $type-manager,
 					without $type-manager.get($pname);
 		}
 	}
-}
-
-# loggers
-
-class Filter {
-	has Level:D $.level is required;
-
-	only method new(FilterConf:D $conf, Level:D $default-level) {
-		self.bless(
-			level => $conf.level // $default-level,
-		);
-	}
-
-	submethod TWEAK() {
-
-	}
-}
-
-class Writer {
-	has Str:D $.pattern is required;
-
-	only method new(WriterConf:D $conf, Str:D $default-pattern) {
-		self.bless(
-			pattern => $conf.pattern // $default-pattern,
-		);
-	}
-
-	submethod TWEAK() {
-
-	}
-}
-
-class Logger {
-	has Str:D $.trait is required;
-	has List:D $.grooves is required;
 }
 
 sub create-logger($trait, $cliche) {
