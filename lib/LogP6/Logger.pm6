@@ -1,3 +1,7 @@
+use LogP6::Level;
+use LogP6::Context;
+use LogP6::ThreadLocal;
+
 class LogP6::Cliche {
 	has Str:D $.name is required;
 	has $.matcher is required;
@@ -26,18 +30,59 @@ class LogP6::Cliche {
 	}
 }
 
+role LogP6::LoggerRole {
+	method info(Str:D $msg) { ... }
+	method debug(Str:D $msg) { ... }
+	method ndc-push($obj) { ... }
+	method ndc-pop() { ... }
+	method ndc-clean() { ... }
+}
+
 class LogP6::Logger does LogP6::LoggerRole {
 	has Str:D $.trait is required;
 	has List:D $.grooves is required;
 
 	method info(Str:D $msg) {
-
+		self!log($msg, info);
 	}
 
-}
+	method debug(Str:D $msg) {
+		self!log($msg, debug);
+	}
 
-role LogP6::LoggerRole {
+	method !log($msg, $level) {
+		my LogP6::Context $context = self!get-context();
+		for @$!grooves -> $groove {
+			my ($writer, $filter) = $groove;
+			$context.reset($msg, $level);
 
-	method info(Str:D $msg) { ... }
-	method debug(Str:D $msg) { ... }
+			if $filter.do-before($context) {
+				$writer.write($context);
+				$filter.do-after($context);
+			}
+		}
+		$context.clean();
+	}
+
+	method !get-context() {
+		return LogP6::Context.get-myself-to;
+		CATCH {
+			default {
+				$*THREAD does LogP6::ThreadLocal;
+				return LogP6::Context.get-myself-to;
+			}
+		}
+	}
+
+	method ndc-push($obj) {
+		self!get-context.ndc-push: $obj;
+	}
+
+	method ndc-pop() {
+		self!get-context.ndc-pop;
+	}
+
+	method ndc-clean() {
+		self!get-context.ndc-clean;
+	}
 }

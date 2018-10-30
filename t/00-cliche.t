@@ -3,9 +3,9 @@ use Test;
 use lib 'lib';
 use LogP6 :configure;
 
-writer(name => "w1", pattern => "w1 %s");
+writer(name => "w1", pattern => "w1 %s", handle => $*ERR);
 my $writer-w2 = writer(name => "w2", pattern => "w2 %s");
-my $writer-uuid2 = writer(pattern => "uuid2 %s");
+my $writer-uuid2 = writer();
 
 filter(name => "f1", level => $trace);
 my $filter-f2 = filter(name => "f2", level => $debug);
@@ -24,9 +24,13 @@ cliche(
 	)
 );
 
-say get-logger("foo t");
+#say get-logger("foo t");
 writer(name => 'w2', pattern => 'w2 update', :update);
-say get-logger("foo t");
-say get-logger("default");
+#say get-logger("foo t");
+#say get-logger("default");
+#say $?MODULE;
+my $logger = get-logger("foo t");
+$logger.info("this is log msg");
+$logger.debug("this is log msg (debug)");
 
 done-testing;

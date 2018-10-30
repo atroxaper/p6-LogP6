@@ -4,18 +4,14 @@
     "depends": ["UUID"],
     "provides": {
         "Log::Fast": "lib/Log/Fast.pm6",
-        "Log::Fast::Decider": "lib/Log/Fast/Decider.pm6",
-        "Log::Fast::Level": "lib/Log/Fast/Level.pm6",
-        "Log::Fast::Layout": "lib/Log/Fast/Layout.pm6",
-        "LogP6::Logger": "lib/LogP6/Logger.pm6",
-        "LogP6": "lib/LogP6.pm6",
-        "Log::Fast::Writer": "lib/Log/Fast/Writer.pm6",
-        "LogP6::Filter": "lib/LogP6/Filter.pm6",
-        "LogP6::Level": "lib/LogP6/Level.pm6",
         "LogP6::Writer": "lib/LogP6/Writer.pm6",
         "LogP6::ThreadLocal": "lib/LogP6/ThreadLocal.pm6",
+        "LogP6::Logger": "lib/LogP6/Logger.pm6",
         "Log::Fast::Context": "lib/Log/Fast/Context.pm6",
-        "Log::Fast::Logger": "lib/Log/Fast/Logger.pm6"
+        "LogP6": "lib/LogP6.pm6",
+        "LogP6::Context": "lib/LogP6/Context.pm6",
+        "LogP6::Filter": "lib/LogP6/Filter.pm6",
+        "LogP6::Level": "lib/LogP6/Level.pm6"
     },
     "name": "Log::Fast",
     "description": "Write me!",
