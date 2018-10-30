@@ -26,7 +26,18 @@ class LogP6::Cliche {
 	}
 }
 
-class LogP6::Logger {
+class LogP6::Logger does LogP6::LoggerRole {
 	has Str:D $.trait is required;
 	has List:D $.grooves is required;
+
+	method info(Str:D $msg) {
+
+	}
+
+}
+
+role LogP6::LoggerRole {
+
+	method info(Str:D $msg) { ... }
+	method debug(Str:D $msg) { ... }
 }
