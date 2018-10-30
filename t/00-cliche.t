@@ -25,6 +25,8 @@ cliche(
 );
 
 say get-logger("foo t");
+writer(name => 'w2', pattern => 'w2 update', :update);
+say get-logger("foo t");
 say get-logger("default");
 
 done-testing;

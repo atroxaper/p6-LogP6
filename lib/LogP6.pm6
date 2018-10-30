@@ -2,8 +2,8 @@ unit module LogP6;
 
 
 # TODO
-# 1. add support of "" (default) writers and filters (create them at start)
-# 2. add START support (create default)
+# (1). add support of "" (default) writers and filters (create them at start)
+# (2). add START support (create default)
 # 3. add STOP support (close all writers)
 
 use UUID;
@@ -34,7 +34,7 @@ class WriterConf {
 	has Str $.pattern is required;
 }
 
-my role GroovesPartsManager[$lock, $part-type, $part-name, ::Type] {
+my role GroovesPartsManager[$lock, $part-name, ::Type] {
 	my %parts = %();
 
 	method create(Str :$name, *%fields) {
@@ -54,10 +54,10 @@ my role GroovesPartsManager[$lock, $part-type, $part-name, ::Type] {
 			my $old = %parts{$name}:delete;
 			my %new-fields = %();
 			for %fields.kv -> $f-name, $f-value {
-				%new-fields{$f-name} = $old."$f-name"() // $f-value;
+				%new-fields{$f-name} = $f-value // $old."$f-name"();
 			}
 			my $new = self.create(:$name, |%new-fields);
-			update-loggers(find-cliche-with($name, $part-type));
+			update-loggers(find-cliche-with($name, $part-name));
 			return $old;
 		});
 	}
@@ -66,7 +66,7 @@ my role GroovesPartsManager[$lock, $part-type, $part-name, ::Type] {
 		$lock.protect({
 			my $old = %parts{$name}:delete;
 			my $new = self.create(:$name, |%fields);
-			update-loggers(find-cliche-with($name, $part-type));
+			update-loggers(find-cliche-with($name, $part-name));
 			return $old // Type;
 		});
 	}
@@ -76,10 +76,10 @@ my role GroovesPartsManager[$lock, $part-type, $part-name, ::Type] {
 		$lock.protect({
 			my $old = %parts{$name}:delete;
 			with $old {
-				my @found := find-cliche-with($old.name, $part-type);
+				my @found := find-cliche-with($old.name, $part-name);
 				for @found -> $old-cliche {
 					my $new-cliche = $old-cliche
-							.copy-with-new($old.name, "", $part-type);
+							.copy-with-new($old.name, "", $part-name);
 					change-cliche($old-cliche, $new-cliche);
 				}
 				update-loggers(@found);
@@ -98,9 +98,9 @@ my role GroovesPartsManager[$lock, $part-type, $part-name, ::Type] {
 }
 
 my $filter-manager =
-		GroovesPartsManager[lock, (filter => True), 'filter', FilterConf].new;
+		GroovesPartsManager[lock, 'filter', FilterConf].new;
 my $writer-manager =
-		GroovesPartsManager[lock, (writer => True), 'writer', WriterConf].new;
+		GroovesPartsManager[lock, 'writer', WriterConf].new;
 
 sub get-filter(Str:D $name! --> FilterConf) is export {
 	$filter-manager.get($name);
@@ -172,16 +172,15 @@ multi sub writer(Str:D :$name!, Bool:D :$remove! where *.so --> WriterConf) {
 
 # -------------------
 
-sub find-cliche-with(Str:D $name, Bool :$writer, Bool :$filter --> List:D) {
-	my @result;
-	@result.push(@cliches.grep(*.has($name, :writer)).list) if $writer;
-	@result.push(@cliches.grep(*.has($name, :filter)).list) if $filter;
-	@result>>.List.flat.unique.list;
+sub find-cliche-with(Str:D $name!,
+		Str:D $type where * ~~ any('writer', 'filter') --> List:D
+) {
+	@cliches.grep(*.has($name, $type)).list;
 }
 
 sub update-loggers(Positional:D $cliches) {
 	for |$cliches -> $cliche {
-		for %clishes-to-loggers{$cliche.name} -> $trait {
+		for |%clishes-to-loggers{$cliche.name} -> $trait {
 			%loggers{$trait} = create-logger($trait, $cliche);
 		}
 	}
@@ -205,19 +204,22 @@ class Cliche {
 	has Positional $.writers;
 	has Positional $.filters;
 
-	method has(Cliche:D: $name, Bool :$writer, Bool :$filter --> Bool:D) {
-		my $iter = $writer ?? $!writers !! $filter ?? $!filters !! ();
+	method has(Cliche:D: $name, Str:D $type where * ~~ any('writer', 'filter')
+			--> Bool:D
+	) {
+		my $iter = $type eq 'writer' ?? $!writers !! $!filters;
 		so $iter.grep(* eq $name);
 	}
 
-	method copy-with-new($old-name, $new-name, Bool :$writer, Bool :$filter) {
+	method copy-with-new($old, $new,
+			Str:D $type where * ~~ any('writer', 'filter')
+	) {
 		my $new-writers = $!writers;
 		my $new-filters = $!filters;
-		$new-writers = $new-writers
-				.map(-> $w { $w eq $old-name ?? $new-name !! $w }).list if $writer;
-		$new-filters = $new-filters
-				.map(-> $f { $f eq $old-name ?? $new-name !! $f }).list if $filter;
-
+		$new-writers = $new-writers.map(-> $w { $w eq $old ?? $new !! $w }).list
+				if $type eq 'writer';
+		$new-filters = $new-filters.map(-> $f { $f eq $old ?? $new !! $f }).list
+				if $type eq 'filter';
 		self.clone(writers => $new-writers, filters => $new-filters);
 	}
 }
@@ -324,7 +326,7 @@ sub get-logger(Str:D $trait --> Logger:D) is export {
 	my $logger = create-logger($trait, $cliche);
 
 	%loggers{$trait} = $logger;
-	(%clishes-to-loggers{$trait} //= []).push: $trait;
+	(%clishes-to-loggers{$cliche.name} //= []).push: $trait;
 
 	return $logger;
 }
