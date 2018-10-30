@@ -1,8 +1,7 @@
 use Test;
 
 use lib 'lib';
-use LogP6;
-use LogP6::Level;
+use LogP6 :configure;
 
 writer(name => "w1", pattern => "w1 %s");
 my $writer-w2 = writer(name => "w2", pattern => "w2 %s");

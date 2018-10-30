@@ -4,6 +4,7 @@ unit module LogP6;
 # (1). add support of "" (default) writers and filters (create them at start)
 # (2). add START support (create default)
 # 3. add STOP support (close all writers)
+# (4). add EXPORT strategy (one for configuring, one for getting)
 
 use UUID;
 
@@ -17,11 +18,11 @@ my $clishes-names = SetHash.new;
 my %loggers = %();
 my %clishes-to-loggers = %();
 
-our $trace is export = trace;
-our $debug is export = debug;
-our $info  is export = info;
-our $warn  is export = Level::warn;
-our $error is export = error;
+our $trace is export(:configure) = trace;
+our $debug is export(:configure) = debug;
+our $info  is export(:configure) = info;
+our $warn  is export(:configure) = Level::warn;
+our $error is export(:configure) = error;
 
 my Lock \lock .= new;
 my Str \default-pattern = "default %s";
@@ -100,15 +101,15 @@ my $filter-manager =
 my $writer-manager =
 		GroovesPartsManager[lock, 'writer', WriterConf].new;
 
-sub get-filter(Str:D $name! --> FilterConf) is export {
+sub get-filter(Str:D $name! --> FilterConf) is export(:configure) {
 	$filter-manager.get($name);
 }
 
-sub level(Level:D $level --> FilterConf:D) is export {
+sub level(Level:D $level --> FilterConf:D) is export(:configure) {
 	$filter-manager.create(:$level);
 }
 
-proto filter(| --> FilterConf) is export { * }
+proto filter(| --> FilterConf) is export(:configure) { * }
 
 multi sub filter(Str :$name, Level :$level --> FilterConf:D) {
 	$filter-manager.create(:$name, :$level);
@@ -138,11 +139,11 @@ multi sub filter(Str:D :$name!, Bool:D :$remove! where *.so
 	$filter-manager.remove(:$name);
 }
 
-sub get-writer(Str:D $name! --> WriterConf) is export {
+sub get-writer(Str:D $name! --> WriterConf) is export(:configure) {
 	$writer-manager.get($name);
 }
 
-proto writer(| --> WriterConf) is export { * }
+proto writer(| --> WriterConf) is export(:configure) { * }
 
 multi sub writer(Str :$name, Str :$pattern --> WriterConf:D) {
 	$writer-manager.create(:$name, :$pattern);
@@ -198,7 +199,7 @@ sub change-cliche($old-cliche, $new-cliche) {
 	die "can not chnage cliche with name $($old-cliche.name)";
 }
 
-proto cliche(| --> Cliche) is export { * }
+proto cliche(| --> Cliche) is export(:configure) { * }
 
 multi sub cliche(
 	Str:D :$name!, :$matcher! where $matcher ~~ any(Str:D, Regex:D),
@@ -258,7 +259,7 @@ sub find-cliche-for-trait($trait) {
 	die "create default cliche";
 }
 
-sub get-logger(Str:D $trait --> Logger:D) is export {
+sub get-logger(Str:D $trait --> Logger:D) is export(:MANDATORY) {
 	return $_ with %loggers{$trait};
 
 	my $cliche = find-cliche-for-trait($trait);
