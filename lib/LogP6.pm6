@@ -12,6 +12,7 @@ use LogP6::Logger;
 use LogP6::Writer;
 use LogP6::Filter;
 use LogP6::Level;
+use LogP6::ThreadLocal;
 
 my @cliches = [];
 my $clishes-names = SetHash.new;
@@ -264,8 +265,14 @@ sub find-cliche-for-trait($trait) {
 	die "create default cliche";
 }
 
+sub apply-thread-local() {
+	$*THREAD does LogP6::ThreadLocal unless $*THREAD ~~ LogP6::ThreadLocal;
+}
+
 sub get-logger(Str:D $trait --> Logger:D) is export(:MANDATORY) {
 	lock.protect({
+		apply-thread-local();
+
 		return $_ with %loggers{$trait};
 
 		my $cliche = find-cliche-for-trait($trait);
