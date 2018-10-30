@@ -14,10 +14,15 @@ my %loggers = %();
 my %clishes-to-loggers = %();
 my Lock \lock .= new;
 
-my \default-pattern = "default %s";
-my \default-level = 2;
-
 enum Level is export (trace => 1, debug => 2, info => 3, warn => 4, error => 5);
+
+my \default-pattern = "default %s";
+my \default-level = info;
+
+sub initialize() {
+	cliche(name => '', matcher => /.*/,
+			grooves => (writer(name => ''), filter(name => '')));
+}
 
 class FilterConf {
 	has Str $.name;
@@ -67,14 +72,14 @@ my role GroovesPartsManager[$lock, $part-type, $part-name, ::Type] {
 	}
 
 	method remove(Str:D :$name!) {
+		die "remove default $part-name is prohibited" if $name eq "";
 		$lock.protect({
 			my $old = %parts{$name}:delete;
 			with $old {
-				my $new-name = self.create(name => UUID.new.Str).name;
 				my @found := find-cliche-with($old.name, $part-type);
 				for @found -> $old-cliche {
 					my $new-cliche = $old-cliche
-							.copy-with-new($old.name, $new-name, $part-type);
+							.copy-with-new($old.name, "", $part-type);
 					change-cliche($old-cliche, $new-cliche);
 				}
 				update-loggers(@found);
@@ -224,71 +229,39 @@ multi sub cliche(
 	Level :$default-level, Str :$default-pattern, Positional :$grooves
 ) {
 	die "cliche with name $name already exists" if $clishes-names{$name};
-	my $all-grooves = ($grooves // (),)>>.List.flat;
-	die "grooves must have even amount of elements" unless $all-grooves %% 2;
+	my $grvs = ($grooves // (),)>>.List.flat;
+	die "grooves must have even amount of elements" unless $grvs %% 2;
 
-	check-cliche-writer($_) for $all-grooves[0,2 ...^ *];
-	check-cliche-filter($_) for $all-grooves[1,3 ...^ *];
+	check-part(WriterConf, 'writer', $writer-manager, $_) for $grvs[0,2 ...^ *];
+	check-part(FilterConf, 'filter', $filter-manager, $_) for $grvs[1,3 ...^ *];
 
-	my $writers-names = $all-grooves[0,2 ...^ *]>>.&get-cliche-writer-name.List;
-	my $filters-names = $all-grooves[1,3 ...^ *]>>.&get-cliche-filter-name.List;
+	my $writers-names = $grvs[0,2 ...^ *]>>.&get-part-name($writer-manager).List;
+	my $filters-names = $grvs[1,3 ...^ *]>>.&get-part-name($filter-manager).List;
 
 	$clishes-names<$name> = True;
 	@cliches.push: Cliche.new(:$name, :$default-level, :$default-pattern,
 			:$matcher, writers => $writers-names, filters => $filters-names);
 }
 
-sub check-cliche-writer($writer) {
-	die "writer of some part is a type object" without $writer;
-	if $writer ~~ Str {
-		die "writer with name $writer does not exist"
-				without $writer-manager.get($writer);
-	} elsif $writer ~~ WriterConf {
-		with $writer.name -> $wname {
-			die "writer with name $wname are not stored"
-					without $writer-manager.get($wname);
-		}
-	} else {
-		die "the are not either writer or its name at the first position of some part";
-	}
-}
-
-sub get-cliche-writer-name($writer) {
-	check-cliche-writer($writer);
-	return $writer if $writer ~~ Str;
-	return $writer.name with $writer.name;
-	my $clone = $writer.clone(name => UUID.new.Str);
-	$writer-manager.put($clone);
+sub get-part-name($part, $type-manager) {
+	return $part if $part ~~ Str;
+	return $part.name with $part.name;
+	my $clone = $part.clone(name => UUID.new.Str);
+	$type-manager.put($clone);
 	return $clone.name;
 }
 
-sub check-cliche-filter($filter) {
-	with $filter {
-		if $filter ~~ Str {
-			die "filter with name $filter does not exist"
-					without $filter-manager.get($filter);
-		} elsif $filter ~~ FilterConf {
-			with $filter.name -> $fname {
-				die "filter with name $fname are not stored"
-						without $filter-manager.get($fname);
-			}
+sub check-part(::T, $type, $type-manager,
+		$part where $part.defined && ($part.WHAT ~~ Str || $part.WHAT ~~ T)
+) {
+	if $part ~~ Str {
+		die "$type with name $part does not exist" without $type-manager.get($part);
+	} else {
+		with $part.name -> $pname {
+			die "$type with name $pname are not stored"
+					without $type-manager.get($pname);
 		}
 	}
-}
-
-sub get-cliche-filter-name($filter) {
-	check-cliche-filter($filter);
-	with $filter {
-		return $filter if $filter ~~ Str;
-		if $filter ~~ FilterConf {
-			return $filter.name with $filter.name;
-			my $clone = $filter.clone(name => UUID.new.Str);
-			$filter-manager.put($clone);
-			return $clone.name;
-		}
-	}
-	my $empty = filter(name => UUID.new.Str);
-	return $empty.name;
 }
 
 # loggers
@@ -355,3 +328,5 @@ sub get-logger(Str:D $trait --> Logger:D) is export {
 
 	return $logger;
 }
+
+initialize;

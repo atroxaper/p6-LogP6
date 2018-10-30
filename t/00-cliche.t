@@ -25,5 +25,6 @@ cliche(
 );
 
 say get-logger("foo t");
+say get-logger("default");
 
 done-testing;
