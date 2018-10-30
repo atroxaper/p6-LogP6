@@ -13,6 +13,7 @@ unit module LogP6;
 # 10. tests tests tests
 # 11. docs docs docs
 # 12. add methods for logger
+# 13. add 'turn off' logger (in cliche and Logger)
 
 use UUID;
 
