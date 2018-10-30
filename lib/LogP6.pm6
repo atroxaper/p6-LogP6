@@ -204,20 +204,25 @@ proto cliche(| --> Cliche) is export(:configure) { * }
 multi sub cliche(
 	Str:D :$name!, :$matcher! where $matcher ~~ any(Str:D, Regex:D),
 	Level :$default-level, Str :$default-pattern, Positional :$grooves
+	--> Cliche:D
 ) {
-	die "cliche with name $name already exists" if $clishes-names{$name};
-	my $grvs = ($grooves // (),)>>.List.flat;
-	die "grooves must have even amount of elements" unless $grvs %% 2;
+	lock.protect({
+		die "cliche with name $name already exists" if $clishes-names{$name};
+		my $grvs = ($grooves // (),)>>.List.flat;
+		die "grooves must have even amount of elements" unless $grvs %% 2;
 
-	check-part(WriterConf, 'writer', $writer-manager, $_) for $grvs[0,2 ...^ *];
-	check-part(FilterConf, 'filter', $filter-manager, $_) for $grvs[1,3 ...^ *];
+		check-part(WriterConf, 'writer', $writer-manager, $_) for $grvs[0,2...^*];
+		check-part(FilterConf, 'filter', $filter-manager, $_) for $grvs[1,3...^*];
 
-	my $writers-names = $grvs[0,2 ...^ *]>>.&get-part-name($writer-manager).List;
-	my $filters-names = $grvs[1,3 ...^ *]>>.&get-part-name($filter-manager).List;
+		my $writers-names = $grvs[0,2...^*]>>.&get-part-name($writer-manager).List;
+		my $filters-names = $grvs[1,3...^*]>>.&get-part-name($filter-manager).List;
 
-	$clishes-names<$name> = True;
-	@cliches.push: Cliche.new(:$name, :$default-level, :$default-pattern,
-			:$matcher, writers => $writers-names, filters => $filters-names);
+		$clishes-names<$name> = True;
+		my $cliche = Cliche.new(:$name, :$default-level, :$default-pattern,
+				:$matcher, writers => $writers-names, filters => $filters-names);
+		@cliches.push: $cliche;
+		$cliche;
+	});
 }
 
 sub get-part-name($part, $type-manager) {
@@ -260,15 +265,17 @@ sub find-cliche-for-trait($trait) {
 }
 
 sub get-logger(Str:D $trait --> Logger:D) is export(:MANDATORY) {
-	return $_ with %loggers{$trait};
+	lock.protect({
+		return $_ with %loggers{$trait};
 
-	my $cliche = find-cliche-for-trait($trait);
-	my $logger = create-logger($trait, $cliche);
+		my $cliche = find-cliche-for-trait($trait);
+		my $logger = create-logger($trait, $cliche);
 
-	%loggers{$trait} = $logger;
-	(%clishes-to-loggers{$cliche.name} //= []).push: $trait;
+		%loggers{$trait} = $logger;
+		(%clishes-to-loggers{$cliche.name} //= []).push: $trait;
 
-	return $logger;
+		return $logger;
+	});
 }
 
 initialize;
