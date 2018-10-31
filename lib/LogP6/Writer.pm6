@@ -1,14 +1,3 @@
-# for pattern
-# %trait - logger name (trait)
-# %date{yyyy-mm-dd hh:mm:ss z} - date and time
-# %mdc{key} - mdc-value
-# %ndc - ndc-stack
-# %x{msg name trace} - exception {message class-name backtrace}
-# %msg - message
-# %level{WARN=W, DEBUG=D, ERROR=E, TRACE=T, INFO=I, length=2}
-# %tname - thread name
-# %tid - thread id
-
 class LogP6::WriterConf {
 	has Str $.name;
 	has Str $.pattern;
