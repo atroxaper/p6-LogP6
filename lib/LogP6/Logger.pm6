@@ -52,6 +52,7 @@ class LogP6::Logger does LogP6::LoggerRole {
 
 	method !log($msg, $level) {
 		my LogP6::Context $context = self!get-context();
+		$context.trait-set($!trait);
 		for @$!grooves -> $groove {
 			my ($writer, $filter) = $groove;
 			$context.reset($msg, $level);
@@ -65,11 +66,11 @@ class LogP6::Logger does LogP6::LoggerRole {
 	}
 
 	method !get-context() {
-		return LogP6::Context.get-myself-to;
+		return LogP6::Context.get-myself;
 		CATCH {
 			default {
 				$*THREAD does LogP6::ThreadLocal;
-				return LogP6::Context.get-myself-to;
+				return LogP6::Context.get-myself;
 			}
 		}
 	}

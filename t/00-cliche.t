@@ -24,13 +24,23 @@ cliche(
 	)
 );
 
+cliche(
+	name => 'test writer', matcher => 'writer',
+	grooves => (
+		writer(pattern => '[%tid|%tname](%trait){user=%mdc{user},%ndc} %msg'), ""
+	)
+);
+
+my $w-logger = get-logger('writer');
+$w-logger.info("it works!");
+
 #say get-logger("foo t");
 writer(name => 'w2', pattern => 'w2 update', :update);
 #say get-logger("foo t");
 #say get-logger("default");
 #say $?MODULE;
-my $logger = get-logger("foo t");
-$logger.info("this is log msg");
-$logger.debug("this is log msg (debug)");
+#my $logger = get-logger("foo t");
+#$logger.info("this is log msg");
+#$logger.debug("this is log msg (debug)");
 
 done-testing;

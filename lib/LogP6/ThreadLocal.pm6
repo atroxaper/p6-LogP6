@@ -1,3 +1,5 @@
+use LogP6::Context;
+
 role LogP6::ThreadLocal {
-	has %.local = %();
+	has $._context = LogP6::Context.new;
 }

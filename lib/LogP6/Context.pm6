@@ -6,15 +6,21 @@ use LogP6::Level;
 
 has $!msg;
 has $!level;
-
+has $!x;
+has $!trait;
 has $!thread;
+has $!tid;
+has $!tname;
+has $!local = %();
 
 submethod BUILD() {
 	$!thread = $*THREAD;
+	$!tid = $!thread.id;
+	$!tname = $!thread.name;
 }
 
-method get-myself-to() {
-	return $*THREAD.local<context> //= self.new;
+method get-myself() {
+	return $*THREAD._context;
 }
 
 # method for concrete object use
@@ -24,7 +30,7 @@ method reset($msg, $level) {
 	$!level = $level;
 }
 
-method msg-get() {
+method msg() {
 	$!msg;
 }
 
@@ -32,7 +38,7 @@ method msg-set(Str:D $msg) {
 	$!msg = $msg;
 }
 
-method level-get() {
+method level() {
 	$!level;
 }
 
@@ -40,60 +46,91 @@ method level-set(LogP6::Level $level) {
 	$!level = $level;
 }
 
-method ndc-get() {
-	$!thread.local<ndc> //= [];
+method ndc() {
+	$!local<ndc> //= [];
 }
 
 method ndc-push($obj) {
-	my $ndc := $!thread.local<ndc> //= [];
+	my $ndc := $!local<ndc> //= [];
 	$ndc.push: $obj;
 }
 
 method ndc-pop() {
-	my $ndc := $!thread.local<ndc> //= [];
+	my $ndc := $!local<ndc> //= [];
 	$ndc.pop;
 }
 
 method ndc-clean() {
-	$!thread.local<ndc> = [];
+	$!local<ndc> = [];
 }
 
-method mdc-get-all() {
-	$!thread.local<mdc> //= %();
+method mdc() {
+	$!local<mdc> //= %();
 }
 
 method mdc-get($key) {
-	my $mdc := $!thread.local<mdc> //= %();
+	my $mdc := $!local<mdc> //= %();
 	$mdc{$key};
 }
 
 method mdc-put($key, $obj) {
-	my $mdc := $!thread.local<mdc> //= %();
+	my $mdc := $!local<mdc> //= %();
 	$mdc{$key} = $obj;
 }
 
 method mdc-remove($key) {
-	my $mdc := $!thread.local<mdc> //= %();
+	my $mdc := $!local<mdc> //= %();
 	$mdc{$key}:delete;
 }
 
 method mdc-clean() {
-	$!thread.local<mdc> = %();
+	$!local<mdc> = %();
 }
 
-method date-get() {
-	$!thread.local<date> //= DateTime.now;
+method date() {
+	$!local<date> //= DateTime.now;
 }
 
 method date-set(DateTime $date) {
-	$!thread.local<date> = $date;
+	$!local<date> = $date;
 }
 
 method date-clean() {
-	$!thread.local<date>:delete;
+	$!local<date>:delete;
+}
+
+method tid() {
+	$!tid;
+}
+
+method tname() {
+	$!tname;
+}
+
+method trait-set($trait) {
+	$!trait = $trait;
+}
+
+method trait() {
+	$!trait;
+}
+
+method x() {
+	#$!x; TODO
+	die "bla bla bla";
+	CATCH {
+		when X::AdHoc {
+			return $_;
+		}
+	}
+}
+
+method x-set($x) {
+	$!x = $x;
 }
 
 method clean() {
-	$!thread.local<date> = DateTime;
+	$!local<date> = DateTime;
 	$!msg = Str;
+	$!x = Any;
 }

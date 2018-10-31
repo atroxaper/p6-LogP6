@@ -44,6 +44,6 @@ class LogP6::Filter {
 	}
 
 	sub make-level-check($need-level) {
-		-> $c { $need-level <= $c.level-get() };
+		-> $c { $need-level <= $c.level() };
 	}
 }

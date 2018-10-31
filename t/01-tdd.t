@@ -2,11 +2,12 @@ use Test;
 
 use lib 'lib';
 
-use Grammar::Tracer;
+use LogP6::Pattern;
 
-
-say Gr.parse('%level{WARN = W DEBUG=   D ERROR=E TRACE=T INFO=I length=2   } Troom boom %trait [%ndc%ndc]');
-
-
+#use Grammar::Tracer;
+#say LogP6::Pattern::Grammar.parse(
+#		'[$tid|%tname](%trait){user=%mdc{user},%ndc} %msg',
+#		actions => LogP6::Pattern::Actions
+#).made;
 
 done-testing;
