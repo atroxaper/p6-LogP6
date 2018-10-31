@@ -42,20 +42,22 @@ class LogP6::Logger does LogP6::LoggerRole {
 	has Str:D $.trait is required;
 	has List:D $.grooves is required;
 
-	method info(Str:D $msg) {
-		self!log($msg, info);
+	method info(*@args, :$x) {
+		self!log(info, @args, :$x);
 	}
 
-	method debug(Str:D $msg) {
-		self!log($msg, debug);
+	method debug(*@args, :$x) {
+		self!log(debug, @args, :$x);
 	}
 
-	method !log($msg, $level) {
+	method !log($level, @args, :$x) {
 		my LogP6::Context $context = self!get-context();
 		$context.trait-set($!trait);
+		$context.x-set($x);
+		my $msg;
 		for @$!grooves -> $groove {
 			my ($writer, $filter) = $groove;
-			$context.reset($msg, $level);
+			$context.reset($msg //= msg(@args), $level);
 
 			if $filter.do-before($context) {
 				$writer.write($context);
@@ -63,6 +65,10 @@ class LogP6::Logger does LogP6::LoggerRole {
 			}
 		}
 		$context.clean();
+	}
+
+	sub msg(@args) {
+		@args.elems < 2 ?? @args[0] !! sprintf(@args[0], |@args[1..*]);
 	}
 
 	method !get-context() {

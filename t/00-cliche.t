@@ -33,8 +33,13 @@ cliche(
 	)
 );
 
+my $x;
+die "fake exception";
+CATCH { when X::AdHoc { $x = $_; .resume; } }
+
 my $w-logger = get-logger('writer');
-$w-logger.info("it works!");
+$w-logger.info('it works! %s !', 'booo', :$x);
+$w-logger.info('it works! %s !');
 
 #say get-logger("foo t");
 writer(name => 'w2', pattern => 'w2 update', :update);
