@@ -17,6 +17,14 @@ submethod BUILD() {
 	$!thread = $*THREAD;
 	$!tid = $!thread.id;
 	$!tname = $!thread.name;
+# TODO
+#	die "bla bla bla";
+#	CATCH {
+#		when X::AdHoc {
+#			$!x = $_;
+#			.resume;
+#		}
+#	}
 }
 
 method get-myself() {
@@ -116,13 +124,7 @@ method trait() {
 }
 
 method x() {
-	#$!x; TODO
-	die "bla bla bla";
-	CATCH {
-		when X::AdHoc {
-			return $_;
-		}
-	}
+	$!x;
 }
 
 method x-set($x) {

@@ -3,6 +3,8 @@ use Test;
 use lib 'lib';
 use LogP6 :configure;
 
+$*OUT.out-buffer = False;
+
 writer(name => "w1", pattern => "w1 %s", handle => $*ERR);
 my $writer-w2 = writer(name => "w2", pattern => "w2 %s");
 my $writer-uuid2 = writer();
