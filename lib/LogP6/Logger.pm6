@@ -55,27 +55,27 @@ class LogP6::LoggerWOSync does LogP6::Logger {
 	}
 
 	method ndc-push($obj) {
-		self!get-context.ndc-push: $obj;
+		get-context.ndc-push: $obj;
 	}
 
 	method ndc-pop() {
-		self!get-context.ndc-pop;
+		get-context.ndc-pop;
 	}
 
 	method ndc-clean() {
-		self!get-context.ndc-clean;
+		get-context.ndc-clean;
 	}
 
 	method mdc-put($key, $obj) {
-		self!get-context.mdc-put: $key, $obj;
+		get-context.mdc-put: $key, $obj;
 	}
 
 	method mdc-remove($key) {
-		self!get-context.mdc-remove: $key;
+		get-context.mdc-remove: $key;
 	}
 
 	method mdc-clean() {
-		self!get-context.mdc-clean;
+		get-context.mdc-clean;
 	}
 
 	method trace(*@args, :$x) {
@@ -104,7 +104,7 @@ class LogP6::LoggerWOSync does LogP6::Logger {
 	}
 
 	submethod !log($level, @args, :$x) {
-		my LogP6::Context $context = self!get-context();
+		my LogP6::Context $context = get-context();
 		$context.trait-set($!trait);
 		$context.x-set($x);
 		my $msg = msg(@args);
@@ -121,19 +121,64 @@ class LogP6::LoggerWOSync does LogP6::Logger {
 		$context.clean();
 	}
 
-	submethod !get-context() {
-		return LogP6::Context.get-myself;
-		CATCH {
-			# did not check application of the role for performance goal.
-			# that will throw only one and first time for each thread
-			default {
-				$*THREAD does LogP6::ThreadLocal;
-				return LogP6::Context.get-myself;
-			}
-		}
-	}
-
 	sub msg(@args) {
 		@args.elems < 2 ?? @args[0] // '' !! sprintf(@args[0], |@args[1..*]);
+	}
+}
+
+sub get-context() {
+	return LogP6::Context.get-myself;
+	CATCH {
+		# did not check application of the role for performance goal.
+		# that will throw only one and first time for each thread
+		default {
+			$*THREAD does LogP6::ThreadLocal;
+			return LogP6::Context.get-myself;
+		}
+	}
+}
+
+class LogP6::LoggerAbstractSync does LogP6::Logger {
+	has LogP6::LoggerWOSync:D $.aggr is required;
+	has &.get-fresh-logger is required;
+
+	method sync($context) { ... }
+
+	method get-sync-obj() {
+		get-context.sync($!aggr.trait);
+	}
+
+	method put-sync-obj($obj) {
+		get-context.sync-put($!aggr.trait, $obj);
+	}
+
+	method update-aggr() {
+		say $!aggr.WHICH;
+		$!aggr = &!get-fresh-logger($!aggr.trait);
+		say $!aggr.WHICH;
+	}
+
+	method ndc-push($obj) { $!aggr.ndc-push($obj) }
+	method ndc-pop()      { $!aggr.ndc-pop() }
+	method ndc-clean()    { $!aggr.ndc-clean() }
+	method mdc-put($key, $obj) { $!aggr.mdc-put($key, $obj) }
+	method mdc-remove($key)    { $!aggr.mdc-remove($key) }
+	method mdc-clean()         { $!aggr.mdc-clean() }
+	method trace(*@args, :$x) { self.sync(get-context); $!aggr.trace(|@args, :$x)}
+	method debug(*@args, :$x) { self.sync(get-context); $!aggr.debug(|@args, :$x)}
+	method info(*@args, :$x)  { self.sync(get-context);  $!aggr.info(|@args, :$x)}
+	method warn(*@args, :$x)  { self.sync(get-context);  $!aggr.warn(|@args, :$x)}
+	method error(*@args, :$x) { self.sync(get-context); $!aggr.error(|@args, :$x)}
+}
+
+class LogP6::LoggerTimeSync is LogP6::LoggerAbstractSync {
+	has Int:D $.seconds is required;
+
+	method sync($context) {
+		my DateTime $last = self.get-sync-obj // DateTime.now;
+		my $now = $context.date;
+		self.update-aggr if $now - $last > $!seconds;
+		say $now - $last;
+		self.put-sync-obj($now);
 	}
 }

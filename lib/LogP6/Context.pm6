@@ -5,13 +5,16 @@ unit class LogP6::Context;
 use LogP6::Level;
 
 has $!msg;
+has $!date;
 has $!level;
 has $!x;
 has $!trait;
 has $!thread;
 has $!tid;
 has $!tname;
-has $!local = %();
+has @!ndc = [];
+has %!mdc = %();
+has %!sync = %();
 
 submethod BUILD() {
 	$!thread = $*THREAD;
@@ -55,56 +58,51 @@ method level-set(LogP6::Level $level) {
 }
 
 method ndc() {
-	$!local<ndc> //= [];
+	@!ndc;
 }
 
 method ndc-push($obj) {
-	my $ndc := $!local<ndc> //= [];
-	$ndc.push: $obj;
+	@!ndc.push: $obj;
 }
 
 method ndc-pop() {
-	my $ndc := $!local<ndc> //= [];
-	$ndc.pop;
+	@!ndc.pop;
 }
 
 method ndc-clean() {
-	$!local<ndc> = [];
+	@!ndc = [];
 }
 
 method mdc() {
-	$!local<mdc> //= %();
+	%!mdc;
 }
 
 method mdc-get($key) {
-	my $mdc := $!local<mdc> //= %();
-	$mdc{$key};
+	%!mdc{$key};
 }
 
 method mdc-put($key, $obj) {
-	my $mdc := $!local<mdc> //= %();
-	$mdc{$key} = $obj;
+	%!mdc{$key} = $obj;
 }
 
 method mdc-remove($key) {
-	my $mdc := $!local<mdc> //= %();
-	$mdc{$key}:delete;
+	%!mdc{$key}:delete;
 }
 
 method mdc-clean() {
-	$!local<mdc> = %();
+	%!mdc = %();
 }
 
 method date() {
-	$!local<date> //= DateTime.now;
+	$!date //= DateTime.now;
 }
 
 method date-set(DateTime $date) {
-	$!local<date> = $date;
+	$!date = $date;
 }
 
 method date-clean() {
-	$!local<date>:delete;
+	$!date = DateTime;
 }
 
 method tid() {
@@ -131,8 +129,16 @@ method x-set($x) {
 	$!x = $x;
 }
 
+method sync($trait) {
+	%!sync{$trait};
+}
+
+method sync-put($trait, $obj) {
+	%!sync{$trait} = $obj;
+}
+
 method clean() {
-	$!local<date> = DateTime;
+	$!date = DateTime;
 	$!msg = Str;
 	$!x = Any;
 }

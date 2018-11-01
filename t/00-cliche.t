@@ -46,6 +46,10 @@ $w-logger.debug('it works! %s !');
 $w-logger.ndc-pop();
 $w-logger.debug();
 
+use LogP6::Logger;
+my $wr = LogP6::LoggerTimeSync.new(seconds => 5, aggr => $w-logger, get-fresh-logger => &get-logger);
+$wr.info('wrapper');
+
 #say get-logger("foo t");
 writer(name => 'w2', pattern => 'w2 update', :update);
 #say get-logger("foo t");
