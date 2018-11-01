@@ -29,7 +29,7 @@ cliche(
 cliche(
 	name => 'test writer', matcher => 'writer',
 	grooves => (
-		writer(pattern => '[%tid|%tname](%trait){user=%mdc{user},%ndc} %msg'), ""
+		writer(pattern => '[%date{$yyyy-$MM-$dd $hh:$mm:$ss $z}][%tid|%tname](%trait){user=%mdc{user},%ndc} %msg'), ""
 	)
 );
 

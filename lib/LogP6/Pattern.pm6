@@ -45,6 +45,9 @@ class Mdc does PatternPart {
 
 class Glue does PatternPart {
 	has $.glue is required;
+	method new($str) {
+		self.bless(glue => $str);
+	}
 	method show($context) {
 		$.glue;
 	}
@@ -78,6 +81,79 @@ class XTrace does PatternPart {
 	}
 }
 
+my $digits = ('00', '01' ... '99').list;
+my $months = ('', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec').list;
+
+class Date does PatternPart {
+	has $.pieces;
+	method show($context) {
+		with $context.date() {
+			return ($!pieces>>.show($_)).join;
+		}
+		return '';
+	}
+}
+
+class DateYearFour does PatternPart {
+	method show($d) {
+		$d.year;
+	}
+}
+
+class DateYearTwo does PatternPart {
+	method show($d) {
+		$digits[$d.year % 100];
+	}
+}
+
+class DateMonthWord does PatternPart {
+	method show($d) {
+		$months[$d.month];
+	}
+}
+
+class DateMonthNum does PatternPart {
+	method show($d) {
+		$digits[$d.month];
+	}
+}
+
+class DateDay does PatternPart {
+	method show($d) {
+		$digits[$d.day];
+	}
+}
+
+class DateHour does PatternPart {
+	method show($d) {
+		$digits[$d.hour];
+	}
+}
+
+class DateMinute does PatternPart {
+	method show($d) {
+		$digits[$d.minute];
+	}
+}
+
+class DateSecond does PatternPart {
+	method show($d) {
+		$digits[$d.whole-second];
+	}
+}
+
+class DateMSecond does PatternPart {
+	method show($d) {
+		round(($d.second - $d.whole-second) * 1000);
+	}
+}
+
+class DateZone does PatternPart {
+	method show($d) {
+		$d.timezone;
+	}
+}
+
 
 #++ %trait - logger name (trait)
 #++ %tid - thread id
@@ -108,6 +184,19 @@ grammar Grammar is export {
 	token x-param:sym<name> { '$name' }
 	token x-param:sym<trace> { '$trace' }
 	token x-param:sym<glue> { $<text>=<-[$}]>+ }
+
+	token item:sym<date> { '%date'<date-params>? }
+	token date-params { \{ <date-param>+ \} }
+	proto token date-param { * }
+	token date-param:sym<year> { '$' $<l>=y ** 2..4 }
+	token date-param:sym<month> { '$' $<l>=M ** 2..3 }
+	token date-param:sym<day> { '$dd' }
+	token date-param:sym<hour> { '$hh' }
+	token date-param:sym<minute> { '$mm' }
+	token date-param:sym<second> { '$ss' }
+	token date-param:sym<msecond> { '$mss' }
+	token date-param:sym<zone> { '$z' }
+	token date-param:sym<glue> { $<text>=<-[$}]>+ }
 
 	token item:sym<mdc> { '%mdc'<mdc-param> }
 	token mdc-param { \{ <word> \} }
@@ -157,7 +246,7 @@ class Actions is export {
 	}
 
 	method item:sym<glue>($/) {
-		make Glue.new(glue => $<text>.Str);
+		make Glue.new($<text>.Str);
 	}
 
 	method word($/) {
@@ -168,7 +257,7 @@ class Actions is export {
 		with $<x-params> {
 			make X.new(pieces => $<x-params>.made);
 		} else {
-			make X.new(pieces => (XName, Glue.new(glue => ': '), XMsg));
+			make X.new(pieces => (XName, Glue.new(': '), XMsg));
 		}
 	}
 
@@ -189,12 +278,61 @@ class Actions is export {
 	}
 
 	method x-param:sym<glue>($/) {
-		make Glue.new(glue => $<text>.Str);
+		make Glue.new($<text>.Str);
+	}
+
+	method item:sym<date>($/) {
+		with $<date-params> {
+			make Date.new(pieces => $<date-params>.made);
+		} else {
+			make Date.new(pieces => (DateHour, Glue.new(':'), DateMinute, Glue.new(':'),
+							DateSecond, Glue.new(':'), DateMSecond));
+		}
+	}
+
+	method date-params($/) {
+		make $<date-param>>>.made.List;
+	}
+
+	method date-param:sym<year>($/) {
+		make $<l>.chars == 4 ?? DateYearFour !! DateYearTwo;
+	}
+
+	method date-param:sym<month>($/) {
+		make $<l>.chars == 2 ?? DateMonthNum !! DateMonthWord;
+	}
+
+	method date-param:sym<day>($/) {
+		make DateDay;
+	}
+
+	method date-param:sym<hour>($/) {
+		make DateHour;
+	}
+
+	method date-param:sym<minute>($/) {
+		make DateMinute;
+	}
+
+	method date-param:sym<second>($/) {
+		make DateSecond;
+	}
+
+	method date-param:sym<msecond>($/) {
+		make DateMSecond;
+	}
+
+	method date-param:sym<zone>($/) {
+		make DateZone;
+	}
+
+	method date-param:sym<glue>($/) {
+		make Glue.new($<text>.Str);
 	}
 }
 
 
 #say LogP6::Pattern::Grammar.parse(
-#		'[%tid|%tname](%trait){user=%mdc{user},%ndc} %msg' ~ " \%x\{cause \$name: \$msg\n\$trace}",
+#		'%date{$yyyy-$yy-$MM-$MMM-$dd $hh:$mm:$ss:$mss $z}[%tid|%tname](%trait){user=%mdc{user},%ndc} %msg' ~ " \%x\{cause \$name: \$msg\n\$trace}",
 #		actions => LogP6::Pattern::Actions
 #).made;
