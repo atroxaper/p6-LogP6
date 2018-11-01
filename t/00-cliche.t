@@ -27,9 +27,9 @@ cliche(
 );
 
 cliche(
-	name => 'test writer', matcher => 'writer',
+	name => 'test writer', matcher => 'writer', default-level => $trace,
 	grooves => (
-		writer(pattern => '[%date{$yyyy-$MM-$dd $hh:$mm:$ss $z}][%tid|%tname](%trait){user=%mdc{user},%ndc} %msg'), ""
+		writer(pattern => '%level{WARN=Wwarn INFO=Iinfo ERROR=Eerror TRACE=Ttrace length=3}|| [%date{$yyyy-$MMM-$dd $hh:$mm:$ss $z}][%tid|%tname](%trait){user=%mdc{user},%ndc} %msg'), ""
 	)
 );
 
@@ -39,7 +39,7 @@ CATCH { when X::AdHoc { $x = $_; .resume; } }
 
 my $w-logger = get-logger('writer');
 $w-logger.info('it works! %s !', 'booo', :$x);
-$w-logger.info('it works! %s !');
+$w-logger.debug('it works! %s !');
 
 #say get-logger("foo t");
 writer(name => 'w2', pattern => 'w2 update', :update);

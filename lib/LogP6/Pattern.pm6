@@ -1,6 +1,6 @@
 unit module LogP6::Pattern;
 
-#use Grammar::Tracer;
+use LogP6::Level;
 
 role PatternPart {
 	method show($) { ... }
@@ -82,7 +82,7 @@ class XTrace does PatternPart {
 }
 
 my $digits = ('00', '01' ... '99').list;
-my $months = ('', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec').list;
+my $months = <0 Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec>.list;
 
 class Date does PatternPart {
 	has $.pieces;
@@ -154,6 +154,34 @@ class DateZone does PatternPart {
 	}
 }
 
+my $lnames = [];
+$lnames[trace.Int] = 'TRACE';
+$lnames[debug.Int] = 'DEBUG';
+$lnames[info.Int]  = 'INFO';
+$lnames[warn.Int]  = 'WARN';
+$lnames[error.Int] = 'ERROR';
+$lnames .= List;
+
+class LevelName does PatternPart {
+	has $.levels;
+
+	method new($conf) {
+	say $conf;
+		my $levels = $lnames.clone.Array;
+		my $length = $conf<length> // 5;
+		for 1..5 -> $i {
+			$levels[$i] = $conf{$i.Str} // $levels[$i];
+			$levels[$i] = sprintf('%-*.*s', $length, $length, $levels[$i]);
+		}
+		$levels = $levels.List;
+
+		self.bless(:$levels);
+	}
+
+	method show($context) {
+		$!levels[$context.level];
+	}
+}
 
 #++ %trait - logger name (trait)
 #++ %tid - thread id
@@ -162,8 +190,8 @@ class DateZone does PatternPart {
 #++ %ndc - ndc-stack
 #++ %mdc{key} - mdc-value
 #++ %x{$msg $name $trace} - exception {message class-name backtrace}
-# %date{$yyyy-$yy-$mm-$mmm-$dd $hh:$mm:$ss $z} - date and time
-# %level{WARN=W, DEBUG=D, ERROR=E, TRACE=T, INFO=I, length=2}
+#++ %date{$yyyy-$yy-$MM-$MMM-$dd $hh:$mm:$ss $z} - date and time
+#++ %level{WARN=W, DEBUG=D, ERROR=E, TRACE=T, INFO=I, length=2}
 grammar Grammar is export {
 	token TOP { <item>* }
 
@@ -176,6 +204,7 @@ grammar Grammar is export {
 	token item:sym<glue> { $<text>=<-[%]>+ }
 
 	token word { $<text>=<-[\s}]>+ }
+	token num { $<text>=\d+ }
 
 	token item:sym<x> { '%x'<x-params>? }
 	token x-params { \{ <x-param>+ \} }
@@ -188,7 +217,7 @@ grammar Grammar is export {
 	token item:sym<date> { '%date'<date-params>? }
 	token date-params { \{ <date-param>+ \} }
 	proto token date-param { * }
-	token date-param:sym<year> { '$' $<l>=y ** 2..4 }
+	token date-param:sym<year> { '$' $<l>='yy' ** 1..2 }
 	token date-param:sym<month> { '$' $<l>=M ** 2..3 }
 	token date-param:sym<day> { '$dd' }
 	token date-param:sym<hour> { '$hh' }
@@ -209,7 +238,7 @@ grammar Grammar is export {
 	rule level-param:sym<info> { 'INFO' '=' <word> }
 	rule level-param:sym<warn> { 'WARN' '=' <word> }
 	rule level-param:sym<error> { 'ERROR' '=' <word> }
-	rule level-param:sym<length> { 'length' '=' <word> }
+	rule level-param:sym<length> { 'length' '=' <num> }
 }
 
 class Actions is export {
@@ -329,10 +358,40 @@ class Actions is export {
 	method date-param:sym<glue>($/) {
 		make Glue.new($<text>.Str);
 	}
+
+	method item:sym<level>($/) {
+		with $<level-params> {
+			make LevelName.new($<level-params>.made);
+		} else {
+			make LevelName.new(%());
+		}
+	}
+
+	method level-params($/) {
+		make $<level-param>>>.made.hash;
+	}
+
+	method level-param:sym<trace>($/) {
+		make LogP6::Level::trace.Int.Str => $<word>.Str;
+	}
+
+	method level-param:sym<debug>($/) {
+		make LogP6::Level::debug.Int.Str => $<word>.Str;
+	}
+
+	method level-param:sym<info>($/) {
+		make LogP6::Level::info.Int.Str => $<word>.Str;
+	}
+
+	method level-param:sym<warn>($/) {
+		make LogP6::Level::warn.Int.Str => $<word>.Str;
+	}
+
+	method level-param:sym<error>($/) {
+		make LogP6::Level::error.Int.Str => $<word>.Str;
+	}
+
+	method level-param:sym<length>($/) {
+		make 'length' => $<num>.Str;
+	}
 }
-
-
-#say LogP6::Pattern::Grammar.parse(
-#		'%date{$yyyy-$yy-$MM-$MMM-$dd $hh:$mm:$ss:$mss $z}[%tid|%tname](%trait){user=%mdc{user},%ndc} %msg' ~ " \%x\{cause \$name: \$msg\n\$trace}",
-#		actions => LogP6::Pattern::Actions
-#).made;
