@@ -30,24 +30,66 @@ class LogP6::Cliche {
 	}
 }
 
-role LogP6::LoggerRole {
-	method info(Str:D $msg) { ... }
-	method debug(Str:D $msg) { ... }
+role LogP6::Logger {
 	method ndc-push($obj) { ... }
 	method ndc-pop() { ... }
 	method ndc-clean() { ... }
+	method mdc-put($key, $obj) { ... }
+	method mdc-remove($key) { ... }
+	method mdc-clean() { ... }
+	method trace(*@args, :$x) { ... }
+	method debug(*@args, :$x) { ... }
+	method info(*@args, :$x) { ... }
+	method warn(*@args, :$x) { ... }
+	method error(*@args, :$x) { ... }
 }
 
-class LogP6::Logger does LogP6::LoggerRole {
+class LogP6::LoggerWOSync does LogP6::Logger {
 	has Str:D $.trait is required;
 	has List:D $.grooves is required;
+
+	method ndc-push($obj) {
+		self!get-context.ndc-push: $obj;
+	}
+
+	method ndc-pop() {
+		self!get-context.ndc-pop;
+	}
+
+	method ndc-clean() {
+		self!get-context.ndc-clean;
+	}
+
+	method mdc-put($key, $obj) {
+		self!get-context.mdc-put: $key, $obj;
+	}
+
+	method mdc-remove($key) {
+		self!get-context.mdc-remove: $key;
+	}
+
+	method mdc-clean() {
+		self!get-context.mdc-clean;
+	}
+
+	method trace(*@args, :$x) {
+		self!log(trace, @args, :$x);
+	}
+
+	method debug(*@args, :$x) {
+		self!log(debug, @args, :$x);
+	}
 
 	method info(*@args, :$x) {
 		self!log(info, @args, :$x);
 	}
 
-	method debug(*@args, :$x) {
-		self!log(debug, @args, :$x);
+	method warn(*@args, :$x) {
+		self!log(warn, @args, :$x);
+	}
+
+	method error(*@args, :$x) {
+		self!log(error, @args, :$x);
 	}
 
 	method !log($level, @args, :$x) {
@@ -67,13 +109,11 @@ class LogP6::Logger does LogP6::LoggerRole {
 		$context.clean();
 	}
 
-	sub msg(@args) {
-		@args.elems < 2 ?? @args[0] !! sprintf(@args[0], |@args[1..*]);
-	}
-
 	method !get-context() {
 		return LogP6::Context.get-myself;
 		CATCH {
+			# did not check application of the role for performance goal.
+			# that will throw only one and first time for each thread
 			default {
 				$*THREAD does LogP6::ThreadLocal;
 				return LogP6::Context.get-myself;
@@ -81,15 +121,7 @@ class LogP6::Logger does LogP6::LoggerRole {
 		}
 	}
 
-	method ndc-push($obj) {
-		self!get-context.ndc-push: $obj;
-	}
-
-	method ndc-pop() {
-		self!get-context.ndc-pop;
-	}
-
-	method ndc-clean() {
-		self!get-context.ndc-clean;
+	sub msg(@args) {
+		@args.elems < 2 ?? @args[0] // '' !! sprintf(@args[0], |@args[1..*]);
 	}
 }

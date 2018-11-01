@@ -39,7 +39,12 @@ CATCH { when X::AdHoc { $x = $_; .resume; } }
 
 my $w-logger = get-logger('writer');
 $w-logger.info('it works! %s !', 'booo', :$x);
+$w-logger.ndc-push('np1');
+$w-logger.ndc-push('np2');
+$w-logger.mdc-put('user', 'misha');
 $w-logger.debug('it works! %s !');
+$w-logger.ndc-pop();
+$w-logger.debug();
 
 #say get-logger("foo t");
 writer(name => 'w2', pattern => 'w2 update', :update);
