@@ -9,7 +9,7 @@ unit module LogP6;
 # 6. init from file
 # 7. cliche factories
 # 8. improve exceptions
-# 9. improve writer format
+# (9). improve writer format
 # 10. tests tests tests
 # 11. docs docs docs
 # 12. add methods for logger
