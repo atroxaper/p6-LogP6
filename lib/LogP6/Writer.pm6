@@ -5,6 +5,10 @@ class LogP6::WriterConf {
 	has Str $.pattern;
 	has IO::Handle $.handle;
 	has Bool $.auto-exceptions;
+
+	method default-handle() {
+		$*OUT;
+	}
 }
 
 class LogP6::Writer {
@@ -21,7 +25,7 @@ class LogP6::Writer {
 		$pattern ~= $default-x if $auto-exeptions;
 		self.bless(
 			pattern => $pattern,
-			handle => $conf.handle // $*OUT
+			handle => $conf.handle // $conf.default-handle
 		);
 	}
 

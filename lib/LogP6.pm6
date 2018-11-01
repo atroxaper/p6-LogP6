@@ -3,7 +3,7 @@ unit module LogP6;
 # TODO
 # (1). add support of '' (default) writers and filters (create them at start)
 # (2). add START support (create default)
-# 3. add STOP support (close all writers)
+# (3). add STOP support (close all writers)
 # (4). add EXPORT strategy (one for configuring, one for getting)
 # 5. logger wrappers and sync
 # 6. init from file
@@ -48,13 +48,13 @@ sub initialize() {
 }
 
 my role GroovesPartsManager[$lock, $part-name, ::Type] {
-	my %parts = %();
+	has %!parts = %();
 
 	method create(Str :$name, *%fields) {
 		with $name {
 			return $lock.protect({
-				die "$part-name with name $name already exists" with %parts{$name};
-				%parts{$name} = Type.new: :$name, |%fields;
+				die "$part-name with name $name already exists" with %!parts{$name};
+				%!parts{$name} = Type.new: :$name, |%fields;
 			});
 		} else {
 			return Type.new: |%fields;
@@ -63,8 +63,8 @@ my role GroovesPartsManager[$lock, $part-name, ::Type] {
 
 	method update(Str:D :$name!, *%fields) {
 		$lock.protect({
-			die "there is no $part-name with name $name" without %parts{$name};
-			my $old = %parts{$name}:delete;
+			die "there is no $part-name with name $name" without %!parts{$name};
+			my $old = %!parts{$name}:delete;
 			my %new-fields = %();
 			for %fields.kv -> $f-name, $f-value {
 				%new-fields{$f-name} = $f-value // $old."$f-name"();
@@ -77,7 +77,7 @@ my role GroovesPartsManager[$lock, $part-name, ::Type] {
 
 	method replace(Str:D :$name!, *%fields) {
 		$lock.protect({
-			my $old = %parts{$name}:delete;
+			my $old = %!parts{$name}:delete;
 			my $new = self.create(:$name, |%fields);
 			update-loggers(find-cliche-with($name, $part-name));
 			return $old // Type;
@@ -87,7 +87,7 @@ my role GroovesPartsManager[$lock, $part-name, ::Type] {
 	method remove(Str:D :$name!) {
 		die "remove default $part-name is prohibited" if $name eq '';
 		$lock.protect({
-			my $old = %parts{$name}:delete;
+			my $old = %!parts{$name}:delete;
 			with $old {
 				my @found := find-cliche-with($old.name, $part-name);
 				for @found -> $old-cliche {
@@ -102,11 +102,15 @@ my role GroovesPartsManager[$lock, $part-name, ::Type] {
 	}
 
 	method get(Str:D $name) {
-		$lock.protect({ %parts{$name} // Type });
+		$lock.protect({ %!parts{$name} // Type });
 	}
 
 	method put(Type:D $part) {
-		$lock.protect({ %parts{$part.name} = $part });
+		$lock.protect({ %!parts{$part.name} = $part });
+	}
+
+	method all() {
+		$lock.protect({ %!parts;; });
 	}
 }
 
@@ -331,6 +335,17 @@ sub get-logger(Str:D $trait --> Logger:D) is export(:MANDATORY) {
 
 		return $logger;
 	});
+}
+
+END {
+	return without $writer-manager;
+	for $writer-manager.all().values -> $writer {
+		for $writer.handle, $writer.default-handle -> $h {
+			if $h.defined && $h ne $*OUT && $h ne $*ERR {
+				try $h.close;
+			}
+		}
+	}
 }
 
 initialize;
