@@ -16,7 +16,7 @@ unit module LogP6;
 # 13. add 'turn off' logger (in cliche and Logger)
 # 14. add support custom writer (sql or so)
 # (15). add support of str format (lazy creation of msg)
-# 16. improve logger log method to be more lazy
+# (16). improve logger log method to be more lazy
 
 use UUID;
 

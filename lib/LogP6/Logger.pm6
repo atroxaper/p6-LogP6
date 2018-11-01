@@ -47,6 +47,12 @@ role LogP6::Logger {
 class LogP6::LoggerWOSync does LogP6::Logger {
 	has Str:D $.trait is required;
 	has List:D $.grooves is required;
+	has $!first-filter;
+
+	submethod TWEAK() {
+		# save the first filter separately
+		$!first-filter = $!grooves[0][1];
+	}
 
 	method ndc-push($obj) {
 		self!get-context.ndc-push: $obj;
@@ -73,33 +79,39 @@ class LogP6::LoggerWOSync does LogP6::Logger {
 	}
 
 	method trace(*@args, :$x) {
+		return if !$!first-filter.reactive-check(trace);
 		self!log(trace, @args, :$x);
 	}
 
 	method debug(*@args, :$x) {
+		return if !$!first-filter.reactive-check(debug);
 		self!log(debug, @args, :$x);
 	}
 
 	method info(*@args, :$x) {
+		return if !$!first-filter.reactive-check(info);
 		self!log(info, @args, :$x);
 	}
 
 	method warn(*@args, :$x) {
+		return if !$!first-filter.reactive-check(warn);
 		self!log(warn, @args, :$x);
 	}
 
 	method error(*@args, :$x) {
+		return if !$!first-filter.reactive-check(error);
 		self!log(error, @args, :$x);
 	}
 
-	method !log($level, @args, :$x) {
+	submethod !log($level, @args, :$x) {
 		my LogP6::Context $context = self!get-context();
 		$context.trait-set($!trait);
 		$context.x-set($x);
-		my $msg;
+		my $msg = msg(@args);
+		my ($writer, $filter);
 		for @$!grooves -> $groove {
-			my ($writer, $filter) = $groove;
-			$context.reset($msg //= msg(@args), $level);
+			($writer, $filter) = $groove;
+			$context.reset($msg, $level);
 
 			if $filter.do-before($context) {
 				$writer.write($context);
@@ -109,7 +121,7 @@ class LogP6::LoggerWOSync does LogP6::Logger {
 		$context.clean();
 	}
 
-	method !get-context() {
+	submethod !get-context() {
 		return LogP6::Context.get-myself;
 		CATCH {
 			# did not check application of the role for performance goal.
