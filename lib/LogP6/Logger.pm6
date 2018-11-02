@@ -55,27 +55,27 @@ class LogP6::LoggerWOSync does LogP6::Logger {
 	}
 
 	method ndc-push($obj) {
-		get-context.ndc-push: $obj;
+		get-context.ndc-push: $obj, $!trait;
 	}
 
 	method ndc-pop() {
-		get-context.ndc-pop;
+		get-context.ndc-pop: $!trait;
 	}
 
 	method ndc-clean() {
-		get-context.ndc-clean;
+		get-context.ndc-clean: $!trait;
 	}
 
 	method mdc-put($key, $obj) {
-		get-context.mdc-put: $key, $obj;
+		get-context.mdc-put: $key, $obj, $!trait;
 	}
 
 	method mdc-remove($key) {
-		get-context.mdc-remove: $key;
+		get-context.mdc-remove: $key, $!trait;
 	}
 
 	method mdc-clean() {
-		get-context.mdc-clean;
+		get-context.mdc-clean; $!trait;
 	}
 
 	method trace(*@args, :$x) {

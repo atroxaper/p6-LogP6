@@ -17,7 +17,7 @@ unit module LogP6;
 # 14. add support custom writer (sql or so)
 # (15). add support of str format (lazy creation of msg)
 # (16). improve logger log method to be more lazy
-# 17. improve ndc and mdc logic in Context and Logger (many loggers)
+# (17). improve ndc and mdc logic in Context and Logger (many loggers)
 
 use UUID;
 
