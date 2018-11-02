@@ -194,40 +194,44 @@ proto writer(| --> WriterConf) is export(:configure) { * }
 multi sub writer(
 		Str :$name,
 		Str :$pattern,
+		Bool :$auto-exceptions,
 		IO::Handle :$handle
 		--> WriterConf:D
 ) {
-	$writer-manager.create(:$name, :$pattern, :$handle);
+	$writer-manager.create(:$name, :$pattern, :$auto-exceptions, :$handle);
 }
 
 multi sub writer(
 		Str :$name,
 		Str :$pattern,
+		Bool :$auto-exceptions,
 		IO::Handle :$handle,
 		Bool:D :$create! where *.so
 		--> WriterConf:D
 ) {
-	$writer-manager.create(:$name, :$pattern, :$handle);
+	$writer-manager.create(:$name, :$pattern, :$auto-exceptions, :$handle);
 }
 
 multi sub writer(
 		Str:D :$name!,
 		Str :$pattern,
 		IO::Handle :$handle,
+		Bool :$auto-exceptions,
 		Bool:D :$update! where *.so
 		--> WriterConf:D
 ) {
-	$writer-manager.update(:$name, :$pattern, :$handle);
+	$writer-manager.update(:$name, :$pattern, :$auto-exceptions, :$handle);
 }
 
 multi sub writer(
 		Str:D :$name!,
 		Str :$pattern,
 		IO::Handle :$handle,
+		Bool :$auto-exceptions,
 		Bool:D :$replace! where *.so
 		--> WriterConf
 ) {
-	$writer-manager.replace(:$name, :$pattern, :$handle);
+	$writer-manager.replace(:$name, :$pattern, :$auto-exceptions, :$handle);
 }
 
 multi sub writer(Str:D :$name!, Bool:D :$remove! where *.so --> WriterConf) {
@@ -259,6 +263,8 @@ multi sub cliche(
 		$cliche;
 	});
 }
+
+
 
 sub get-part-name($part, $type-manager) {
 	return $part if $part ~~ Str;
