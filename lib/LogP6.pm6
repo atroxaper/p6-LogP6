@@ -5,7 +5,7 @@ unit module LogP6;
 # (2). add START support (create default)
 # (3). add STOP support (close all writers)
 # (4). add EXPORT strategy (one for configuring, one for getting)
-# 5. logger wrappers and sync
+# (5). logger wrappers and sync
 # 6. init from file
 # (7). cliche factories
 # 8. improve exceptions
@@ -22,6 +22,7 @@ unit module LogP6;
 use UUID;
 
 use LogP6::Logger;
+use LogP6::LoggerSyncTime;
 use LogP6::Writer;
 use LogP6::Filter;
 use LogP6::Level;
@@ -39,16 +40,22 @@ my Lock \lock .= new;
 my @cliches = [];
 my $cliches-names = SetHash.new;
 my %cliches-to-loggers = %();
+my %loggers-pure = %();
 my %loggers = %();
 
 my Str \default-pattern = "default %msg";
 die "wrong default lib pattern <$(default-pattern)>"
 		unless Grammar.parse(default-pattern);
 my Level \default-level = info;
+my $sync-strategy = Any;
 
 sub initialize() {
 	cliche(name => '', matcher => /.*/,
 			grooves => (writer(name => ''), filter(name => '')));
+}
+
+sub set-sync-strategy(Str $strategy-name) is export(:configure) {
+	$sync-strategy = $strategy-name;
 }
 
 my role GroovesPartsManager[$lock, $part-name, ::Type] {
@@ -368,7 +375,7 @@ sub find-cliche-with(Str:D $name!,
 multi sub update-loggers(Positional:D $cliches) {
 	for |$cliches -> $cliche {
 		for (%cliches-to-loggers{$cliche.name} // SetHash.new).keys -> $trait {
-			%loggers{$trait} = create-logger($trait, $cliche);
+			create-and-store-logger($trait);
 		}
 	}
 }
@@ -376,8 +383,7 @@ multi sub update-loggers(Positional:D $cliches) {
 multi sub update-loggers() {
 	my @traits := %loggers.keys.List;
 	for @traits -> $trait {
-		my $cliche = find-cliche-for-trait($trait);
-		%loggers{$trait} = create-logger($trait, $cliche);
+		create-and-store-logger($trait);
 	}
 }
 
@@ -398,7 +404,19 @@ sub create-logger($trait, $cliche) {
 			Writer.new(get-writer($cliche.writers[$i]), $pattern),
 			Filter.new(get-filter($cliche.filters[$i]), $level)
 	) }).list;
-	LoggerWOSync.new(:$trait, :$grooves);
+	LoggerPure.new(:$trait, :$grooves);
+}
+
+sub wrap-to-sync-logger($logger) {
+	given $sync-strategy {
+		when 'time' {
+			LoggerSyncTime.new(aggr => $logger, seconds => 60,
+					get-fresh-logger => &get-logger-pure);
+		}
+		default {
+			$logger;
+		}
+	}
 }
 
 sub find-cliche-for-trait($trait) {
@@ -412,15 +430,27 @@ sub find-cliche-for-trait($trait) {
 sub get-logger(Str:D $trait --> Logger:D) is export(:MANDATORY) {
 	lock.protect({
 		return $_ with %loggers{$trait};
-
-		my $cliche = find-cliche-for-trait($trait);
-		my $logger = create-logger($trait, $cliche);
-
-		%loggers{$trait} = $logger;
-		(%cliches-to-loggers{$cliche.name} //= SetHash.new){$trait} = True;
-
-		return $logger;
+		create-and-store-logger($trait);
+		%loggers{$trait}
 	});
+}
+
+sub get-logger-pure(Str:D $trait --> Logger:D) is export(:configure) {
+	lock.protect({
+		return $_ with %loggers-pure{$trait};
+		create-and-store-logger($trait);
+	});
+}
+
+sub create-and-store-logger($trait) {
+	my $cliche = find-cliche-for-trait($trait);
+	my $logger-pure = create-logger($trait, $cliche);
+
+	%loggers{$trait} = wrap-to-sync-logger($logger-pure);
+	%loggers-pure{$trait} = $logger-pure;
+	(%cliches-to-loggers{$cliche.name} //= SetHash.new){$trait} = True;
+
+	return $logger-pure;
 }
 
 END {
