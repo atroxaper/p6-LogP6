@@ -5,8 +5,8 @@ use LogP6 :configure;
 
 $*OUT.out-buffer = False;
 
-writer(name => "w1", pattern => "w1 %s", handle => $*ERR);
-my $writer-w2 = writer(name => "w2", pattern => "w2 %s");
+writer(name => "w1", pattern => "w1 %msg", handle => $*ERR);
+my $writer-w2 = writer(name => "w2", pattern => "w2 %msg");
 my $writer-uuid2 = writer();
 
 filter(name => "f1", level => $trace);
@@ -18,7 +18,7 @@ cliche(
 	name => 'about users', matcher => 'foo t',
 	default-level => $info,
 	grooves => (
-		(writer(pattern => "uuid1 %s"), $filter-uuid1),
+		(writer(pattern => "uuid1 %msg"), $filter-uuid1),
 		($writer-uuid2, $filter-uuid2),
 		("w1", "f1"),
 		($writer-w2, $filter-f2),
@@ -34,8 +34,8 @@ cliche(
 );
 
 my $x;
-die "fake exception";
-CATCH { when X::AdHoc { $x = $_; .resume; } }
+#die "fake exception";
+#CATCH { when X::AdHoc { $x = $_; .resume; } }
 
 my $w-logger = get-logger('writer');
 $w-logger.info('it works! %s !', 'booo', :$x);
@@ -50,13 +50,19 @@ use LogP6::Logger;
 my $wr = LogP6::LoggerTimeSync.new(seconds => 5, aggr => $w-logger, get-fresh-logger => &get-logger);
 $wr.info('wrapper');
 
-#say get-logger("foo t");
+say get-logger("foo t");
 writer(name => 'w2', pattern => 'w2 update', :update);
-#say get-logger("foo t");
-#say get-logger("default");
-#say $?MODULE;
-#my $logger = get-logger("foo t");
-#$logger.info("this is log msg");
-#$logger.debug("this is log msg (debug)");
+say get-logger("foo t");
+say get-logger("default");
+my $logger = get-logger("foo t");
+$logger.info("this is log msg");
+$logger.debug("this is log msg (debug)");
+
+say ">> ", %?RESOURCES;
+
+cliche(name => 'about users', :remove);
+$logger = get-logger("foo t");
+$logger.info("this is log msg");
+$logger.debug("this is log msg (debug)");
 
 done-testing;

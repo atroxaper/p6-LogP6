@@ -7,7 +7,7 @@ unit module LogP6;
 # (4). add EXPORT strategy (one for configuring, one for getting)
 # 5. logger wrappers and sync
 # 6. init from file
-# 7. cliche factories
+# (7). cliche factories
 # 8. improve exceptions
 # (9). improve writer format
 # 10. tests tests tests
@@ -26,6 +26,7 @@ use LogP6::Writer;
 use LogP6::Filter;
 use LogP6::Level;
 use LogP6::ThreadLocal;
+use LogP6::Pattern;
 
 our $trace is export(:configure) = trace;
 our $debug is export(:configure) = debug;
@@ -36,11 +37,13 @@ our $error is export(:configure) = error;
 my Lock \lock .= new;
 
 my @cliches = [];
-my $clishes-names = SetHash.new;
-my %clishes-to-loggers = %();
+my $cliches-names = SetHash.new;
+my %cliches-to-loggers = %();
 my %loggers = %();
 
-my Str \default-pattern = "default %s";
+my Str \default-pattern = "default %msg";
+die "wrong default lib pattern <$(default-pattern)>"
+		unless Grammar.parse(default-pattern);
 my Level \default-level = info;
 
 sub initialize() {
@@ -238,6 +241,12 @@ multi sub writer(Str:D :$name!, Bool:D :$remove! where *.so --> WriterConf) {
 	$writer-manager.remove(:$name);
 }
 
+sub get-cliche(Str:D $name --> Cliche) {
+	lock.protect({
+		@cliches.grep(*.name eq $name).first // Cliche;
+	});
+}
+
 proto cliche(| --> Cliche) is export(:configure) { * }
 
 multi sub cliche(
@@ -245,26 +254,82 @@ multi sub cliche(
 	Level :$default-level, Str :$default-pattern, Positional :$grooves
 	--> Cliche:D
 ) {
+	cliche(:$name, :$matcher, :$default-level, :$default-pattern, :$grooves,
+			:create);
+}
+
+multi sub cliche(
+	Str:D :$name!, :$matcher! where $matcher ~~ any(Str:D, Regex:D),
+	Level :$default-level, Str :$default-pattern, Positional :$grooves,
+	:$create! where *.so --> Cliche:D
+) {
 	lock.protect({
-		die "cliche with name $name already exists" if $clishes-names{$name};
-		my $grvs = ($grooves // (),)>>.List.flat;
-		die "grooves must have even amount of elements" unless $grvs %% 2;
-
-		check-part(WriterConf, 'writer', $writer-manager, $_) for $grvs[0,2...^*];
-		check-part(FilterConf, 'filter', $filter-manager, $_) for $grvs[1,3...^*];
-
-		my $writers-names = $grvs[0,2...^*]>>.&get-part-name($writer-manager).List;
-		my $filters-names = $grvs[1,3...^*]>>.&get-part-name($filter-manager).List;
-
-		$clishes-names<$name> = True;
-		my $cliche = Cliche.new(:$name, :$default-level, :$default-pattern,
-				:$matcher, writers => $writers-names, filters => $filters-names);
+		die "cliche with name $name already exists" if $cliches-names{$name};
+		my $cliche = create-cliche(:$name, :$matcher, :$default-level,
+				:$default-pattern, :$grooves);
+		$cliches-names<$name> = True;
 		@cliches.push: $cliche;
 		$cliche;
 	});
 }
 
+multi sub cliche(
+	Str:D :$name!, :$matcher! where $matcher ~~ any(Str:D, Regex:D),
+	Level :$default-level, Str :$default-pattern, Positional :$grooves,
+	:$replace! where *.so --> Cliche:D
+) {
+	lock.protect({
+		my $new = create-cliche(:$name, :$matcher, :$default-level,
+				:$default-pattern, :$grooves);
+		for @cliches.kv -> $i, $old {
+			if $old.name eq $name {
+				@cliches[$i] = $new;
+				update-loggers;
+				return $old;
+			}
+		}
+		$cliches-names<$name> = True;
+		@cliches.push: $new;
+		update-loggers;
+		Cliche;
+	});
+}
 
+multi sub cliche(Str:D :$name!, :$remove! where *.so --> Cliche) {
+	die "remove default cliche is prohibited" if $name eq '';
+	lock.protect({
+		return Cliche without $cliches-names{$name};
+		my $old = @cliches.grep(*.name eq $name).first // Cliche;
+		@cliches = @cliches.grep(*.name ne $name).Array;
+		$cliches-names{$name} = False;
+		%cliches-to-loggers = %();
+		update-loggers;
+		$old;
+	});
+}
+
+sub create-cliche(
+	Str:D :$name!, :$matcher! where $matcher ~~ any(Str:D, Regex:D),
+	Level :$default-level, Str :$default-pattern, Positional :$grooves
+) {
+	die "wrong default pattern <$default-pattern>"
+			unless check-pattern($default-pattern);
+	my $grvs = ($grooves // (),)>>.List.flat;
+	die "grooves must have even amount of elements" unless $grvs %% 2;
+
+	check-part(WriterConf, 'writer', $writer-manager, $_) for $grvs[0,2...^*];
+	check-part(FilterConf, 'filter', $filter-manager, $_) for $grvs[1,3...^*];
+	for $grvs[0,2...^*] -> $wr {
+		die "wrong pattern <$($wr.pattern)>"
+				if $wr !~~ Str && !check-pattern($wr.pattern);
+	}
+
+	my $writers-names = $grvs[0,2...^*]>>.&get-part-name($writer-manager).List;
+	my $filters-names = $grvs[1,3...^*]>>.&get-part-name($filter-manager).List;
+
+	Cliche.new(:$name, :$default-level, :$default-pattern,
+			:$matcher, writers => $writers-names, filters => $filters-names);
+}
 
 sub get-part-name($part, $type-manager) {
 	return $part if $part ~~ Str;
@@ -287,18 +352,32 @@ sub check-part(::T, $type, $type-manager,
 	}
 }
 
+sub check-pattern(Str $pattern) {
+	return True without $pattern;
+	say $pattern;
+	say so Grammar.parse($pattern);
+	so Grammar.parse($pattern);
+}
+
 sub find-cliche-with(Str:D $name!,
 		Str:D $type where * ~~ any('writer', 'filter') --> List:D
 ) {
 	@cliches.grep(*.has($name, $type)).list;
 }
 
-sub update-loggers(Positional:D $cliches) {
+multi sub update-loggers(Positional:D $cliches) {
 	for |$cliches -> $cliche {
-		for |%clishes-to-loggers{$cliche.name} -> $trait {
-			next unless $trait;
+		for (%cliches-to-loggers{$cliche.name} // SetHash.new).keys -> $trait {
 			%loggers{$trait} = create-logger($trait, $cliche);
 		}
+	}
+}
+
+multi sub update-loggers() {
+	my @traits := %loggers.keys.List;
+	for @traits -> $trait {
+		my $cliche = find-cliche-for-trait($trait);
+		%loggers{$trait} = create-logger($trait, $cliche);
 	}
 }
 
@@ -338,18 +417,19 @@ sub get-logger(Str:D $trait --> Logger:D) is export(:MANDATORY) {
 		my $logger = create-logger($trait, $cliche);
 
 		%loggers{$trait} = $logger;
-		(%clishes-to-loggers{$cliche.name} //= []).push: $trait;
+		(%cliches-to-loggers{$cliche.name} //= SetHash.new){$trait} = True;
 
 		return $logger;
 	});
 }
 
 END {
-	return without $writer-manager;
-	for $writer-manager.all().values -> $writer {
-		for $writer.handle, $writer.default-handle -> $h {
-			if $h.defined && $h ne $*OUT && $h ne $*ERR {
-				try $h.close;
+	with $writer-manager {
+		for $writer-manager.all().values -> $writer {
+			for $writer.handle, $writer.default-handle -> $h {
+				if $h.defined && $h ne $*OUT && $h ne $*ERR {
+					try $h.close;
+				}
 			}
 		}
 	}
