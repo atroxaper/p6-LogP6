@@ -3,19 +3,17 @@
     "source-url": "Write me!",
     "depends": ["UUID"],
     "provides": {
-        "Log::Fast": "lib/Log/Fast.pm6",
         "LogP6::LoggerPure": "lib/LogP6/LoggerPure.pm6",
+        "LogP6::Writer": "lib/LogP6/Writer.pm6",
+        "LogP6::ThreadLocal": "lib/LogP6/ThreadLocal.pm6",
         "LogP6::Logger": "lib/LogP6/Logger.pm6",
         "LogP6": "lib/LogP6.pm6",
         "LogP6::Context": "lib/LogP6/Context.pm6",
         "LogP6::LoggerSyncTime": "lib/LogP6/LoggerSyncTime.pm6",
+        "LogP6::LoggerSyncAbstract": "lib/LogP6/LoggerSyncAbstract.pm6",
         "LogP6::Pattern": "lib/LogP6/Pattern.pm6",
         "LogP6::Filter": "lib/LogP6/Filter.pm6",
-        "LogP6::Level": "lib/LogP6/Level.pm6",
-        "LogP6::Writer": "lib/LogP6/Writer.pm6",
-        "LogP6::ThreadLocal": "lib/LogP6/ThreadLocal.pm6",
-        "Log::Fast::Context": "lib/Log/Fast/Context.pm6",
-        "LogP6::LoggerSyncAbstract": "lib/LogP6/LoggerSyncAbstract.pm6"
+        "LogP6::Level": "lib/LogP6/Level.pm6"
     },
     "name": "Log::Fast",
     "description": "Write me!",
