@@ -1,4 +1,5 @@
 use LogP6::Pattern;
+use LogP6::Exceptions;
 
 role LogP6::Writer {
 	method write($context) { ... }
@@ -54,7 +55,8 @@ class LogP6::WriterConfStd does LogP6::WriterConf {
 
 	method self-check() {
 		return True without $!pattern;
-		die "wrong pattern <$!pattern>" unless so Grammar.parse($!pattern);
+		X::LogP6::PatternIsNotValid.new(:$!pattern).throw
+				unless so Grammar.parse($!pattern);
 	}
 
 	method make-writer(*%defaults --> LogP6::WriterStd:D) {
@@ -64,7 +66,7 @@ class LogP6::WriterConfStd does LogP6::WriterConf {
 
 	method close() {
 		with $!handle {
-			$!handle.close if $!handle ne $*OUT && $!handle ne $*ERR
+			$!handle.close unless $!handle eqv $*OUT || $!handle eqv $*ERR
 		}
 	}
 }

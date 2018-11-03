@@ -13,13 +13,14 @@
         "LogP6::LoggerSyncAbstract": "lib/LogP6/LoggerSyncAbstract.pm6",
         "LogP6::Pattern": "lib/LogP6/Pattern.pm6",
         "LogP6::Filter": "lib/LogP6/Filter.pm6",
-        "LogP6::Level": "lib/LogP6/Level.pm6"
+        "LogP6::Level": "lib/LogP6/Level.pm6",
+        "LogP6::Exceptions": "lib/LogP6/Exceptions.pm6"
     },
     "name": "Log::Fast",
     "description": "Write me!",
     "resources": [],
     "perl": "6.*",
-    "test-depends": ["Test"],
+    "test-depends": ["Test", "IO::String"],
     "version": "1.0.0",
     "authors": ["Mikhail Khorkov"]
 }

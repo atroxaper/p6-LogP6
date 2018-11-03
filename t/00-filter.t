@@ -42,7 +42,6 @@ sub context($level, $x) {
 }
 
 subtest {
-	# create full filter with name
 	my $f-with-name = filter(:name<f-name>, :level($trace), :!first-level-check,
 			before-check => (&beforeTrue,), after-check => (&afterTrue,));
 
@@ -77,11 +76,14 @@ subtest {
 
 subtest {
 	my $f-with-name = get-filter('f-name');
-	lives-ok { $f-with-name.self-check }, 'filter self check pass';
+	lives-ok { $f-with-name.self-check }, 'filter configuration self check pass';
 }, 'self-check filter configuration';
 
 subtest {
 	my LogP6::Context $context .= new;
+
+	ok get-filter('f-name').make-filter(:default-level($info))
+			~~ LogP6::FilterStd:D, 'make filter proper value';
 
 	my $reactive-level = filter(
 			:name<reactive-level>, :level($warn),
