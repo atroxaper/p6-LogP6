@@ -20,14 +20,6 @@ submethod BUILD() {
 	$!thread = $*THREAD;
 	$!tid = $!thread.id;
 	$!tname = $!thread.name;
-# TODO
-#	die "bla bla bla";
-#	CATCH {
-#		when X::AdHoc {
-#			$!x = $_;
-#			.resume;
-#		}
-#	}
 }
 
 method get-myself() {

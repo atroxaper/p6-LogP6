@@ -6,18 +6,19 @@ unit module LogP6;
 # (3). add STOP support (close all writers)
 # (4). add EXPORT strategy (one for configuring, one for getting)
 # (5). logger wrappers and sync
-# 6. init from file
 # (7). cliche factories
-# 8. improve exceptions
 # (9). improve writer format
-# 10. tests tests tests
-# 11. docs docs docs
 # (12). add methods for logger
-# 13. add 'turn off' logger (in cliche and Logger)
-# 14. add support custom writer (sql or so)
+# (14). add support custom writer (sql or so)
 # (15). add support of str format (lazy creation of msg)
 # (16). improve logger log method to be more lazy
 # (17). improve ndc and mdc logic in Context and Logger (many loggers)
+# 10. tests tests tests
+# 8. improve exceptions
+# 11. docs docs docs
+# 13. add 'turn off' logger (in cliche and Logger)
+# 18. add database writer
+# 6. init from file
 
 use UUID;
 
@@ -58,7 +59,7 @@ sub set-sync-strategy(Str $strategy-name) is export(:configure) {
 	$sync-strategy = $strategy-name;
 }
 
-my role GroovesPartsManager[$lock, $part-name, ::Type] {
+my role GroovesPartsManager[$lock, $part-name, ::Type, ::NilType] {
 	has %!parts = %();
 
 	multi method create(Str :$name, *%fields) {
@@ -72,7 +73,7 @@ my role GroovesPartsManager[$lock, $part-name, ::Type] {
 		}
 	}
 
-	multi method create($part) {
+	multi method create(NilType:D $part) {
 		my $name = $part.name;
 		die "Name or $part-name have to be defined" without $name;
 		return $lock.protect({
@@ -100,17 +101,17 @@ my role GroovesPartsManager[$lock, $part-name, ::Type] {
 			my $old = %!parts{$name}:delete;
 			my $new = self.create(:$name, |%fields);
 			update-loggers(find-cliche-with($name, $part-name));
-			return $old // Type;
+			return $old // NilType;
 		});
 	}
 
-	multi method replace($part) {
+	multi method replace(NilType:D $part) {
 		my $name = $part.name;
 		die "Name or $part-name have to be defined" without $name;
 		$lock.protect({
 			my $old = %!parts{$name}:delete;
 			update-loggers(find-cliche-with($name, $part-name));
-			return $old // Type;
+			return $old // NilType;
 		});
 	}
 
@@ -127,15 +128,15 @@ my role GroovesPartsManager[$lock, $part-name, ::Type] {
 				}
 				update-loggers(@found);
 			}
-			return $old // Type;
+			return $old // NilType;
 		});
 	}
 
 	method get(Str:D $name) {
-		$lock.protect({ %!parts{$name} // Type });
+		$lock.protect({ %!parts{$name} // NilType });
 	}
 
-	method put(Type:D $part) {
+	method put(NilType:D $part) {
 		$lock.protect({ %!parts{$part.name} = $part });
 	}
 
@@ -145,9 +146,9 @@ my role GroovesPartsManager[$lock, $part-name, ::Type] {
 }
 
 my $filter-manager =
-		GroovesPartsManager[lock, 'filter', FilterConfStd].new;
+		GroovesPartsManager[lock, 'filter', FilterConfStd, FilterConf].new;
 my $writer-manager =
-		GroovesPartsManager[lock, 'writer', WriterConfStd].new;
+		GroovesPartsManager[lock, 'writer', WriterConfStd, WriterConf].new;
 
 sub get-filter(Str:D $name --> FilterConf) is export(:configure) {
 	$filter-manager.get($name);

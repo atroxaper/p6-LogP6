@@ -27,8 +27,8 @@ class LogP6::FilterStd does LogP6::Filter {
 		my &level-check := chose-level-check($level);
 		my $before = ($conf.before-check // ()).Array;
 		$before = $first-level-check
-				?? $before.append(&level-check)
-				!! [&level-check].append($before);
+				?? [&level-check].push(|$before)
+				!! $before.push(&level-check);
 		$before = $before.list;
 		self.bless(
 			level => $level,
@@ -50,7 +50,7 @@ class LogP6::FilterStd does LogP6::Filter {
 	}
 
 	method do-after($context) {
-		for @$!before-check -> $check {
+		for @$!after-check -> $check {
 			return unless $check($context);
 		}
 	}
