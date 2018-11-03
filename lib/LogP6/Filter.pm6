@@ -1,22 +1,28 @@
 use LogP6::Level;
 
-class LogP6::FilterConf {
-	has Str $.name;
-	has LogP6::Level $.level;
-	has Bool $.first-level-check;
-	has List $.before-check;
-	has List $.after-check;
+role LogP6::Filter {
+	method reactive-check($level) { ... }
+	method do-before($context) { ... }
+	method do-after($context) { ... }
 }
 
-class LogP6::Filter {
+role LogP6::FilterConf {
+	method clone-with-name($name) { ... }
+	method self-check() { ... }
+	method make-filter(*%defaults --> LogP6::Filter:D) { ... }
+}
+
+class LogP6::FilterConfStd { ... }
+
+class LogP6::FilterStd does LogP6::Filter {
 	has LogP6::Level:D $.level is required;
 	has List:D $.before-check is required;
 	has List:D $.after-check is required;
 	has Bool:D $.first-level-check is required;
 
-	only method new(LogP6::FilterConf:D $conf, LogP6::Level:D $default-level) {
+	only method new(LogP6::FilterConfStd:D $conf, *%defaults) {
 		my $first-level-check = $conf.first-level-check // True;
-		my $level = $conf.level // $default-level;
+		my $level = $conf.level // %defaults<default-level>;
 		my &level-check := chose-level-check($level);
 		my $before = ($conf.before-check // ()).Array;
 		$before = $first-level-check
@@ -63,4 +69,22 @@ class LogP6::Filter {
 	sub  info-level-check($context) { LogP6::Level::info  <= $context.level }
 	sub  warn-level-check($context) { LogP6::Level::warn  <= $context.level }
 	sub error-level-check($context) { LogP6::Level::error <= $context.level }
+}
+
+class LogP6::FilterConfStd does LogP6::FilterConf {
+	has Str $.name;
+	has LogP6::Level $.level;
+	has Bool $.first-level-check;
+	has List $.before-check;
+	has List $.after-check;
+
+	method clone-with-name($name) {
+		self.clone(:$name);
+	}
+
+	method self-check() { }
+
+	method make-filter(*%defaults --> LogP6::Filter:D) {
+		LogP6::FilterStd.new(self, |%defaults);
+	}
 }

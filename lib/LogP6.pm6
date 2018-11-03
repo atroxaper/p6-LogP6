@@ -61,7 +61,7 @@ sub set-sync-strategy(Str $strategy-name) is export(:configure) {
 my role GroovesPartsManager[$lock, $part-name, ::Type] {
 	has %!parts = %();
 
-	method create(Str :$name, *%fields) {
+	multi method create(Str :$name, *%fields) {
 		with $name {
 			return $lock.protect({
 				die "$part-name with name $name already exists" with %!parts{$name};
@@ -70,6 +70,15 @@ my role GroovesPartsManager[$lock, $part-name, ::Type] {
 		} else {
 			return Type.new: |%fields;
 		}
+	}
+
+	multi method create($part) {
+		my $name = $part.name;
+		die "Name or $part-name have to be defined" without $name;
+		return $lock.protect({
+			die "$part-name with name $name already exists" with %!parts{$name};
+			%!parts{$name} = $part;
+		});
 	}
 
 	method update(Str:D :$name!, *%fields) {
@@ -86,10 +95,20 @@ my role GroovesPartsManager[$lock, $part-name, ::Type] {
 		});
 	}
 
-	method replace(Str:D :$name!, *%fields) {
+	multi method replace(Str:D :$name!, *%fields) {
 		$lock.protect({
 			my $old = %!parts{$name}:delete;
 			my $new = self.create(:$name, |%fields);
+			update-loggers(find-cliche-with($name, $part-name));
+			return $old // Type;
+		});
+	}
+
+	multi method replace($part) {
+		my $name = $part.name;
+		die "Name or $part-name have to be defined" without $name;
+		$lock.protect({
+			my $old = %!parts{$name}:delete;
 			update-loggers(find-cliche-with($name, $part-name));
 			return $old // Type;
 		});
@@ -126,9 +145,9 @@ my role GroovesPartsManager[$lock, $part-name, ::Type] {
 }
 
 my $filter-manager =
-		GroovesPartsManager[lock, 'filter', FilterConf].new;
+		GroovesPartsManager[lock, 'filter', FilterConfStd].new;
 my $writer-manager =
-		GroovesPartsManager[lock, 'writer', WriterConf].new;
+		GroovesPartsManager[lock, 'writer', WriterConfStd].new;
 
 sub get-filter(Str:D $name --> FilterConf) is export(:configure) {
 	$filter-manager.get($name);
@@ -211,6 +230,10 @@ multi sub writer(
 	$writer-manager.create(:$name, :$pattern, :$auto-exceptions, :$handle);
 }
 
+multi sub writer(WriterConf:D $writer --> WriterConf:D) {
+	$writer-manager.create($writer);
+}
+
 multi sub writer(
 		Str :$name,
 		Str :$pattern,
@@ -220,6 +243,14 @@ multi sub writer(
 		--> WriterConf:D
 ) {
 	$writer-manager.create(:$name, :$pattern, :$auto-exceptions, :$handle);
+}
+
+multi sub writer(
+		WriterConf:D $writer,
+		Bool:D :$create! where *.so
+		--> WriterConf:D
+) {
+	$writer-manager.create($writer);
 }
 
 multi sub writer(
@@ -242,6 +273,10 @@ multi sub writer(
 		--> WriterConf
 ) {
 	$writer-manager.replace(:$name, :$pattern, :$auto-exceptions, :$handle);
+}
+
+multi sub writer(WriterConf:D $writer--> WriterConf) {
+	$writer-manager.replace($writer);
 }
 
 multi sub writer(Str:D :$name!, Bool:D :$remove! where *.so --> WriterConf) {
@@ -326,10 +361,7 @@ sub create-cliche(
 
 	check-part(WriterConf, 'writer', $writer-manager, $_) for $grvs[0,2...^*];
 	check-part(FilterConf, 'filter', $filter-manager, $_) for $grvs[1,3...^*];
-	for $grvs[0,2...^*] -> $wr {
-		die "wrong pattern <$($wr.pattern)>"
-				if $wr !~~ Str && !check-pattern($wr.pattern);
-	}
+	self-check-part($_) for |$grvs;
 
 	my $writers-names = $grvs[0,2...^*]>>.&get-part-name($writer-manager).List;
 	my $filters-names = $grvs[1,3...^*]>>.&get-part-name($filter-manager).List;
@@ -341,7 +373,7 @@ sub create-cliche(
 sub get-part-name($part, $type-manager) {
 	return $part if $part ~~ Str;
 	return $part.name with $part.name;
-	my $clone = $part.clone(name => UUID.new.Str);
+	my $clone = $part.clone-with-name(UUID.new.Str);
 	$type-manager.put($clone);
 	return $clone.name;
 }
@@ -359,10 +391,14 @@ sub check-part(::T, $type, $type-manager,
 	}
 }
 
+sub self-check-part($conf) {
+	if $conf !~~ Str {
+		$conf.self-check;
+	}
+}
+
 sub check-pattern(Str $pattern) {
 	return True without $pattern;
-	say $pattern;
-	say so Grammar.parse($pattern);
 	so Grammar.parse($pattern);
 }
 
@@ -398,11 +434,11 @@ sub change-cliche($old-cliche, $new-cliche) {
 }
 
 sub create-logger($trait, $cliche) {
-	my $level = $cliche.default-level // default-level;
-	my $pattern = $cliche.default-pattern // default-pattern;
+	my $default-level = $cliche.default-level // default-level;
+	my $default-pattern = $cliche.default-pattern // default-pattern;
  	my $grooves = (0...^$cliche.writers.elems).list.map(-> $i { (
-			Writer.new(get-writer($cliche.writers[$i]), $pattern),
-			Filter.new(get-filter($cliche.filters[$i]), $level)
+			get-writer($cliche.writers[$i]).make-writer(:$default-pattern),
+			get-filter($cliche.filters[$i]).make-filter(:$default-level)
 	) }).list;
 	LoggerPure.new(:$trait, :$grooves);
 }
@@ -456,11 +492,7 @@ sub create-and-store-logger($trait) {
 END {
 	with $writer-manager {
 		for $writer-manager.all().values -> $writer {
-			for $writer.handle, $writer.default-handle -> $h {
-				if $h.defined && $h ne $*OUT && $h ne $*ERR {
-					try $h.close;
-				}
-			}
+			$writer.close();
 		}
 	}
 }
