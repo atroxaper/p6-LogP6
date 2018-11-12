@@ -7,6 +7,8 @@ use LogP6 :configure;
 use LogP6::Pattern;
 use LogP6::Context;
 
+plan 10;
+
 my LogP6::Context $context .= new;
 $context.level-set($info);
 $context.msg-set("test message");

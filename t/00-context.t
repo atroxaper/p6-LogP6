@@ -4,6 +4,8 @@ use lib 'lib';
 use LogP6::Logger;
 use LogP6::Level;
 
+plan 62;
+
 my LogP6::Context $context = get-context();
 
 # create

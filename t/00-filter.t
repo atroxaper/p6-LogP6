@@ -5,6 +5,8 @@ use LogP6 :configure;
 use LogP6::Filter;
 use LogP6::Context;
 
+plan 4;
+
 my @before-action = [];
 my @after-action = [];
 
@@ -42,6 +44,8 @@ sub context($level, $x) {
 }
 
 subtest {
+	plan 9;
+
 	my $f-with-name = filter(:name<f-name>, :level($trace), :!first-level-check,
 			before-check => (&beforeTrue,), after-check => (&afterTrue,));
 
@@ -60,6 +64,8 @@ subtest {
 }, 'create named filter configuration by factory';
 
 subtest {
+	plan 7;
+
 	my $f-with-name = get-filter('f-name');
 	my $anothre-name = $f-with-name.clone-with-name('another');
 	is $f-with-name.name, 'f-name', 'source has origin name';
@@ -75,11 +81,15 @@ subtest {
 }, 'clone filter configuration';
 
 subtest {
+	plan 1;
+
 	my $f-with-name = get-filter('f-name');
 	lives-ok { $f-with-name.self-check }, 'filter configuration self check pass';
 }, 'self-check filter configuration';
 
 subtest {
+	plan 24;
+
 	my LogP6::Context $context .= new;
 
 	ok get-filter('f-name').make-filter(:default-level($info))

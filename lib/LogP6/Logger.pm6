@@ -5,7 +5,7 @@ use LogP6::ThreadLocal;
 class LogP6::Cliche {
 	has Str:D $.name is required;
 	has $.matcher is required;
-	has Int $.default-level;
+	has LogP6::Level $.default-level;
 	has Str $.default-pattern;
 	has Positional $.writers;
 	has Positional $.filters;

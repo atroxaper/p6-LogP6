@@ -5,6 +5,8 @@ use lib 'lib';
 use LogP6 :configure;
 use LogP6::Context;
 
+plan 5;
+
 my LogP6::Context $context .= new;
 $context.level-set($info);
 $context.msg-set("test message");
@@ -27,6 +29,8 @@ my class IO::Fake::Close is IO::Handle {
 }
 
 subtest {
+	plan 8;
+
 	my $w-with-name = writer(:name<w-name>, :!auto-exceptions, :handle($*OUT),
 			:pattern($simple-pattern));
 
@@ -44,6 +48,8 @@ subtest {
 }, 'create named writer configuration by factory';
 
 subtest {
+	plan 6;
+
 	my $w-with-name = get-writer('w-name');
 	my $anothre-name = $w-with-name.clone-with-name('another');
 	is $w-with-name.name, 'w-name', 'source has origin name';
@@ -56,6 +62,8 @@ subtest {
 }, 'clone writer configuration';
 
 subtest {
+	plan 3;
+
 	my $w-with-name = get-writer('w-name');
 	lives-ok { $w-with-name.self-check }, 'writer configuration self check pass';
 	lives-ok { writer(:name<empty-pattern>).self-check },
@@ -65,6 +73,8 @@ subtest {
 }, 'self-check writer configuration';
 
 subtest {
+	plan 4;
+
 	writer(:handle($*OUT)).close();
 	ok $*OUT.opened, '$*OUT are not closeble';
 	writer(:handle($*ERR)).close();
@@ -76,6 +86,8 @@ subtest {
 }, 'close writer configuration';
 
 subtest {
+	plan 9;
+
 	my IO::String $io-str .= new;
 
 	ok get-writer('w-name').make-writer(:$default-pattern)

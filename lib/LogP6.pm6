@@ -19,6 +19,8 @@ unit module LogP6;
 # 13. add 'turn off' logger (in cliche and Logger)
 # 18. add database writer
 # 6. init from file
+# 19. add trace-some methods in logger
+# 20. add backup/restore ndc and mdc
 
 use UUID;
 
