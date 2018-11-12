@@ -19,7 +19,7 @@ class Tname does PatternPart {
 }
 
 class Ndc does PatternPart {
-	method show($context) { $context.ndc }
+	method show($context) { $context.ndc.join: ' ' }
 }
 
 class Msg does PatternPart {
@@ -166,7 +166,7 @@ grammar Grammar is export {
 	token x-param:sym<name> { '$name' }
 	token x-param:sym<trace> { '$trace' }
 	token x-param:sym<glue> { $<text>=<-[$}]>+ }
-	# %date{$yyyy-$yy-$MM-$MMM-$dd $hh:$mm:$ss $z} - date and time
+	# %date{$yyyy-$yy-$MM-$MMM-$dd $hh:$mm:$ss:$mss $z} - date and time
 	token item:sym<date> { '%date'<date-params>? }
 	token date-params { \{ <date-param>+ \} }
 	proto token date-param { * }
@@ -209,7 +209,8 @@ class Actions is export {
 		with $<x-params> {
 			make X.new(pieces => $<x-params>.made);
 		} else {
-			make X.new(pieces => (XName, Glue.new(': '), XMsg));
+			make X.new(pieces => (Glue.new("Exception "), XName, Glue.new(': '), XMsg,
+					Glue.new("\n"), XTrace));
 		}
 	}
 	method x-params($/) { make $<x-param>>>.made.List }
