@@ -37,7 +37,7 @@ method msg() {
 	$!msg;
 }
 
-method msg-set(Str:D $msg) {
+method msg-set($msg) {
 	$!msg = $msg;
 }
 
@@ -45,7 +45,7 @@ method level() {
 	$!level;
 }
 
-method level-set(LogP6::Level $level) {
+method level-set($level) {
 	$!level = $level;
 }
 
