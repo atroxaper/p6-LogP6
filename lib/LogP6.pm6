@@ -21,6 +21,7 @@ unit module LogP6;
 # 6. init from file
 # 19. add trace-some methods in logger
 # 20. add backup/restore ndc and mdc
+# 21. add params for %trait in pattern
 
 use UUID;
 
