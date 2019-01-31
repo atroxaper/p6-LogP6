@@ -145,7 +145,7 @@ my role GroovesPartsManager[$lock, $part-name, ::Type, ::NilType] {
 	}
 
 	method all() {
-		$lock.protect({ %!parts;; });
+		$lock.protect({ return %!parts.clone; });
 	}
 }
 
@@ -523,6 +523,7 @@ sub create-and-store-logger($trait) {
 END {
 	with $writer-manager {
 		for $writer-manager.all().values -> $writer {
+			say $writer;
 			$writer.close();
 		}
 	}
