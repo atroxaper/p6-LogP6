@@ -113,6 +113,7 @@ my role GroovesPartsManager[$lock, $part-name, ::Type, ::NilType] {
 		die "Name or $part-name have to be defined" without $name;
 		$lock.protect({
 			my $old = %!parts{$name}:delete;
+			%!parts{$name} = $part;
 			update-loggers(find-cliche-with($name, $part-name));
 			return $old // NilType;
 		});
@@ -189,6 +190,19 @@ multi sub filter(
 }
 
 multi sub filter(
+	FilterConf:D $filter,
+	--> FilterConf:D) {
+	$filter-manager.create($filter);
+}
+
+multi sub filter(
+	FilterConf:D $filter,
+	Bool:D :$create! where *.so
+	--> FilterConf:D) {
+	$filter-manager.create($filter);
+}
+
+multi sub filter(
 		Str:D :$name!,
 		Level :$level,
 		Bool :$first-level-check,
@@ -214,6 +228,13 @@ multi sub filter(
 			:$before-check, :$after-check);
 }
 
+multi sub filter(
+	FilterConf:D $filter,
+	Bool:D :$replace! where *.so
+	--> FilterConf:D) {
+	$filter-manager.replace($filter);
+}
+
 multi sub filter(Str:D :$name!, Bool:D :$remove! where *.so --> FilterConf) {
 	$filter-manager.remove(:$name);
 }
@@ -234,10 +255,6 @@ multi sub writer(
 	$writer-manager.create(:$name, :$pattern, :$auto-exceptions, :$handle);
 }
 
-multi sub writer(WriterConf:D $writer --> WriterConf:D) {
-	$writer-manager.create($writer);
-}
-
 multi sub writer(
 		Str :$name,
 		Str :$pattern,
@@ -247,6 +264,13 @@ multi sub writer(
 		--> WriterConf:D
 ) {
 	$writer-manager.create(:$name, :$pattern, :$auto-exceptions, :$handle);
+}
+
+multi sub writer(
+		WriterConf:D $writer,
+		--> WriterConf:D
+) {
+	$writer-manager.create($writer);
 }
 
 multi sub writer(
@@ -279,7 +303,10 @@ multi sub writer(
 	$writer-manager.replace(:$name, :$pattern, :$auto-exceptions, :$handle);
 }
 
-multi sub writer(WriterConf:D $writer--> WriterConf) {
+multi sub writer(
+	WriterConf:D $writer,
+	Bool:D :$replace! where *.so
+	--> WriterConf:D) {
 	$writer-manager.replace($writer);
 }
 
