@@ -1,9 +1,9 @@
 use Test;
-use IO::String;
 
 use lib 'lib';
 use LogP6 :configure;
 use LogP6::Context;
+use LogP6::Helpers::IOString;
 
 plan 5;
 
@@ -88,7 +88,7 @@ subtest {
 subtest {
 	plan 9;
 
-	my IO::String $io-str .= new;
+	my LogP6::Helpers::IOString $io-str .= new;
 
 	ok get-writer('w-name').make-writer(:$default-pattern)
 			~~ LogP6::WriterStd:D, 'make writer proper value';
@@ -100,7 +100,7 @@ subtest {
 			:pattern($simple-pattern))
 			.make-writer(:$default-pattern);
 	is $full.pattern, $simple-pattern, 'make full writer with self pattern';
-	is $full.handle, $io-str, 'make full writer with self handle';
+	is $full.handle.WHICH, $io-str.WHICH, 'make full writer with self handle';
 
 	my $half = writer(:name<half>, :pattern($simple-pattern))
 			.make-writer(:$default-pattern);

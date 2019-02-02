@@ -296,6 +296,7 @@ subtest {
 
 	use LogP6::LoggerPure;
 	use LogP6::LoggerSyncTime;
+	use LogP6::Helpers::IOString;
 
 	my $any-log = get-logger('any');
 	ok $any-log, 'default cliche';
@@ -325,38 +326,9 @@ subtest {
 	does-ok get-logger-pure('log'), LogP6::LoggerPure, 'pure logger instanceof';
 	does-ok get-logger('log'), LogP6::LoggerSyncTime, 'time logger instanceof';
 
-	class StringIO is IO::Handle {
-		has Str $writed;
-
-		submethod TWEAK {
-			self.encoding: 'utf8';
-		}
-
-		method WRITE(IO::Handle:D: Blob:D \data --> Bool:D) {
-			$writed //= '';
-			$writed ~= data.decode.trim;
-			True;
-		}
-
-		method READ(IO::Handle:D: Int:D \bytes --> Buf:D) {
-			...
-		}
-
-		method EOF(IO::Handle:D: --> Bool:D) {
-			False;
-		}
-
-		method got(StringIO:D: --> Str) {
-			$writed;
-		}
-
-		method clean() {
-			$writed = Nil;
-		}
-	}
-
 	set-sync-strategy('');
-	my StringIO ($h1, $h2, $h3) = (StringIO.new xx 3).list;
+	my LogP6::Helpers::IOString ($h1, $h2, $h3) =
+		(LogP6::Helpers::IOString.new xx 3).list;
 	filter(:name<of>, :level($trace));
 	writer(:name<ow1>, :handle($h1), :pattern<%msg>);
 	writer(:name<ow2>, :handle($h2), :pattern<%msg>);
@@ -373,9 +345,9 @@ subtest {
 	$general.error('general');
 	$important.error('important');
 	$default.error('to output');
-	is $h1.got, 'foo', 'foo logger detect fine';
-	is $h2.got, 'general', 'general logger detect fine';
-	is $h3.got, 'important', 'important logger detect fine';
+	is $h1.Str.trim, 'foo', 'foo logger detect fine';
+	is $h2.Str.trim, 'general', 'general logger detect fine';
+	is $h3.Str.trim, 'important', 'important logger detect fine';
 
 	dies-ok { cliche(:name(''), :matcher('hahaha'), grooves => ('', ''),
 		:replace) }, 'change default cliche dies';
@@ -384,9 +356,6 @@ subtest {
 	remove-logger('any2');
 	cliche(:name(''), :matcher('hahaha'), grooves => ('', ''), :replace);
 	dies-ok { get-logger('not-log') }, 'default cliche is changed';
-
-
-	#	create default cliche DIE
 
 }, 'logger';
 
