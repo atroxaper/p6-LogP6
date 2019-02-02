@@ -314,7 +314,7 @@ multi sub writer(Str:D :$name!, Bool:D :$remove! where *.so --> WriterConf) {
 	$writer-manager.remove(:$name);
 }
 
-sub get-cliche(Str:D $name --> Cliche) {
+sub get-cliche(Str:D $name --> Cliche) is export(:configure) {
 	lock.protect({
 		@cliches.grep(*.name eq $name).first // Cliche;
 	});
@@ -340,7 +340,7 @@ multi sub cliche(
 		die "cliche with name $name already exists" if $cliches-names{$name};
 		my $cliche = create-cliche(:$name, :$matcher, :$default-level,
 				:$default-pattern, :$grooves);
-		$cliches-names<$name> = True;
+		$cliches-names{$name} = True;
 		@cliches.push: $cliche;
 		$cliche;
 	});
@@ -349,7 +349,7 @@ multi sub cliche(
 multi sub cliche(
 	Str:D :$name!, :$matcher! where $matcher ~~ any(Str:D, Regex:D),
 	Level :$default-level, Str :$default-pattern, Positional :$grooves,
-	:$replace! where *.so --> Cliche:D
+	:$replace! where *.so --> Cliche
 ) {
 	lock.protect({
 		my $new = create-cliche(:$name, :$matcher, :$default-level,
@@ -361,7 +361,7 @@ multi sub cliche(
 				return $old;
 			}
 		}
-		$cliches-names<$name> = True;
+		$cliches-names{$name} = True;
 		@cliches.push: $new;
 		update-loggers;
 		Cliche;
@@ -523,7 +523,6 @@ sub create-and-store-logger($trait) {
 END {
 	with $writer-manager {
 		for $writer-manager.all().values -> $writer {
-			say $writer;
 			$writer.close();
 		}
 	}

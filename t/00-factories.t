@@ -198,4 +198,93 @@ subtest {
 
 }, 'writer';
 
+subtest {
+
+	plan 51;
+
+	writer(:name<w1>);
+	filter(:name<f2>);
+
+	my $c = cliche(:name<c-name>, :matcher<main>, :default-level($error),
+		:default-pattern($pattern2), grooves => (
+			'w1', filter(:name<f1>, :level($warn)),
+			writer(:name<w2>, :pattern($pattern1)), 'f2',
+			writer(:pattern($pattern1)), filter(:level($debug))
+		)
+	);
+
+	is $c.name, 'c-name', 'c name';
+	is $c.matcher, 'main', 'c matcher str';
+	is $c.default-level, $error, 'c default-level';
+	is $c.default-pattern, $pattern2, 'c default pattern';
+	is $c.writers.elems, 3, 'c writers elems';
+	is $c.filters.elems, 3, 'c filters elems';
+	is $c.writers[0,1], <w1 w2>, 'c writers name';
+	is $c.writers[2].chars, 36, 'c writers UUID';
+	is $c.filters[0,1], <f1 f2>, 'c filters name';
+	is $c.filters[2].chars, 36, 'c filters UUID';
+
+	my $c-rep = cliche(:name<c-rep>, :matcher<rep>, :replace);
+	nok $c-rep, 'created by replace return type obj';
+	$c-rep = get-cliche('c-rep');
+	is $c-rep.name, 'c-rep', 'c-rep name';
+	nok $c-rep.default-level, 'c-rep default-level';
+	nok $c-rep.default-pattern, 'c-rep default-pattern';
+	nok $c-rep.writers, 'c-rep writers';
+	nok $c-rep.filters, 'c-rep filters';
+
+	$c = cliche(:name<c-name>, :matcher<low>, :default-level($info),
+		:default-pattern($pattern1), grooves => (
+			'w2', 'f2', 'w1', 'f1', $c.writers[2], $c.filters[2]
+		), :replace
+	);
+	is $c.name, 'c-name', 'c name brefore replace';
+	is $c.matcher, 'main', 'c matcher str brefore replace';
+	is $c.default-level, $error, 'c default-level brefore replace';
+	is $c.default-pattern, $pattern2, 'c default pattern brefore replace';
+	is $c.writers.elems, 3, 'c writers elems brefore replace';
+	is $c.filters.elems, 3, 'c filters elems brefore replace';
+	is $c.writers[0,1], <w1 w2>, 'c writers name brefore replace';
+	is $c.writers[2].chars, 36, 'c writers UUID brefore replace';
+	is $c.filters[0,1], <f1 f2>, 'c filters name brefore replace';
+	is $c.filters[2].chars, 36, 'c filters UUID brefore replace';
+
+	$c = get-cliche('c-name');
+	is $c.name, 'c-name', 'c name replace';
+	is $c.matcher, 'low', 'c matcher str replace';
+	is $c.default-level, $info, 'c default-level replace';
+	is $c.default-pattern, $pattern1, 'c default pattern replace';
+	is $c.writers.elems, 3, 'c writers elems replace';
+	is $c.filters.elems, 3, 'c filters elems replace';
+	is $c.writers[0,1], <w2 w1>, 'c writers name replace';
+	is $c.writers[2].chars, 36, 'c writers UUID replace';
+	is $c.filters[0,1], <f2 f1>, 'c filters name replace';
+	is $c.filters[2].chars, 36, 'c filters UUID replace';
+
+	$c = cliche(:name<c-name>, :remove);
+	is $c.name, 'c-name', 'c name before remove';
+	is $c.matcher, 'low', 'c matcher str before remove';
+	is $c.default-level, $info, 'c default-level before remove';
+	is $c.default-pattern, $pattern1, 'c default pattern before remove';
+	is $c.writers.elems, 3, 'c writers elems before remove';
+	is $c.filters.elems, 3, 'c filters elems before remove';
+	is $c.writers[0,1], <w2 w1>, 'c writers name before remove';
+	is $c.writers[2].chars, 36, 'c writers UUID before remove';
+	is $c.filters[0,1], <f2 f1>, 'c filters name before remove';
+	is $c.filters[2].chars, 36, 'c filters UUID before remove';
+
+	nok get-cliche('c-name'), 'c remove';
+
+	dies-ok { cliche(:name<c>, :matcher<m>,
+		grooves => ('w', 'f')) }, 'cliche die no writer';
+	dies-ok { cliche(:name<c>, :matcher<m>,
+		grooves => (writer(:name<ww>), 'f')) }, 'cliche die no filter';
+	dies-ok { cliche(:name<c>, :matcher<m>, grooves =>
+		(writer(:name<w>, :pattern<%p>), filter(:name<ff>))) },
+		'cliche die bad writer';
+	cliche(:name<c>, :matcher<m>);
+	dies-ok { cliche(:name<c>, :matcher<m>) }, 'cliche die same name';
+
+}, 'cliche';
+
 done-testing;
