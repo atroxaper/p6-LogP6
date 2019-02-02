@@ -200,7 +200,7 @@ subtest {
 
 subtest {
 
-	plan 51;
+	plan 52;
 
 	writer(:name<w1>);
 	filter(:name<f2>);
@@ -282,9 +282,112 @@ subtest {
 	dies-ok { cliche(:name<c>, :matcher<m>, grooves =>
 		(writer(:name<w>, :pattern<%p>), filter(:name<ff>))) },
 		'cliche die bad writer';
+	dies-ok { cliche(:name<c>, :matcher<m>, grooves =>
+		(filter(:name<ff>), writer(:name<w>))) },
+		'cliche die writer filter wrong order';
 	cliche(:name<c>, :matcher<m>);
 	dies-ok { cliche(:name<c>, :matcher<m>) }, 'cliche die same name';
 
 }, 'cliche';
+
+subtest {
+
+	plan 16;
+
+	use LogP6::LoggerPure;
+	use LogP6::LoggerSyncTime;
+
+	my $any-log = get-logger('any');
+	ok $any-log, 'default cliche';
+
+	filter(:name<filter>);
+	writer(:name<writer>);
+	my $c = cliche(:name<c-log>, :matcher<log>, :default-level($error),
+					:default-pattern($pattern2), grooves => <writer filter>);
+
+	my $log = get-logger('log');
+	ok $log, 'log cliche';
+	isnt $log, $any-log, 'default and log are not the same logs';
+	isnt get-logger('any2'), $any-log, 'default and another are not the same';
+	is get-logger('any'), $any-log, 'same trait - same logger';
+	is get-logger('log'), $log, 'same trait - same logger again';
+
+	filter(:name<filter>, :level($debug), :update);
+	isnt get-logger('log'), $log, 'same trait after change - not same logger';
+
+	set-sync-strategy('');
+	filter(:name<filter>, :level($debug), :update);
+	is get-logger('log'), get-logger-pure('log'), 'not sync - same pure and log';
+
+	set-sync-strategy('time');
+	filter(:name<filter>, :level($debug), :update);
+	isnt get-logger('log'), get-logger-pure('log'), 'pure and log with sync';
+	does-ok get-logger-pure('log'), LogP6::LoggerPure, 'pure logger instanceof';
+	does-ok get-logger('log'), LogP6::LoggerSyncTime, 'time logger instanceof';
+
+	class StringIO is IO::Handle {
+		has Str $writed;
+
+		submethod TWEAK {
+			self.encoding: 'utf8';
+		}
+
+		method WRITE(IO::Handle:D: Blob:D \data --> Bool:D) {
+			$writed //= '';
+			$writed ~= data.decode.trim;
+			True;
+		}
+
+		method READ(IO::Handle:D: Int:D \bytes --> Buf:D) {
+			...
+		}
+
+		method EOF(IO::Handle:D: --> Bool:D) {
+			False;
+		}
+
+		method got(StringIO:D: --> Str) {
+			$writed;
+		}
+
+		method clean() {
+			$writed = Nil;
+		}
+	}
+
+	set-sync-strategy('');
+	my StringIO ($h1, $h2, $h3) = (StringIO.new xx 3).list;
+	filter(:name<of>, :level($trace));
+	writer(:name<ow1>, :handle($h1), :pattern<%msg>);
+	writer(:name<ow2>, :handle($h2), :pattern<%msg>);
+	writer(:name<ow3>, :handle($h3), :pattern<%msg>);
+	cliche(:name<c1>, matcher => /^log/, grooves => <ow1 of>);
+	cliche(:name<c2>, matcher => /^log\-data/, grooves => <ow2 of>);
+	cliche(:name<c3>, matcher => /^log\-data\-important/, grooves => <ow3 of>);
+
+	my $log-foo = get-logger('log-foo');
+	my $general = get-logger('log-data-general');
+	my $important = get-logger('log-data-important');
+	my $default = get-logger('not-log');
+	$log-foo.error('foo');
+	$general.error('general');
+	$important.error('important');
+	$default.error('to output');
+	is $h1.got, 'foo', 'foo logger detect fine';
+	is $h2.got, 'general', 'general logger detect fine';
+	is $h3.got, 'important', 'important logger detect fine';
+
+	dies-ok { cliche(:name(''), :matcher('hahaha'), grooves => ('', ''),
+		:replace) }, 'change default cliche dies';
+	remove-logger('not-log');
+	remove-logger('any');
+	remove-logger('any2');
+	cliche(:name(''), :matcher('hahaha'), grooves => ('', ''), :replace);
+	dies-ok { get-logger('not-log') }, 'default cliche is changed';
+
+
+	#	create default cliche DIE
+
+}, 'logger';
 
 done-testing;

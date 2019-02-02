@@ -33,11 +33,11 @@ use LogP6::Level;
 use LogP6::ThreadLocal;
 use LogP6::Pattern;
 
-our $trace is export(:configure) = trace;
-our $debug is export(:configure) = debug;
-our $info  is export(:configure) = info;
+our $trace is export(:configure) = Level::trace;
+our $debug is export(:configure) = Level::debug;
+our $info  is export(:configure) = Level::info;
 our $warn  is export(:configure) = Level::warn;
-our $error is export(:configure) = error;
+our $error is export(:configure) = Level::error;
 
 my Lock \lock .= new;
 
@@ -49,8 +49,8 @@ my %loggers = %();
 
 my Str \default-pattern = "default %msg";
 die "wrong default lib pattern <$(default-pattern)>"
-		unless Grammar.parse(default-pattern);
-my Level \default-level = info;
+	unless Grammar.parse(default-pattern);
+my Level \default-level = $info;
 my $sync-strategy = Any;
 
 sub initialize() {
@@ -491,7 +491,7 @@ sub find-cliche-for-trait($trait) {
 		return $cliche if $trait ~~ $cliche.matcher;
 	}
 
-	die 'create default cliche';
+	die 'create default cliche for trait ' ~ $trait;
 }
 
 sub get-logger(Str:D $trait --> Logger:D) is export(:MANDATORY) {
@@ -506,6 +506,14 @@ sub get-logger-pure(Str:D $trait --> Logger:D) is export(:configure) {
 	lock.protect({
 		return $_ with %loggers-pure{$trait};
 		create-and-store-logger($trait);
+	});
+}
+
+sub remove-logger(Str:D $trait --> Logger) is export(:configure) {
+	lock.protect({
+		my $old = %loggers{$trait}:delete;
+		%loggers-pure{$trait}:delete;
+		return $old // Logger;
 	});
 }
 
