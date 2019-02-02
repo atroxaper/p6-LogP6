@@ -47,7 +47,7 @@ class LogP6::WriterConfStd does LogP6::WriterConf {
 	has Bool $.auto-exceptions;
 
 	my $default-handle = $*OUT;
-	my $default-x-pattern = ' %x{Exception $name: $msg' ~ "\n" ~'$trace}';
+	my $default-x-pattern = '%x{ Exception $name: $msg' ~ "\n" ~'$trace}';
 
 	method clone-with-name($name) {
 		self.clone(:$name);

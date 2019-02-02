@@ -19,7 +19,7 @@ $context.date-set(DateTime.new(:year(2018), :month(11), :day(3),
 
 my $simple-pattern = '[%date{$hh:$mm:$ss}][%level{length=5}] %msg';
 my $default-pattern = '%level| %msg';
-my $default-x-pattern = " \%x\{Exception \$name: \$msg\n\$trace}";
+my $default-x-pattern = "\%x\{ Exception \$name: \$msg\n\$trace}";
 
 my class IO::Fake::Close is IO::Handle {
 	has $.closed = False;
