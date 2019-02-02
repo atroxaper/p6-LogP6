@@ -22,10 +22,12 @@ unit module LogP6;
 # 19. add trace-some methods in logger
 # 20. add backup/restore ndc and mdc
 # 21. add params for %trait in pattern
+# 22. try make entities immutable (filters, writes, loggers)
 
 use UUID;
 
 use LogP6::Logger;
+use LogP6::LoggerPure;
 use LogP6::LoggerSyncTime;
 use LogP6::Writer;
 use LogP6::Filter;
@@ -342,6 +344,7 @@ multi sub cliche(
 				:$default-pattern, :$grooves);
 		$cliches-names{$name} = True;
 		@cliches.push: $cliche;
+		update-loggers;
 		$cliche;
 	});
 }
@@ -471,7 +474,9 @@ sub create-logger($trait, $cliche) {
 			get-writer($cliche.writers[$i]).make-writer(:$default-pattern),
 			get-filter($cliche.filters[$i]).make-filter(:$default-level)
 	) }).list;
-	LoggerPure.new(:$trait, :$grooves);
+	return $grooves.elems > 0
+		?? LogP6::LoggerPure.new(:$trait, :$grooves)
+		!! LogP6::LoggerMute.new;
 }
 
 sub wrap-to-sync-logger($logger) {

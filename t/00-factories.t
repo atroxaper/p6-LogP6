@@ -298,13 +298,13 @@ subtest {
 	use LogP6::LoggerSyncTime;
 	use LogP6::Helpers::IOString;
 
-	my $any-log = get-logger('any');
-	ok $any-log, 'default cliche';
-
 	filter(:name<filter>);
 	writer(:name<writer>);
 	my $c = cliche(:name<c-log>, :matcher<log>, :default-level($error),
 					:default-pattern($pattern2), grooves => <writer filter>);
+
+	my $any-log = get-logger('any');
+	ok $any-log, 'default cliche';
 
 	my $log = get-logger('log');
 	ok $log, 'log cliche';

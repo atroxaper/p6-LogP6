@@ -1,14 +1,27 @@
 use LogP6::Level;
 use LogP6::Logger;
+use LogP6::Filter;
 
 class LogP6::LoggerPure does LogP6::Logger {
 	has Str:D $.trait is required;
 	has List:D $.grooves is required;
-	has $!first-filter;
+	has $!reactive-filter;
 
 	submethod TWEAK() {
-		# save the first filter separately
-		$!first-filter = $!grooves[0][1];
+		die 'pure logger with empty grooves: ' ~ $!trait if $!grooves.elems < 1;
+		# find minimum level of all grooves filters
+		# if any filter has no first-level-check then use trace as minimum level
+		my $min-level = error;
+		for @$!grooves -> $groove {
+			$min-level = min($groove[1].level, $min-level);
+			unless $groove[1].first-level-check {
+				$min-level = trace;
+				last;
+			}
+		}
+		# filter for decision wo we need to go to grooves or can ignore log
+		$!reactive-filter = LogP6::FilterConfStd
+			.new(:level($min-level), :first-level-check).make-filter();
 	}
 
 	method ndc-push($obj) {
@@ -36,27 +49,27 @@ class LogP6::LoggerPure does LogP6::Logger {
 	}
 
 	method trace(*@args, :$x) {
-		return if !$!first-filter.reactive-check(trace);
+		return if !$!reactive-filter.reactive-check(trace);
 		self!log(trace, @args, :$x);
 	}
 
 	method debug(*@args, :$x) {
-		return if !$!first-filter.reactive-check(debug);
+		return if !$!reactive-filter.reactive-check(debug);
 		self!log(debug, @args, :$x);
 	}
 
 	method info(*@args, :$x) {
-		return if !$!first-filter.reactive-check(info);
+		return if !$!reactive-filter.reactive-check(info);
 		self!log(info, @args, :$x);
 	}
 
 	method warn(*@args, :$x) {
-		return if !$!first-filter.reactive-check(warn);
+		return if !$!reactive-filter.reactive-check(warn);
 		self!log(warn, @args, :$x);
 	}
 
 	method error(*@args, :$x) {
-		return if !$!first-filter.reactive-check(error);
+		return if !$!reactive-filter.reactive-check(error);
 		self!log(error, @args, :$x);
 	}
 
@@ -81,4 +94,18 @@ class LogP6::LoggerPure does LogP6::Logger {
 	sub msg(@args) {
 		@args.elems < 2 ?? @args[0] // '' !! sprintf(@args[0], |@args[1..*]);
 	}
+}
+
+class LogP6::LoggerMute does LogP6::Logger {
+	method ndc-push($obj) {}
+	method ndc-pop() {}
+	method ndc-clean() {}
+	method mdc-put($key, $obj) {}
+	method mdc-remove($key) {}
+	method mdc-clean() {}
+	method trace(*@args, :$x) {}
+	method debug(*@args, :$x) {}
+	method info(*@args, :$x) {}
+	method error(*@args, :$x) {}
+	method warn(*@args, :$x) {}
 }
