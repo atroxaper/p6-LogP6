@@ -14,16 +14,15 @@ unit module LogP6;
 # (16). improve logger log method to be more lazy
 # (17). improve ndc and mdc logic in Context and Logger (many loggers)
 # (10). tests tests tests
+# 6. init from file
 # 8. improve exceptions
 # 11. docs docs docs
+# 22. try make entities immutable (filters, writes, loggers)
 # 13. add 'turn off' logger (in cliche and Logger)
 # 18. add database writer
-# 6. init from file
 # 19. add trace-some methods in logger
 # 20. add backup/restore ndc and mdc
 # 21. add params for %trait in pattern
-# 22. try make entities immutable (filters, writes, loggers)
-# 23. rename sync logger to auto-update logger or so
 
 use UUID;
 
