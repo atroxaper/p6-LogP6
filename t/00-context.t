@@ -4,7 +4,7 @@ use lib 'lib';
 use LogP6::Logger;
 use LogP6::Level;
 
-plan 62;
+plan 64;
 
 my LogP6::Context $context = get-context();
 
@@ -15,7 +15,7 @@ ok $context.defined, 'get-context';
 is $context.tname, $*THREAD.name, 'tname';
 is $context.tid, $*THREAD.id, 'tid';
 
-# msg and level
+# msg, level and x
 nok $context.msg.defined, 'default msg';
 $context.msg-set('setted');
 is $context.msg, 'setted', 'setted msg';
@@ -24,9 +24,13 @@ $context.level-set('boom');
 is $context.level, 'boom', 'can set any level';
 $context.level-set(info);
 is $context.level, info, 'set properly level';
-$context.reset('resetted', trace);
+nok $context.x.defined, 'default x';
+$context.x-set(X::AdHoc.new);
+is $context.x, X::AdHoc.new, 'setted x';
+$context.reset('resetted', trace, X::AdHoc.new(:payload<p>));
 is $context.msg, 'resetted', 'resetted msg';
 is $context.level, trace, 'resetted level';
+is $context.x.payload, 'p', 'resetted x';
 
 # trait
 nok $context.trait, 'default trait';
@@ -93,7 +97,6 @@ $context.sync-put('tr', Any);
 is $context.sync('tr'), Any, 'putted Any sync';
 
 # x
-nok $context.x, 'default x';
 $context.x-set('boom');
 is $context.x, 'boom', 'can set any x';
 $context.x-set(X::AdHoc.new);

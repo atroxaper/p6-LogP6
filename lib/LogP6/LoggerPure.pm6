@@ -81,7 +81,7 @@ class LogP6::LoggerPure does LogP6::Logger {
 		my ($writer, $filter);
 		for @$!grooves -> $groove {
 			($writer, $filter) = $groove;
-			$context.reset($msg, $level);
+			$context.reset($msg, $level, $x);
 
 			if $filter.do-before($context) {
 				$writer.write($context);

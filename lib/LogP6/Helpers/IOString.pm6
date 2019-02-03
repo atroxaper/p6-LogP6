@@ -17,7 +17,9 @@ method writed(LogP6::Helpers::IOString:D: --> Str) {
 }
 
 method clean() {
+	my $return = $!writed;
 	$!writed = Nil;
+	return $return;
 }
 
 method READ(IO::Handle:D: Int:D \bytes --> Buf:D) {

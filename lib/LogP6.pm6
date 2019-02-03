@@ -23,6 +23,7 @@ unit module LogP6;
 # 20. add backup/restore ndc and mdc
 # 21. add params for %trait in pattern
 # 22. try make entities immutable (filters, writes, loggers)
+# 23. rename sync logger to auto-update logger or so
 
 use UUID;
 
@@ -316,18 +317,18 @@ multi sub writer(Str:D :$name!, Bool:D :$remove! where *.so --> WriterConf) {
 	$writer-manager.remove(:$name);
 }
 
-sub get-cliche(Str:D $name --> Cliche) is export(:configure) {
+sub get-cliche(Str:D $name --> LogP6::Cliche) is export(:configure) {
 	lock.protect({
-		@cliches.grep(*.name eq $name).first // Cliche;
+		@cliches.grep(*.name eq $name).first // LogP6::Cliche;
 	});
 }
 
-proto cliche(| --> Cliche) is export(:configure) { * }
+proto cliche(| --> LogP6::Cliche) is export(:configure) { * }
 
 multi sub cliche(
 	Str:D :$name!, :$matcher! where $matcher ~~ any(Str:D, Regex:D),
 	Level :$default-level, Str :$default-pattern, Positional :$grooves
-	--> Cliche:D
+	--> LogP6::Cliche:D
 ) {
 	cliche(:$name, :$matcher, :$default-level, :$default-pattern, :$grooves,
 			:create);
@@ -336,7 +337,7 @@ multi sub cliche(
 multi sub cliche(
 	Str:D :$name!, :$matcher! where $matcher ~~ any(Str:D, Regex:D),
 	Level :$default-level, Str :$default-pattern, Positional :$grooves,
-	:$create! where *.so --> Cliche:D
+	:$create! where *.so --> LogP6::Cliche:D
 ) {
 	lock.protect({
 		die "cliche with name $name already exists" if $cliches-names{$name};
@@ -352,7 +353,7 @@ multi sub cliche(
 multi sub cliche(
 	Str:D :$name!, :$matcher! where $matcher ~~ any(Str:D, Regex:D),
 	Level :$default-level, Str :$default-pattern, Positional :$grooves,
-	:$replace! where *.so --> Cliche
+	:$replace! where *.so --> LogP6::Cliche
 ) {
 	lock.protect({
 		my $new = create-cliche(:$name, :$matcher, :$default-level,
@@ -367,15 +368,15 @@ multi sub cliche(
 		$cliches-names{$name} = True;
 		@cliches.push: $new;
 		update-loggers;
-		Cliche;
+		LogP6::Cliche;
 	});
 }
 
-multi sub cliche(Str:D :$name!, :$remove! where *.so --> Cliche) {
+multi sub cliche(Str:D :$name!, :$remove! where *.so --> LogP6::Cliche) {
 	die "remove default cliche is prohibited" if $name eq '';
 	lock.protect({
-		return Cliche without $cliches-names{$name};
-		my $old = @cliches.grep(*.name eq $name).first // Cliche;
+		return LogP6::Cliche without $cliches-names{$name};
+		my $old = @cliches.grep(*.name eq $name).first // LogP6::Cliche;
 		@cliches = @cliches.grep(*.name ne $name).Array;
 		$cliches-names{$name} = False;
 		%cliches-to-loggers = %();
@@ -400,7 +401,7 @@ sub create-cliche(
 	my $writers-names = $grvs[0,2...^*]>>.&get-part-name($writer-manager).List;
 	my $filters-names = $grvs[1,3...^*]>>.&get-part-name($filter-manager).List;
 
-	Cliche.new(:$name, :$default-level, :$default-pattern,
+	LogP6::Cliche.new(:$name, :$default-level, :$default-pattern,
 			:$matcher, writers => $writers-names, filters => $filters-names);
 }
 

@@ -3,6 +3,8 @@ use Test;
 use lib 'lib';
 use LogP6 :configure;
 
+plan 5;
+
 sub some-sub1($context) {
 	True;
 }

@@ -28,9 +28,10 @@ method get-myself() {
 
 # method for concrete object use
 
-method reset($msg, $level) {
+method reset($msg, $level, $x) {
 	$!msg = $msg;
 	$!level = $level;
+	$!x = $x;
 }
 
 method msg() {
