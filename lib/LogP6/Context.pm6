@@ -95,7 +95,7 @@ method date() {
 	$!date //= DateTime.now;
 }
 
-method date-set(DateTime $date) {
+method date-set($date) {
 	$!date = $date;
 }
 
@@ -136,8 +136,5 @@ method sync-put($trait, $obj) {
 }
 
 method clean() {
-	$!date = DateTime;
-	$!msg = Str;
-	$!x = Any;
-	$!level = Any;
+	$!date = $!msg = $!x = $!level = DateTime;
 }

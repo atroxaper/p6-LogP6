@@ -88,7 +88,7 @@ class LogP6::LoggerPure does LogP6::Logger {
 				$filter.do-after($context);
 			}
 		}
-		$context.date-clean();
+		$context.clean();
 	}
 
 	sub msg(@args) {
@@ -104,9 +104,9 @@ class LogP6::LoggerMute does LogP6::Logger {
 	method mdc-put($key, $obj) {}
 	method mdc-remove($key) {}
 	method mdc-clean() {}
-	method trace(*@args, :$x) { get-context().date-clean }
-	method debug(*@args, :$x) { get-context().date-clean }
-	method info(*@args, :$x) { get-context().date-clean }
-	method error(*@args, :$x) { get-context().date-clean }
-	method warn(*@args, :$x) { get-context().date-clean }
+	method trace(*@args, :$x) { get-context().clean }
+	method debug(*@args, :$x) { get-context().clean }
+	method info(*@args, :$x) { get-context().clean }
+	method error(*@args, :$x) { get-context().clean }
+	method warn(*@args, :$x) { get-context().clean }
 }
