@@ -139,4 +139,5 @@ method clean() {
 	$!date = DateTime;
 	$!msg = Str;
 	$!x = Any;
+	$!level = Any;
 }

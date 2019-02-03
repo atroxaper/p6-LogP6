@@ -297,7 +297,7 @@ subtest {
 	plan 16;
 
 	use LogP6::LoggerPure;
-	use LogP6::LoggerSyncTime;
+	use LogP6::Helpers::LoggerWrapperSyncTime;
 	use LogP6::Helpers::IOString;
 
 	filter(:name<filter>);
@@ -318,17 +318,19 @@ subtest {
 	filter(:name<filter>, :level($debug), :update);
 	isnt get-logger('log'), $log, 'same trait after change - not same logger';
 
-	set-sync-strategy('');
+	set-wrapper-factory(LogP6::LoggerWrapperFactory);
 	filter(:name<filter>, :level($debug), :update);
 	is get-logger('log'), get-logger-pure('log'), 'not sync - same pure and log';
 
-	set-sync-strategy('time');
+	set-wrapper-factory(
+		LogP6::Helpers::LoggerWrapperFactorySyncTime.new(:60seconds));
 	filter(:name<filter>, :level($debug), :update);
 	isnt get-logger('log'), get-logger-pure('log'), 'pure and log with sync';
 	does-ok get-logger-pure('log'), LogP6::LoggerPure, 'pure logger instanceof';
-	does-ok get-logger('log'), LogP6::LoggerSyncTime, 'time logger instanceof';
+	does-ok get-logger('log'), LogP6::Helpers::LoggerWrapperSyncTime,
+		'time logger instanceof';
 
-	set-sync-strategy('');
+	set-wrapper-factory(LogP6::LoggerWrapperFactory);
 	my LogP6::Helpers::IOString ($h1, $h2, $h3) =
 		(LogP6::Helpers::IOString.new xx 3).list;
 	filter(:name<of>, :level($trace));

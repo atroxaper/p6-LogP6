@@ -31,6 +31,7 @@ class LogP6::Cliche {
 }
 
 role LogP6::Logger {
+	method trait() { ... }
 	method ndc-push($obj) { ... }
 	method ndc-pop() { ... }
 	method ndc-clean() { ... }

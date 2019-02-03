@@ -4,7 +4,7 @@ use lib 'lib';
 use LogP6::Logger;
 use LogP6::Level;
 
-plan 64;
+plan 65;
 
 my LogP6::Context $context = get-context();
 
@@ -108,5 +108,6 @@ ok $context.date.defined, 'clean all with date defined';
 isnt $context.date, $new-default, 'clean all with date not old';
 nok $context.msg, 'clean all with msg';
 nok $context.x, 'clean all with x';
+nok $context.level, 'clean all with level';
 
 done-testing;

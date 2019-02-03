@@ -1,8 +1,7 @@
 use LogP6::Logger;
-use LogP6::LoggerPure;
 
-class LogP6::LoggerAbstractSync does LogP6::Logger {
-	has LogP6::LoggerPure:D $.aggr is required;
+class LogP6::Helpers::LoggerWrapperSyncAbstract does LogP6::Logger {
+	has LogP6::Logger:D $.aggr is required;
 	has &.get-fresh-logger is required;
 
 	method sync($context) { ... }
@@ -19,6 +18,7 @@ class LogP6::LoggerAbstractSync does LogP6::Logger {
 		$!aggr = &!get-fresh-logger($!aggr.trait);
 	}
 
+	method trait() { $!aggr.trait }
 	method ndc-push($obj) { $!aggr.ndc-push($obj) }
 	method ndc-pop()      { $!aggr.ndc-pop() }
 	method ndc-clean()    { $!aggr.ndc-clean() }

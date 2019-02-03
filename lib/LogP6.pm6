@@ -13,7 +13,7 @@ unit module LogP6;
 # (15). add support of str format (lazy creation of msg)
 # (16). improve logger log method to be more lazy
 # (17). improve ndc and mdc logic in Context and Logger (many loggers)
-# 10. tests tests tests
+# (10). tests tests tests
 # 8. improve exceptions
 # 11. docs docs docs
 # 13. add 'turn off' logger (in cliche and Logger)
@@ -29,7 +29,7 @@ use UUID;
 
 use LogP6::Logger;
 use LogP6::LoggerPure;
-use LogP6::LoggerSyncTime;
+use LogP6::LoggerWrapperFactory;
 use LogP6::Writer;
 use LogP6::Filter;
 use LogP6::Level;
@@ -54,15 +54,16 @@ my Str \default-pattern = "default %msg";
 die "wrong default lib pattern <$(default-pattern)>"
 	unless Grammar.parse(default-pattern);
 my Level \default-level = $info;
-my $sync-strategy = Any;
+my LogP6::LoggerWrapperFactory $wrapper-factory = LogP6::LoggerWrapperFactory;
 
 sub initialize() {
 	cliche(name => '', matcher => /.*/,
 			grooves => (writer(name => ''), filter(name => '')));
 }
 
-sub set-sync-strategy(Str $strategy-name) is export(:configure) {
-	$sync-strategy = $strategy-name;
+sub set-wrapper-factory(LogP6::LoggerWrapperFactory $factory)
+		is export(:configure) {
+	$wrapper-factory = $factory;
 }
 
 my role GroovesPartsManager[$lock, $part-name, ::Type, ::NilType] {
@@ -477,19 +478,13 @@ sub create-logger($trait, $cliche) {
 	) }).list;
 	return $grooves.elems > 0
 		?? LogP6::LoggerPure.new(:$trait, :$grooves)
-		!! LogP6::LoggerMute.new;
+		!! LogP6::LoggerMute.new(:$trait);
 }
 
-sub wrap-to-sync-logger($logger) {
-	given $sync-strategy {
-		when 'time' {
-			LoggerSyncTime.new(aggr => $logger, seconds => 60,
-					get-fresh-logger => &get-logger-pure);
-		}
-		default {
-			$logger;
-		}
-	}
+sub wrap-logger($logger) {
+	return (defined $wrapper-factory)
+		?? $wrapper-factory.wrap($logger)
+		!! $logger;
 }
 
 sub find-cliche-for-trait($trait) {
@@ -527,7 +522,7 @@ sub create-and-store-logger($trait) {
 	my $cliche = find-cliche-for-trait($trait);
 	my $logger-pure = create-logger($trait, $cliche);
 
-	%loggers{$trait} = wrap-to-sync-logger($logger-pure);
+	%loggers{$trait} = wrap-logger($logger-pure);
 	%loggers-pure{$trait} = $logger-pure;
 	(%cliches-to-loggers{$cliche.name} //= SetHash.new){$trait} = True;
 
