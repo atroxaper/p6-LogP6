@@ -30,11 +30,15 @@ use UUID;
 use LogP6::Logger;
 use LogP6::LoggerPure;
 use LogP6::LoggerWrapperFactory;
+
 use LogP6::Writer;
+use LogP6::WriterConf::Std;
+use LogP6::WriterConf::Pattern;
+
 use LogP6::Filter;
 use LogP6::Level;
 use LogP6::ThreadLocal;
-use LogP6::Pattern;
+
 use LogP6::ConfigFile;
 use LogP6::LogGetter;
 
@@ -56,8 +60,8 @@ my Str $default-pattern;
 my Level $default-level;
 my LogP6::LoggerWrapperFactory $wrapper-factory;
 
-my $filter-manager;
-my $writer-manager;
+my $f-manager;
+my $w-manager;
 
 my role GroovesPartsManager[$lock, $part-name, ::Type, ::NilType] { ... }
 
@@ -103,10 +107,10 @@ sub clean-all-settings() {
 	$default-level = Level::info;
 	$wrapper-factory = LogP6::LoggerWrapperFactory;
 
-	$filter-manager =
-		GroovesPartsManager[$lock, 'filter', FilterConfStd, FilterConf].new;
-	$writer-manager =
-		GroovesPartsManager[$lock, 'writer', WriterConfStd, WriterConf].new;
+	$f-manager = GroovesPartsManager[
+			$lock, 'filter', FilterConfStd, FilterConf].new;
+	$w-manager = GroovesPartsManager[
+			$lock, 'writer', LogP6::WriterConf::Std, LogP6::WriterConf].new;
 }
 
 sub set-wrapper-factory(LogP6::LoggerWrapperFactory $factory)
@@ -202,11 +206,11 @@ my role GroovesPartsManager[$lock, $part-name, ::Type, ::NilType] {
 }
 
 sub get-filter(Str:D $name --> FilterConf) is export(:configure) {
-	$filter-manager.get($name);
+	$f-manager.get($name);
 }
 
 sub level(Level:D $level --> FilterConf:D) is export(:configure) {
-	$filter-manager.create(:$level);
+	$f-manager.create(:$level);
 }
 
 proto filter(| --> FilterConf) is export(:configure) { * }
@@ -219,7 +223,7 @@ multi sub filter(
 		List :$after-check
 		--> FilterConf:D
 ) {
-	$filter-manager.create(:$name, :$level, :$first-level-check,
+	$f-manager.create(:$name, :$level, :$first-level-check,
 			:$before-check, :$after-check);
 }
 
@@ -232,21 +236,21 @@ multi sub filter(
 		Bool:D :$create! where *.so
 		--> FilterConf:D
 ) {
-	$filter-manager.create(:$name, :$level, :$first-level-check,
+	$f-manager.create(:$name, :$level, :$first-level-check,
 			:$before-check, :$after-check);
 }
 
 multi sub filter(
 	FilterConf:D $filter,
 	--> FilterConf:D) {
-	$filter-manager.create($filter);
+	$f-manager.create($filter);
 }
 
 multi sub filter(
 	FilterConf:D $filter,
 	Bool:D :$create! where *.so
 	--> FilterConf:D) {
-	$filter-manager.create($filter);
+	$f-manager.create($filter);
 }
 
 multi sub filter(
@@ -258,7 +262,7 @@ multi sub filter(
 		Bool:D :$update! where *.so
 		--> FilterConf:D
 ) {
-	$filter-manager.update(:$name, :$level, :$first-level-check,
+	$f-manager.update(:$name, :$level, :$first-level-check,
 			:$before-check, :$after-check);
 }
 
@@ -271,7 +275,7 @@ multi sub filter(
 		Bool:D :$replace! where *.so
 		--> FilterConf
 ) {
-	$filter-manager.replace(:$name, :$level, :$first-level-check,
+	$f-manager.replace(:$name, :$level, :$first-level-check,
 			:$before-check, :$after-check);
 }
 
@@ -279,18 +283,18 @@ multi sub filter(
 	FilterConf:D $filter,
 	Bool:D :$replace! where *.so
 	--> FilterConf:D) {
-	$filter-manager.replace($filter);
+	$f-manager.replace($filter);
 }
 
 multi sub filter(Str:D :$name!, Bool:D :$remove! where *.so --> FilterConf) {
-	$filter-manager.remove(:$name);
+	$f-manager.remove(:$name);
 }
 
-sub get-writer(Str:D $name --> WriterConf) is export(:configure) {
-	$writer-manager.get($name);
+sub get-writer(Str:D $name --> LogP6::WriterConf) is export(:configure) {
+	$w-manager.get($name);
 }
 
-proto writer(| --> WriterConf) is export(:configure) { * }
+proto writer(| --> LogP6::WriterConf) is export(:configure) { * }
 
 multi sub writer(
 		Str :$name,
@@ -299,7 +303,7 @@ multi sub writer(
 		IO::Handle :$handle
 		--> WriterConf:D
 ) {
-	$writer-manager.create(:$name, :$pattern, :$auto-exceptions, :$handle);
+	$w-manager.create(:$name, :$pattern, :$auto-exceptions, :$handle);
 }
 
 multi sub writer(
@@ -308,24 +312,24 @@ multi sub writer(
 		Bool :$auto-exceptions,
 		IO::Handle :$handle,
 		Bool:D :$create! where *.so
-		--> WriterConf:D
+		--> LogP6::WriterConf:D
 ) {
-	$writer-manager.create(:$name, :$pattern, :$auto-exceptions, :$handle);
+	$w-manager.create(:$name, :$pattern, :$auto-exceptions, :$handle);
 }
 
 multi sub writer(
 		WriterConf:D $writer,
 		--> WriterConf:D
 ) {
-	$writer-manager.create($writer);
+	$w-manager.create($writer);
 }
 
 multi sub writer(
-		WriterConf:D $writer,
+		LogP6::WriterConf:D $writer,
 		Bool:D :$create! where *.so
-		--> WriterConf:D
+		--> LogP6::WriterConf:D
 ) {
-	$writer-manager.create($writer);
+	$w-manager.create($writer);
 }
 
 multi sub writer(
@@ -334,9 +338,9 @@ multi sub writer(
 		IO::Handle :$handle,
 		Bool :$auto-exceptions,
 		Bool:D :$update! where *.so
-		--> WriterConf:D
+		--> LogP6::WriterConf:D
 ) {
-	$writer-manager.update(:$name, :$pattern, :$auto-exceptions, :$handle);
+	$w-manager.update(:$name, :$pattern, :$auto-exceptions, :$handle);
 }
 
 multi sub writer(
@@ -345,20 +349,22 @@ multi sub writer(
 		IO::Handle :$handle,
 		Bool :$auto-exceptions,
 		Bool:D :$replace! where *.so
-		--> WriterConf
+		--> LogP6::WriterConf
 ) {
-	$writer-manager.replace(:$name, :$pattern, :$auto-exceptions, :$handle);
+	$w-manager.replace(:$name, :$pattern, :$auto-exceptions, :$handle);
 }
 
 multi sub writer(
-	WriterConf:D $writer,
+	LogP6::WriterConf:D $writer,
 	Bool:D :$replace! where *.so
-	--> WriterConf:D) {
-	$writer-manager.replace($writer);
+	--> LogP6::WriterConf:D) {
+	$w-manager.replace($writer);
 }
 
-multi sub writer(Str:D :$name!, Bool:D :$remove! where *.so --> WriterConf) {
-	$writer-manager.remove(:$name);
+multi sub writer(Str:D :$name!, Bool:D :$remove! where *.so
+	--> LogP6::WriterConf
+) {
+	$w-manager.remove(:$name);
 }
 
 sub get-cliche(Str:D $name --> LogP6::Cliche) is export(:configure) {
@@ -438,12 +444,12 @@ sub create-cliche(
 	my $grvs = ($grooves // (),)>>.List.flat;
 	die "grooves must have even amount of elements" unless $grvs %% 2;
 
-	check-part(WriterConf, 'writer', $writer-manager, $_) for $grvs[0,2...^*];
-	check-part(FilterConf, 'filter', $filter-manager, $_) for $grvs[1,3...^*];
+	check-part(LogP6::WriterConf, 'writer', $w-manager, $_) for $grvs[0,2...^*];
+	check-part(FilterConf, 'filter', $f-manager, $_) for $grvs[1,3...^*];
 	self-check-part($_) for |$grvs;
 
-	my $writers-names = $grvs[0,2...^*]>>.&get-part-name($writer-manager).List;
-	my $filters-names = $grvs[1,3...^*]>>.&get-part-name($filter-manager).List;
+	my $writers-names = $grvs[0,2...^*]>>.&get-part-name($w-manager).List;
+	my $filters-names = $grvs[1,3...^*]>>.&get-part-name($f-manager).List;
 
 	LogP6::Cliche.new(:$name, :$default-level, :$default-pattern,
 			:$matcher, writers => $writers-names, filters => $filters-names);
@@ -577,8 +583,8 @@ INIT {
 }
 
 END {
-	with $writer-manager {
-		for $writer-manager.all().values -> $writer {
+	with $w-manager {
+		for $w-manager.all().values -> $writer {
 			$writer.close();
 		}
 	}

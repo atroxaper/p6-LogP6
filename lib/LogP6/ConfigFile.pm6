@@ -2,7 +2,7 @@ unit module LogP6::ConfigFile;
 
 use JSON::Fast;
 
-use LogP6::Writer;
+use LogP6::WriterConf::Std;
 use LogP6::Filter;
 use LogP6::Level;
 use LogP6::Logger;
@@ -32,7 +32,7 @@ sub list(\json, &each) {
 sub writer(\json) {
 	given json<type> {
 		when 'std' {
-			return LogP6::WriterConfStd.new(
+			return LogP6::WriterConf::Std.new(
 				name => json<name> // Str,
 				pattern => json<pattern> // Str,
 				handle => handle(json<handle>),
@@ -127,6 +127,10 @@ sub custom(\json) {
 	die 'Missing \'fqn-method\' field in custom definition' without fqn-method;
 	die '\'Args\' field are not Associative in cusom definition'
 		unless args ~~ Associative;
+say 'my-require ', my-require;
+say 'my-method ', fqn-method;
+say 'args ', args;
+
 	require ::(my-require);
 	my &method = ::(fqn-method);
 	return method(|args);

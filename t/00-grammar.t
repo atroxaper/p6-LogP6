@@ -2,7 +2,7 @@ use Test;
 
 use lib 'lib';
 use LogP6 :configure;
-use LogP6::Pattern;
+use LogP6::WriterConf::Pattern;
 use LogP6::Context;
 use LogP6::Helpers::IOString;
 

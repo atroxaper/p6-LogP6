@@ -1,4 +1,4 @@
-unit module LogP6::Pattern;
+unit module LogP6::WriterConf::Pattern;
 
 use LogP6::Level;
 

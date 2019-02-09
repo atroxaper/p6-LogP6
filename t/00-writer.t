@@ -35,7 +35,7 @@ subtest {
 			:pattern($simple-pattern));
 
 	my $w-get = get-writer('w-name');
-	ok $w-get ~~ LogP6::WriterConfStd:D, 'get defined';
+	ok $w-get ~~ LogP6::WriterConf::Std:D, 'get defined';
 	is $w-get.name, 'w-name', 'right name';
 	is $w-get.handle, $*OUT, 'right handle';
 	is $w-get.auto-exceptions, False, 'right auto-exceptions';
@@ -91,7 +91,7 @@ subtest {
 	my LogP6::Helpers::IOString $io-str .= new;
 
 	ok get-writer('w-name').make-writer(:$default-pattern)
-			~~ LogP6::WriterStd:D, 'make writer proper value';
+			~~ LogP6::Writer::Std:D, 'make writer proper value';
 
 	my $full = writer(
 			:name<full>,
