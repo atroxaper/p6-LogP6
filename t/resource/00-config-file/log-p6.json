@@ -1,0 +1,92 @@
+{
+	"wrapper-factory": {
+		"type": "time",
+		"seconds": 60
+	},
+	"wrapper-factory": {
+		"type": "custom",
+		"require": "Custom",
+		"fqn-method": "Custom::EXPORT::DEFAULT::&wrapper",
+		"args": {
+			"seconds": 40
+		}
+	},
+	"wrapper-factory": {
+		"type": "same"
+	},
+	"writers": [
+		{
+			"type": "std",
+			"name": "w1",
+			"pattern": "%msg",
+			"handle": {
+				"type": "file",
+				"path": "./t/resource/00-config-file/delete.after",
+				"append": false
+			},
+			"auto-exceptions": true
+		},
+		{
+			"type": "std",
+			"name": "w2",
+			"pattern": "%level | %msg | %x{$msg}",
+			"handle": {
+				"type": "std",
+				"path": "out"
+			},
+			"auto-exceptions": false
+		},
+		{
+			"type": "std",
+			"name": "w3",
+			"pattern": "%level",
+			"handle": {
+				"type": "custom",
+				"require": "Custom",
+				"fqn-method": "Custom::EXPORT::DEFAULT::&handle1",
+				"args": {
+					"file-name": "t/resource/00-config-file/handle1.after"
+				}
+			}
+		},
+		{
+			"type": "custom",
+			"require": "Custom",
+			"fqn-method": "Custom::EXPORT::DEFAULT::&writer1",
+			"args": {
+				"name": "w4"
+			}
+		}
+	],
+	"filters": [
+		{
+			"type": "std",
+			"name": "f1",
+			"level": "error",
+			"first-level-check": false,
+			"before-check": [
+				{
+					"require": "Custom",
+					"fqn-method": "Custom::EXPORT::DEFAULT::&before-check1"
+				}
+			],
+			"after-check": []
+		}
+	],
+	"cliches": [
+		{
+			"name": "cliche-name",
+			"matcher": "/bo .+ om/",
+			"default-level": "info",
+			"default-pattern": "%level %msg",
+			"grooves": [ "w1", "f1", "w2", "f1" ]
+		},
+		{
+			"name": "cliche-name-2",
+			"matcher": "boom/",
+			"default-level": "info",
+			"default-pattern": "%level %msg",
+			"grooves": [ "w1", "f1" ]
+		}
+	]
+}
