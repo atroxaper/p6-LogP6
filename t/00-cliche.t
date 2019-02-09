@@ -2,12 +2,14 @@ use Test;
 
 use lib 'lib';
 use LogP6::Cliche;
+use LogP6::Wrapper::Transparent;
 use LogP6 :configure;
 
-plan 18;
+plan 20;
 
 my LogP6::Cliche $cliche = LogP6::Cliche.new(
 		:name<n>, :matcher<*>, :default-level($trace), :default-pattern<ptrn>,
+		:wrapper(LogP6::Wrapper::Transparent::Wrapper.new),
 		writers => <w1 w2>, filters => <f1 f2>
 );
 
@@ -18,6 +20,9 @@ ok $cliche.has('f1', 'filter'), 'has f1';
 ok $cliche.has('f2', 'filter'), 'has f2';
 nok $cliche.has('w3', 'writer'), 'do not has w3';
 nok $cliche.has('f3', 'filter'), 'do not has f3';
+ok $cliche.wrapper, 'has wrapper';
+does-ok $cliche.wrapper, LogP6::Wrapper::Transparent::Wrapper,
+		'has transparent wrapper';
 
 dies-ok { $cliche.copy-with-new('w1', 'w3', 'what') },
 		'only writer or filter can be chnaged';

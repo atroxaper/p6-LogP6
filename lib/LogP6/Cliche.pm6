@@ -1,4 +1,5 @@
 use LogP6::Level;
+use LogP6::Wrapper;
 
 class LogP6::Cliche {
 	has Str:D $.name is required;
@@ -7,6 +8,7 @@ class LogP6::Cliche {
 	has Str $.default-pattern;
 	has Positional $.writers;
 	has Positional $.filters;
+	has LogP6::Wrapper $.wrapper;
 
 	method has(LogP6::Cliche:D: $name, Str:D $type where * ~~ any('writer', 'filter')
 			--> Bool:D

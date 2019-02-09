@@ -1,7 +1,7 @@
 unit module Custom;
 
 use LogP6::WriterConf::Std;
-use LogP6::Helpers::LoggerWrapperSyncTime;
+use LogP6::Wrapper::SyncTime;
 
 sub handle1(:$file-name) is export {
 say 'custom handle1 ', $file-name;
@@ -19,5 +19,5 @@ sub before-check1() is export {
 }
 
 sub wrapper(Int() :$seconds) is export {
-	return LogP6::Helpers::LoggerWrapperFactorySyncTime.new(:$seconds);
+	return LogP6::Wrapper::SyncTime::Wrapper.new(:$seconds);
 }

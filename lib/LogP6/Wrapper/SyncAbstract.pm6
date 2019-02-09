@@ -1,6 +1,6 @@
 use LogP6::Logger;
 
-class LogP6::Helpers::LoggerWrapperSyncAbstract does LogP6::Logger {
+class LogP6::Wrapper::SyncAbstract does LogP6::Logger {
 	has LogP6::Logger:D $.aggr is required;
 	has &.get-fresh-logger is required;
 

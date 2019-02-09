@@ -202,7 +202,9 @@ subtest {
 
 subtest {
 
-	plan 52;
+	plan 54;
+
+	use LogP6::Wrapper::Transparent;
 
 	writer(:name<w1>);
 	filter(:name<f2>);
@@ -212,13 +214,15 @@ subtest {
 			'w1', filter(:name<f1>, :level($warn)),
 			writer(:name<w2>, :pattern($pattern1)), 'f2',
 			writer(:pattern($pattern1)), filter(:level($debug))
-		)
+		),
+		:wrapper(LogP6::Wrapper::Transparent::Wrapper.new)
 	);
 
 	is $c.name, 'c-name', 'c name';
 	is $c.matcher, 'main', 'c matcher str';
 	is $c.default-level, $error, 'c default-level';
 	is $c.default-pattern, $pattern2, 'c default pattern';
+	does-ok $c.wrapper, LogP6::Wrapper::Transparent::Wrapper, 'c default wrapper';
 	is $c.writers.elems, 3, 'c writers elems';
 	is $c.filters.elems, 3, 'c filters elems';
 	is $c.writers[0,1], <w1 w2>, 'c writers name';
@@ -232,6 +236,7 @@ subtest {
 	is $c-rep.name, 'c-rep', 'c-rep name';
 	nok $c-rep.default-level, 'c-rep default-level';
 	nok $c-rep.default-pattern, 'c-rep default-pattern';
+	nok $c-rep.wrapper, 'c-rep wrapper';
 	nok $c-rep.writers, 'c-rep writers';
 	nok $c-rep.filters, 'c-rep filters';
 
@@ -294,15 +299,16 @@ subtest {
 
 subtest {
 
-	plan 16;
+	plan 18;
 
 	use LogP6::LoggerPure;
-	use LogP6::Helpers::LoggerWrapperSyncTime;
+	use LogP6::Wrapper::SyncTime;
 	use LogP6::Helpers::IOString;
 
 	filter(:name<filter>);
 	writer(:name<writer>);
 	my $c = cliche(:name<c-log>, :matcher<log>, :default-level($error),
+					:wrapper(LogP6::Wrapper::SyncTime::Wrapper.new(:10seconds)),
 					:default-pattern($pattern2), grooves => <writer filter>);
 
 	my $any-log = get-logger('any');
@@ -318,19 +324,23 @@ subtest {
 	filter(:name<filter>, :level($debug), :update);
 	isnt get-logger('log'), $log, 'same trait after change - not same logger';
 
-	set-wrapper-factory(LogP6::LoggerWrapperFactory);
+	does-ok get-logger('log'), LogP6::Wrapper::SyncTime, 'cliche wrapper';
+	cliche(:name<c-log>, :matcher<log>, :default-level($error),
+					:default-pattern($pattern2), grooves => <writer filter>, :replace);
+	does-ok get-logger('log'), LogP6::LoggerPure, 'cliche wrapper';
+
 	filter(:name<filter>, :level($debug), :update);
 	is get-logger('log'), get-logger-pure('log'), 'not sync - same pure and log';
 
 	set-wrapper-factory(
-		LogP6::Helpers::LoggerWrapperFactorySyncTime.new(:60seconds));
+		LogP6::Wrapper::SyncTime::Wrapper.new(:60seconds));
 	filter(:name<filter>, :level($debug), :update);
 	isnt get-logger('log'), get-logger-pure('log'), 'pure and log with sync';
 	does-ok get-logger-pure('log'), LogP6::LoggerPure, 'pure logger instanceof';
-	does-ok get-logger('log'), LogP6::Helpers::LoggerWrapperSyncTime,
+	does-ok get-logger('log'), LogP6::Wrapper::SyncTime,
 		'time logger instanceof';
 
-	set-wrapper-factory(LogP6::LoggerWrapperFactory);
+	set-wrapper-factory(LogP6::Wrapper);
 	my LogP6::Helpers::IOString ($h1, $h2, $h3) =
 		(LogP6::Helpers::IOString.new xx 3).list;
 	filter(:name<of>, :level($trace));

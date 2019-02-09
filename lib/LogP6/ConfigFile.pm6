@@ -6,7 +6,7 @@ use LogP6::WriterConf::Std;
 use LogP6::FilterConf::Std;
 use LogP6::Level;
 use LogP6::Cliche;
-use LogP6::Helpers::LoggerWrapperSyncTime;
+use LogP6::Wrapper::SyncTime;
 
 sub parce-config(IO() $file-path) is export {
 	CATCH {
@@ -162,16 +162,16 @@ sub matcher(\json) {
 }
 
 sub wrapper-factory(\json) {
-	return LogP6::LoggerWrapperFactory without json;
+	return LogP6::Wrapper without json;
 	given json<type> {
 		when 'time' {
 			die 'Missing \'seconds\' field in time wrapper-factory'
 				without json<seconds>;
-			return LogP6::Helpers::LoggerWrapperFactorySyncTime
+			return LogP6::Wrapper::SyncTime::Wrapper
 					.new(seconds => json<seconds>);
 		}
 		when 'same' {
-			return LogP6::LoggerWrapperFactory;
+			return LogP6::Wrapper;
 		}
 		when 'custom' {
 			return custom(json);

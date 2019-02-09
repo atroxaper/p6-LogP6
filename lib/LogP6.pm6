@@ -29,7 +29,8 @@ use UUID;
 
 use LogP6::Logger;
 use LogP6::LoggerPure;
-use LogP6::LoggerWrapperFactory;
+use LogP6::Wrapper;
+use LogP6::Wrapper::Transparent;
 
 use LogP6::Filter;
 use LogP6::FilterConf::Std;
@@ -62,7 +63,7 @@ my %loggers;
 
 my Str $default-pattern;
 my Level $default-level;
-my LogP6::LoggerWrapperFactory $wrapper-factory;
+my LogP6::Wrapper $wrapper-factory;
 
 my $f-manager;
 my $w-manager;
@@ -109,7 +110,7 @@ sub clean-all-settings() {
 	die "wrong default lib pattern <$($default-pattern)>"
 		unless Grammar.parse($default-pattern);
 	$default-level = Level::info;
-	$wrapper-factory = LogP6::LoggerWrapperFactory;
+	$wrapper-factory = LogP6::Wrapper::Transparent::Wrapper.new;
 
 	$f-manager = GroovesPartsManager[
 			$lock, 'filter', LogP6::FilterConf::Std, LogP6::FilterConf].new;
@@ -117,9 +118,20 @@ sub clean-all-settings() {
 			$lock, 'writer', LogP6::WriterConf::Std, LogP6::WriterConf].new;
 }
 
-sub set-wrapper-factory(LogP6::LoggerWrapperFactory $factory)
-		is export(:configure) {
-	$wrapper-factory = $factory;
+sub set-wrapper-factory(LogP6::Wrapper $factory) is export(:configure) {
+	$wrapper-factory = $factory // LogP6::Wrapper::Transparent::Wrapper.new;
+	update-loggers();
+}
+
+sub set-default-level(LogP6::Level:D $level) is export(:configure) {
+	$default-level = $level;
+	update-loggers();
+}
+
+sub set-default-pattern(Str:D $pattern) is export(:configure) {
+	die "wrong default pattern <$($pattern)>" unless Grammar.parse($pattern);
+	$default-pattern = $pattern;
+	update-loggers();
 }
 
 my role GroovesPartsManager[$lock, $part-name, ::Type, ::NilType] {
@@ -383,22 +395,23 @@ proto cliche(| --> LogP6::Cliche) is export(:configure) { * }
 
 multi sub cliche(
 	Str:D :$name!, :$matcher! where $matcher ~~ any(Str:D, Regex:D),
-	Level :$default-level, Str :$default-pattern, Positional :$grooves
+	Level :$default-level, Str :$default-pattern, LogP6::Wrapper :$wrapper,
+	Positional :$grooves
 	--> LogP6::Cliche:D
 ) {
 	cliche(:$name, :$matcher, :$default-level, :$default-pattern, :$grooves,
-			:create);
+			:$wrapper, :create);
 }
 
 multi sub cliche(
 	Str:D :$name!, :$matcher! where $matcher ~~ any(Str:D, Regex:D),
-	Level :$default-level, Str :$default-pattern, Positional :$grooves,
-	:$create! where *.so --> LogP6::Cliche:D
+	Level :$default-level, Str :$default-pattern, LogP6::Wrapper :$wrapper,
+	Positional :$grooves, :$create! where *.so --> LogP6::Cliche:D
 ) {
 	$lock.protect({
 		die "cliche with name $name already exists" if $cliches-names{$name};
 		my $cliche = create-cliche(:$name, :$matcher, :$default-level,
-				:$default-pattern, :$grooves);
+				:$default-pattern, :$wrapper, :$grooves);
 		$cliches-names{$name} = True;
 		@cliches.push: $cliche;
 		update-loggers;
@@ -408,12 +421,12 @@ multi sub cliche(
 
 multi sub cliche(
 	Str:D :$name!, :$matcher! where $matcher ~~ any(Str:D, Regex:D),
-	Level :$default-level, Str :$default-pattern, Positional :$grooves,
-	:$replace! where *.so --> LogP6::Cliche
+	Level :$default-level, Str :$default-pattern, LogP6::Wrapper :$wrapper,
+	Positional :$grooves, :$replace! where *.so --> LogP6::Cliche
 ) {
 	$lock.protect({
 		my $new = create-cliche(:$name, :$matcher, :$default-level,
-				:$default-pattern, :$grooves);
+				:$default-pattern, :$wrapper, :$grooves);
 		for @cliches.kv -> $i, $old {
 			if $old.name eq $name {
 				@cliches[$i] = $new;
@@ -443,7 +456,8 @@ multi sub cliche(Str:D :$name!, :$remove! where *.so --> LogP6::Cliche) {
 
 sub create-cliche(
 	Str:D :$name!, :$matcher! where $matcher ~~ any(Str:D, Regex:D),
-	Level :$default-level, Str :$default-pattern, Positional :$grooves
+	Level :$default-level, Str :$default-pattern, LogP6::Wrapper :$wrapper,
+	Positional :$grooves
 ) {
 	die "wrong default pattern <$default-pattern>"
 			unless check-pattern($default-pattern);
@@ -457,8 +471,8 @@ sub create-cliche(
 	my $writers-names = $grvs[0,2...^*]>>.&get-part-name($w-manager).List;
 	my $filters-names = $grvs[1,3...^*]>>.&get-part-name($f-manager).List;
 
-	LogP6::Cliche.new(:$name, :$default-level, :$default-pattern,
-			:$matcher, writers => $writers-names, filters => $filters-names);
+	LogP6::Cliche.new(:$name, :$default-level, :$default-pattern, :$matcher,
+			:$wrapper, writers => $writers-names, filters => $filters-names);
 }
 
 sub get-part-name($part, $type-manager) {
@@ -536,10 +550,8 @@ sub create-logger($trait, $cliche) {
 		!! LogP6::LoggerMute.new(:$trait);
 }
 
-sub wrap-logger($logger) {
-	return (defined $wrapper-factory)
-		?? $wrapper-factory.wrap($logger)
-		!! $logger;
+sub wrap-logger($logger, $cliche) {
+	($cliche.wrapper // $wrapper-factory).wrap($logger);
 }
 
 sub find-cliche-for-trait($trait) {
@@ -577,7 +589,7 @@ sub create-and-store-logger($trait) {
 	my $cliche = find-cliche-for-trait($trait);
 	my $logger-pure = create-logger($trait, $cliche);
 
-	%loggers{$trait} = wrap-logger($logger-pure);
+	%loggers{$trait} = wrap-logger($logger-pure, $cliche);
 	%loggers-pure{$trait} = $logger-pure;
 	(%cliches-to-loggers{$cliche.name} //= SetHash.new){$trait} = True;
 

@@ -2,7 +2,7 @@ use Test;
 
 use lib 'lib';
 use LogP6::Logger;
-use LogP6::Helpers::LoggerWrapperSyncAbstract;
+use LogP6::Wrapper::SyncAbstract;
 
 plan 8;
 
@@ -58,7 +58,7 @@ class MockLogger does LogP6::Logger {
 	}
 }
 
-class SyncLogger is LogP6::Helpers::LoggerWrapperSyncAbstract {
+class SyncLogger is LogP6::Wrapper::SyncAbstract {
 	has $.synced = 0;
 	method sync($context) {
 		with self.get-sync-obj() {

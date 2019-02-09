@@ -1,9 +1,8 @@
-use LogP6::LoggerWrapperFactory;
-use LogP6::Helpers::LoggerWrapperSyncAbstract;
+use LogP6::Wrapper;
+use LogP6::Wrapper::SyncAbstract;
 use LogP6::LogGetter;
 
-class LogP6::Helpers::LoggerWrapperSyncTime
-		is LogP6::Helpers::LoggerWrapperSyncAbstract {
+class LogP6::Wrapper::SyncTime is LogP6::Wrapper::SyncAbstract {
 	has Int:D $.seconds is required;
 
 	method sync($context) {
@@ -14,14 +13,14 @@ class LogP6::Helpers::LoggerWrapperSyncTime
 	}
 }
 
-class LogP6::Helpers::LoggerWrapperFactorySyncTime does LogP6::LoggerWrapperFactory {
+class LogP6::Wrapper::SyncTime::Wrapper does LogP6::Wrapper  {
 	has Int:D $.seconds is required;
 	has &.get-logger-pure;
 
-	method wrap(LogP6::Helpers::LoggerWrapperFactorySyncTime:D:
+	method wrap(LogP6::Wrapper::SyncTime::Wrapper:D:
 		LogP6::Logger:D $logger --> LogP6::Logger:D
 	) {
-		return LogP6::Helpers::LoggerWrapperSyncTime.new(
+		return LogP6::Wrapper::SyncTime.new(
 			:$!seconds, :aggr($logger),
 			:get-fresh-logger(&!get-logger-pure // &get-pure)
 		)

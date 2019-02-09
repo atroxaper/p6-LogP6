@@ -3,7 +3,7 @@ use Test;
 use lib 'lib';
 use LogP6 :configure;
 use LogP6::Helpers::IOString;
-use LogP6::Helpers::LoggerWrapperSyncTime;
+use LogP6::Wrapper::SyncTime;
 
 plan 3;
 
@@ -12,7 +12,7 @@ writer(:name<writer>, :handle($h), :pattern<%msg>);
 filter(:name<filter>, :level($info));
 
 set-wrapper-factory(
-	LogP6::Helpers::LoggerWrapperFactorySyncTime.new(:2seconds));
+	LogP6::Wrapper::SyncTime::Wrapper.new(:2seconds));
 my $cliche = cliche(:name<cliche>, :matcher<main>, grooves => <writer filter>);
 
 my $logger = get-logger('main');
