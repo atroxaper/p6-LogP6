@@ -3,7 +3,7 @@ unit module LogP6::ConfigFile;
 use JSON::Fast;
 
 use LogP6::WriterConf::Std;
-use LogP6::Filter;
+use LogP6::FilterConf::Std;
 use LogP6::Level;
 use LogP6::Logger;
 use LogP6::Helpers::LoggerWrapperSyncTime;
@@ -52,7 +52,7 @@ sub writer(\json) {
 sub filter(\json) {
 	given json<type> {
 		when 'std' {
-			return LogP6::FilterConfStd.new(
+			return LogP6::FilterConf::Std.new(
 				name => json<name> // Str,
 				level => level(json<level>),
 				first-level-check => json<first-level-check> // Bool,

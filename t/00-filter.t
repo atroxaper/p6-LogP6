@@ -2,7 +2,7 @@ use Test;
 
 use lib 'lib';
 use LogP6 :configure;
-use LogP6::Filter;
+use LogP6::Filter::Std;
 use LogP6::Context;
 
 plan 4;
@@ -50,7 +50,7 @@ subtest {
 			before-check => (&beforeTrue,), after-check => (&afterTrue,));
 
 	my $f-get = get-filter('f-name');
-	ok $f-get ~~ LogP6::FilterConfStd:D, 'get defined';
+	ok $f-get ~~ LogP6::FilterConf::Std:D, 'get defined';
 	is $f-get.name, 'f-name', 'right name';
 	is $f-get.level, $trace, 'right level';
 	is $f-get.first-level-check, False, 'right first-level-check';
@@ -93,7 +93,7 @@ subtest {
 	my LogP6::Context $context .= new;
 
 	ok get-filter('f-name').make-filter(:default-level($info))
-			~~ LogP6::FilterStd:D, 'make filter proper value';
+			~~ LogP6::Filter::Std:D, 'make filter proper value';
 
 	my $reactive-level = filter(
 			:name<reactive-level>, :level($warn),

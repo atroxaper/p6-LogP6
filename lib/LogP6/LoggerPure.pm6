@@ -1,6 +1,6 @@
 use LogP6::Level;
 use LogP6::Logger;
-use LogP6::Filter;
+use LogP6::FilterConf::Std;
 
 class LogP6::LoggerPure does LogP6::Logger {
 	has Str:D $.trait is required;
@@ -20,7 +20,7 @@ class LogP6::LoggerPure does LogP6::Logger {
 			}
 		}
 		# filter for decision wo we need to go to grooves or can ignore log
-		$!reactive-filter = LogP6::FilterConfStd
+		$!reactive-filter = LogP6::FilterConf::Std
 			.new(:level($min-level), :first-level-check).make-filter();
 	}
 

@@ -36,6 +36,8 @@ use LogP6::WriterConf::Std;
 use LogP6::WriterConf::Pattern;
 
 use LogP6::Filter;
+use LogP6::FilterConf::Std;
+
 use LogP6::Level;
 use LogP6::ThreadLocal;
 
@@ -108,7 +110,7 @@ sub clean-all-settings() {
 	$wrapper-factory = LogP6::LoggerWrapperFactory;
 
 	$f-manager = GroovesPartsManager[
-			$lock, 'filter', FilterConfStd, FilterConf].new;
+			$lock, 'filter', LogP6::FilterConf::Std, LogP6::FilterConf].new;
 	$w-manager = GroovesPartsManager[
 			$lock, 'writer', LogP6::WriterConf::Std, LogP6::WriterConf].new;
 }
@@ -205,15 +207,15 @@ my role GroovesPartsManager[$lock, $part-name, ::Type, ::NilType] {
 	}
 }
 
-sub get-filter(Str:D $name --> FilterConf) is export(:configure) {
+sub get-filter(Str:D $name --> LogP6::FilterConf) is export(:configure) {
 	$f-manager.get($name);
 }
 
-sub level(Level:D $level --> FilterConf:D) is export(:configure) {
+sub level(Level:D $level --> LogP6::FilterConf:D) is export(:configure) {
 	$f-manager.create(:$level);
 }
 
-proto filter(| --> FilterConf) is export(:configure) { * }
+proto filter(| --> LogP6::FilterConf) is export(:configure) { * }
 
 multi sub filter(
 		Str :$name,
@@ -221,7 +223,7 @@ multi sub filter(
 		Bool :$first-level-check,
 		List :$before-check,
 		List :$after-check
-		--> FilterConf:D
+		--> LogP6::FilterConf:D
 ) {
 	$f-manager.create(:$name, :$level, :$first-level-check,
 			:$before-check, :$after-check);
@@ -234,22 +236,22 @@ multi sub filter(
 		List :$before-check,
 		List :$after-check,
 		Bool:D :$create! where *.so
-		--> FilterConf:D
+		--> LogP6::FilterConf:D
 ) {
 	$f-manager.create(:$name, :$level, :$first-level-check,
 			:$before-check, :$after-check);
 }
 
 multi sub filter(
-	FilterConf:D $filter,
-	--> FilterConf:D) {
+	LogP6::FilterConf:D $filter,
+	--> LogP6::FilterConf:D) {
 	$f-manager.create($filter);
 }
 
 multi sub filter(
-	FilterConf:D $filter,
+	LogP6::FilterConf:D $filter,
 	Bool:D :$create! where *.so
-	--> FilterConf:D) {
+	--> LogP6::FilterConf:D) {
 	$f-manager.create($filter);
 }
 
@@ -260,7 +262,7 @@ multi sub filter(
 		List :$before-check,
 		List :$after-check,
 		Bool:D :$update! where *.so
-		--> FilterConf:D
+		--> LogP6::FilterConf:D
 ) {
 	$f-manager.update(:$name, :$level, :$first-level-check,
 			:$before-check, :$after-check);
@@ -273,20 +275,22 @@ multi sub filter(
 		List :$before-check,
 		List :$after-check,
 		Bool:D :$replace! where *.so
-		--> FilterConf
+		--> LogP6::FilterConf
 ) {
 	$f-manager.replace(:$name, :$level, :$first-level-check,
 			:$before-check, :$after-check);
 }
 
 multi sub filter(
-	FilterConf:D $filter,
+	LogP6::FilterConf:D $filter,
 	Bool:D :$replace! where *.so
-	--> FilterConf:D) {
+	--> LogP6::FilterConf:D) {
 	$f-manager.replace($filter);
 }
 
-multi sub filter(Str:D :$name!, Bool:D :$remove! where *.so --> FilterConf) {
+multi sub filter(Str:D :$name!, Bool:D :$remove! where *.so
+	--> LogP6::FilterConf
+	) {
 	$f-manager.remove(:$name);
 }
 
@@ -445,7 +449,7 @@ sub create-cliche(
 	die "grooves must have even amount of elements" unless $grvs %% 2;
 
 	check-part(LogP6::WriterConf, 'writer', $w-manager, $_) for $grvs[0,2...^*];
-	check-part(FilterConf, 'filter', $f-manager, $_) for $grvs[1,3...^*];
+	check-part(LogP6::FilterConf, 'filter', $f-manager, $_) for $grvs[1,3...^*];
 	self-check-part($_) for |$grvs;
 
 	my $writers-names = $grvs[0,2...^*]>>.&get-part-name($w-manager).List;
