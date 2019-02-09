@@ -20,6 +20,7 @@
         "LogP6::Level": "lib/LogP6/Level.pm6",
         "LogP6::Helpers::LoggerWrapperSyncAbstract": "lib/LogP6/Helpers/LoggerWrapperSyncAbstract.pm6",
         "LogP6::FilterConf::Std": "lib/LogP6/FilterConf/Std.pm6",
+        "LogP6::Cliche": "lib/LogP6/Cliche.pm6",
         "LogP6::Writer": "lib/LogP6/Writer.pm6",
         "LogP6::ThreadLocal": "lib/LogP6/ThreadLocal.pm6",
         "LogP6::WriterConf": "lib/LogP6/WriterConf.pm6",

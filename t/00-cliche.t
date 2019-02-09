@@ -1,7 +1,7 @@
 use Test;
 
 use lib 'lib';
-use LogP6::Logger;
+use LogP6::Cliche;
 use LogP6 :configure;
 
 plan 18;

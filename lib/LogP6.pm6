@@ -14,6 +14,7 @@ unit module LogP6;
 # (16). improve logger log method to be more lazy
 # (17). improve ndc and mdc logic in Context and Logger (many loggers)
 # (10). tests tests tests
+# (22). Separate writers and filters and cliches to separate files
 # 6. init from file
 # 8. improve exceptions
 # 11. docs docs docs
@@ -23,7 +24,6 @@ unit module LogP6;
 # 19. add trace-some methods in logger
 # 20. add backup/restore ndc and mdc
 # 21. add params for %trait in pattern
-# 22. Separate writers and filters and cliches to separate files
 
 use UUID;
 
@@ -31,12 +31,14 @@ use LogP6::Logger;
 use LogP6::LoggerPure;
 use LogP6::LoggerWrapperFactory;
 
+use LogP6::Filter;
+use LogP6::FilterConf::Std;
+
 use LogP6::Writer;
 use LogP6::WriterConf::Std;
 use LogP6::WriterConf::Pattern;
 
-use LogP6::Filter;
-use LogP6::FilterConf::Std;
+use LogP6::Cliche;
 
 use LogP6::Level;
 use LogP6::ThreadLocal;

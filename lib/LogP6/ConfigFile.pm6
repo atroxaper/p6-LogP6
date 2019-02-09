@@ -5,7 +5,7 @@ use JSON::Fast;
 use LogP6::WriterConf::Std;
 use LogP6::FilterConf::Std;
 use LogP6::Level;
-use LogP6::Logger;
+use LogP6::Cliche;
 use LogP6::Helpers::LoggerWrapperSyncTime;
 
 sub parce-config(IO() $file-path) is export {
