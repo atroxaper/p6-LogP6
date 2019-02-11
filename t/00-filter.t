@@ -99,7 +99,7 @@ subtest {
 			:name<reactive-level>, :level($warn),
 			before-check => (&beforeX, &beforeTrue,),
 			after-check => (&afterX, &afterTrue,))
-			.make-filter(:default-level($info));
+			.make-filter(:default-level($info), :default-first-level-check);
 	is ($trace, $debug, $info, $warn, $error)
 			.map(-> $l { $reactive-level.reactive-check($l) }),
 			(False, False, False, True, True), 'self level is main';
@@ -108,7 +108,7 @@ subtest {
 			:name<reactive>,
 			before-check => (&beforeX, &beforeTrue,),
 			after-check => (&afterX, &afterTrue,))
-			.make-filter(:default-level($info));
+			.make-filter(:default-level($info), :default-first-level-check);
 	is ($trace, $debug, $info, $warn, $error)
 			.map(-> $l { $reactive.reactive-check($l) }),
 			(False, False, True, True, True), 'self level is empty, took default';
@@ -119,7 +119,7 @@ subtest {
 			:!first-level-check,
 			before-check => (&beforeX, &beforeTrue,),
 			after-check => (&afterX, &afterTrue,))
-			.make-filter(:default-level($info));
+			.make-filter(:default-level($info), :default-first-level-check);
 	is ($trace, $debug, $info, $warn, $error)
 			.map(-> $l { $nonreactive.reactive-check($l) }),
 			(True, True, True, True, True), 'noreactive does not react';

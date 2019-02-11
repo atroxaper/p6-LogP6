@@ -15,15 +15,15 @@ unit module LogP6;
 # (17). improve ndc and mdc logic in Context and Logger (many loggers)
 # (10). tests tests tests
 # (22). Separate writers and filters and cliches to separate files
-# 6. init from file
-# 8. improve exceptions
+# (6). init from file
 # 11. docs docs docs
+# 8. improve exceptions
+# 21. add params for %trait in pattern
 # 22. try make entities immutable (filters, writes, loggers)
 # 13. add 'turn off' logger (in cliche and Logger)
 # 18. add database writer
 # 19. add trace-some methods in logger
 # 20. add backup/restore ndc and mdc
-# 21. add params for %trait in pattern
 
 use UUID;
 
@@ -62,8 +62,14 @@ my %loggers-pure;
 my %loggers;
 
 my Str $default-pattern;
+my Bool $default-auto-exceptions;
+my IO::Handle $default-handle;
+my Str $default-x-pattern;
+
 my Level $default-level;
-my LogP6::Wrapper $wrapper-factory;
+my Bool $default-first-level-check;
+
+my LogP6::Wrapper $default-wrapper;
 
 my $f-manager;
 my $w-manager;
@@ -85,7 +91,17 @@ sub init-from-file($config-path) is export(:configure) {
 		return without $config-path;
 
 		die "log-p6 config '$config-path' is not exist" unless $config-path.IO.e;
-		parce-config($config-path);
+		my $config = parce-config($config-path);
+		set-default-pattern($_) with $config.default-pattern;
+		set-default-auto-exceptions($_) with $config.default-auto-exceptions;
+		set-default-handle($_) with $config.default-handle;
+		set-default-x-pattern($_) with $config.default-x-pattern;
+		set-default-level($_) with $config.default-level;
+		set-default-first-level-check($_) with $config.default-first-level-check;
+		set-default-wrapper($_) with $config.default-wrapper;
+		writer($_) for $config.writers;
+		filter($_) for $config.filters;
+		cliche($_) for $config.cliches;
 	});
 }
 
@@ -109,8 +125,14 @@ sub clean-all-settings() {
 	$default-pattern = "default %msg";
 	die "wrong default lib pattern <$($default-pattern)>"
 		unless Grammar.parse($default-pattern);
-	$default-level = Level::info;
-	$wrapper-factory = LogP6::Wrapper::Transparent::Wrapper.new;
+	$default-auto-exceptions = True;
+	$default-handle = $*OUT;
+	$default-x-pattern = '%x{ Exception $name: $msg' ~ "\n" ~'$trace}';
+
+	$default-level = Level::error;
+	$default-first-level-check = True;
+
+	$default-wrapper = LogP6::Wrapper::Transparent::Wrapper.new;
 
 	$f-manager = GroovesPartsManager[
 			$lock, 'filter', LogP6::FilterConf::Std, LogP6::FilterConf].new;
@@ -118,8 +140,28 @@ sub clean-all-settings() {
 			$lock, 'writer', LogP6::WriterConf::Std, LogP6::WriterConf].new;
 }
 
-sub set-wrapper-factory(LogP6::Wrapper $factory) is export(:configure) {
-	$wrapper-factory = $factory // LogP6::Wrapper::Transparent::Wrapper.new;
+sub set-default-pattern(Str:D $pattern) is export(:configure) {
+	die "wrong default pattern <$($pattern)>" unless Grammar.parse($pattern);
+	$default-pattern = $pattern;
+	update-loggers();
+}
+
+sub set-default-auto-exceptions(Bool:D $auto-exceptions)
+	is export(:configure)
+{
+	$default-auto-exceptions = $auto-exceptions;
+	update-loggers();
+}
+
+sub set-default-handle(IO::Handle:D $handle) is export(:configure)
+{
+	$default-handle = $handle;
+	update-loggers();
+}
+
+sub set-default-x-pattern(Str:D $x-pattern) is export(:configure)
+{
+	$default-x-pattern = $x-pattern;
 	update-loggers();
 }
 
@@ -128,9 +170,15 @@ sub set-default-level(LogP6::Level:D $level) is export(:configure) {
 	update-loggers();
 }
 
-sub set-default-pattern(Str:D $pattern) is export(:configure) {
-	die "wrong default pattern <$($pattern)>" unless Grammar.parse($pattern);
-	$default-pattern = $pattern;
+sub set-default-first-level-check(Bool:D $first-level-check)
+	is export(:configure)
+{
+	$default-first-level-check = $first-level-check;
+	update-loggers();
+}
+
+sub set-default-wrapper(LogP6::Wrapper $factory) is export(:configure) {
+	$default-wrapper = $factory // LogP6::Wrapper::Transparent::Wrapper.new;
 	update-loggers();
 }
 
@@ -393,25 +441,56 @@ sub get-cliche(Str:D $name --> LogP6::Cliche) is export(:configure) {
 
 proto cliche(| --> LogP6::Cliche) is export(:configure) { * }
 
-multi sub cliche(
-	Str:D :$name!, :$matcher! where $matcher ~~ any(Str:D, Regex:D),
-	Level :$default-level, Str :$default-pattern, LogP6::Wrapper :$wrapper,
-	Positional :$grooves
+multi sub cliche(LogP6::Cliche:D $cliche --> LogP6::Cliche:D) {
+	cliche(:name($cliche.name), :matcher($cliche.matcher),
+			:wrapper($cliche.wrapper), :grooves($cliche.grooves),
+			:default-pattern($cliche.default-pattern),
+			:default-auto-exceptions($cliche.default-auto-exceptions),
+			:default-handle($cliche.default-handle),
+			:default-x-pattern($cliche.default-x-pattern),
+			:default-level($cliche.default-level),
+			:default-first-level-check($cliche.default-first-level-check), :create);
+}
+
+multi sub cliche(LogP6::Cliche:D $cliche, :$replace! where *.so
 	--> LogP6::Cliche:D
 ) {
-	cliche(:$name, :$matcher, :$default-level, :$default-pattern, :$grooves,
-			:$wrapper, :create);
+	cliche(:name($cliche.name), :matcher($cliche.matcher),
+			:wrapper($cliche.wrapper), :grooves($cliche.grooves),
+			:default-pattern($cliche.default-pattern),
+			:default-auto-exceptions($cliche.default-auto-exceptions),
+			:default-handle($cliche.default-handle),
+			:default-x-pattern($cliche.default-x-pattern),
+			:default-level($cliche.default-level),
+			:default-first-level-check($cliche.default-first-level-check), :replace);
 }
 
 multi sub cliche(
 	Str:D :$name!, :$matcher! where $matcher ~~ any(Str:D, Regex:D),
-	Level :$default-level, Str :$default-pattern, LogP6::Wrapper :$wrapper,
-	Positional :$grooves, :$create! where *.so --> LogP6::Cliche:D
+	LogP6::Wrapper :$wrapper, Positional :$grooves,
+	Str :$default-pattern, Bool :$default-auto-exceptions,
+	IO::Handle :$default-handle, Str :$default-x-pattern,
+	Level :$default-level, Bool :$default-first-level-check
+	--> LogP6::Cliche:D
+) {
+	cliche(:$name, :$matcher, :$wrapper, :$grooves, :$default-pattern,
+			:$default-auto-exceptions, :$default-handle, :$default-x-pattern,
+			:$default-level, :$default-first-level-check, :create);
+}
+
+multi sub cliche(
+	Str:D :$name!, :$matcher! where $matcher ~~ any(Str:D, Regex:D),
+	LogP6::Wrapper :$wrapper, Positional :$grooves,
+	Str :$default-pattern, Bool :$default-auto-exceptions,
+	IO::Handle :$default-handle, Str :$default-x-pattern,
+	Level :$default-level, Bool :$default-first-level-check,
+	:$create! where *.so --> LogP6::Cliche:D
 ) {
 	$lock.protect({
 		die "cliche with name $name already exists" if $cliches-names{$name};
-		my $cliche = create-cliche(:$name, :$matcher, :$default-level,
-				:$default-pattern, :$wrapper, :$grooves);
+		my $cliche = create-cliche(:$name, :$matcher, :$wrapper, :$grooves,
+				:$default-pattern, :$default-auto-exceptions, :$default-handle,
+				:$default-x-pattern, :$default-level, :$default-first-level-check);
 		$cliches-names{$name} = True;
 		@cliches.push: $cliche;
 		update-loggers;
@@ -421,12 +500,16 @@ multi sub cliche(
 
 multi sub cliche(
 	Str:D :$name!, :$matcher! where $matcher ~~ any(Str:D, Regex:D),
-	Level :$default-level, Str :$default-pattern, LogP6::Wrapper :$wrapper,
-	Positional :$grooves, :$replace! where *.so --> LogP6::Cliche
+	LogP6::Wrapper :$wrapper, Positional :$grooves,
+	Str :$default-pattern, Bool :$default-auto-exceptions,
+	IO::Handle :$default-handle, Str :$default-x-pattern,
+	Level :$default-level, Bool :$default-first-level-check,
+	:$replace! where *.so --> LogP6::Cliche
 ) {
 	$lock.protect({
-		my $new = create-cliche(:$name, :$matcher, :$default-level,
-				:$default-pattern, :$wrapper, :$grooves);
+		my $new = create-cliche(:$name, :$matcher, :$wrapper, :$grooves,
+				:$default-pattern, :$default-auto-exceptions, :$default-handle,
+				:$default-x-pattern, :$default-level, :$default-first-level-check);
 		for @cliches.kv -> $i, $old {
 			if $old.name eq $name {
 				@cliches[$i] = $new;
@@ -456,8 +539,10 @@ multi sub cliche(Str:D :$name!, :$remove! where *.so --> LogP6::Cliche) {
 
 sub create-cliche(
 	Str:D :$name!, :$matcher! where $matcher ~~ any(Str:D, Regex:D),
-	Level :$default-level, Str :$default-pattern, LogP6::Wrapper :$wrapper,
-	Positional :$grooves
+	LogP6::Wrapper :$wrapper, Positional :$grooves,
+	Str :$default-pattern, Bool :$default-auto-exceptions,
+	IO::Handle :$default-handle, Str :$default-x-pattern,
+	Level :$default-level, Bool :$default-first-level-check
 ) {
 	die "wrong default pattern <$default-pattern>"
 			unless check-pattern($default-pattern);
@@ -471,8 +556,10 @@ sub create-cliche(
 	my $writers-names = $grvs[0,2...^*]>>.&get-part-name($w-manager).List;
 	my $filters-names = $grvs[1,3...^*]>>.&get-part-name($f-manager).List;
 
-	LogP6::Cliche.new(:$name, :$default-level, :$default-pattern, :$matcher,
-			:$wrapper, writers => $writers-names, filters => $filters-names);
+	LogP6::Cliche.new(:$name, :$matcher, :$wrapper, writers => $writers-names,
+			filters => $filters-names, :$grooves, :$default-pattern,
+			:$default-auto-exceptions, :$default-handle, :$default-x-pattern,
+			:$default-level, :$default-first-level-check);
 }
 
 sub get-part-name($part, $type-manager) {
@@ -539,19 +626,35 @@ sub change-cliche($old-cliche, $new-cliche) {
 }
 
 sub create-logger($trait, $cliche) {
-	my $level = $cliche.default-level // $default-level;
-	my $pattern = $cliche.default-pattern // $default-pattern;
  	my $grooves = (0...^$cliche.writers.elems).list.map(-> $i { (
-			get-writer($cliche.writers[$i]).make-writer(:default-pattern($pattern)),
-			get-filter($cliche.filters[$i]).make-filter(:default-level($level))
+			get-writer($cliche.writers[$i]).make-writer(|writer-defaults($cliche)),
+			get-filter($cliche.filters[$i]).make-filter(|filter-defaults($cliche))
 	) }).list;
 	return $grooves.elems > 0
 		?? LogP6::LoggerPure.new(:$trait, :$grooves)
 		!! LogP6::LoggerMute.new(:$trait);
 }
 
+sub writer-defaults($cliche) {
+	return %(
+		default-pattern => $cliche.default-pattern // $default-pattern,
+		default-auto-exceptions =>
+			$cliche.default-auto-exceptions // $default-auto-exceptions,
+		default-handle => $cliche.default-handle // $default-handle,
+		default-x-pattern => $cliche.default-x-pattern // $default-x-pattern
+	);
+}
+
+sub filter-defaults($cliche) {
+	return %(
+		default-level => $cliche.default-level // $default-level,
+		default-first-level-check =>
+				$cliche.default-first-level-check // $default-first-level-check
+	);
+}
+
 sub wrap-logger($logger, $cliche) {
-	($cliche.wrapper // $wrapper-factory).wrap($logger);
+	($cliche.wrapper // $default-wrapper).wrap($logger);
 }
 
 sub find-cliche-for-trait($trait) {

@@ -9,9 +9,6 @@ class LogP6::WriterConf::Std does LogP6::WriterConf {
 	has IO::Handle $.handle;
 	has Bool $.auto-exceptions;
 
-	my $default-handle = $*OUT;
-	my $default-x-pattern = '%x{ Exception $name: $msg' ~ "\n" ~'$trace}';
-
 	method name() {
 		$!name;
 	}
@@ -27,8 +24,7 @@ class LogP6::WriterConf::Std does LogP6::WriterConf {
 	}
 
 	method make-writer(*%defaults --> LogP6::Writer:D) {
-		LogP6::Writer::Std
-						.new(self, |%defaults, :$default-handle, :$default-x-pattern);
+		LogP6::Writer::Std.new(self, |%defaults);
 	}
 
 	method close() {

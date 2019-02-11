@@ -9,7 +9,8 @@ class LogP6::Filter::Std does LogP6::Filter {
 	has Bool:D $.first-level-check is required;
 
 	only method new(LogP6::FilterConf:D $conf, *%defaults) {
-		my $first-level-check = $conf.first-level-check // True;
+		my $first-level-check = $conf.first-level-check //
+				%defaults<default-first-level-check>;
 		my $level = $conf.level // %defaults<default-level>;
 		my &level-check := chose-level-check($level);
 		my $before = ($conf.before-check // ()).Array;

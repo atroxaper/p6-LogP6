@@ -1,0 +1,59 @@
+{
+	"default-pattern": "%msg%x{ $msg}",
+	"default-auto-exceptions": false,
+	"default-handle": {
+		"type": "custom",
+		"require": "Custom",
+		"fqn-method": "Custom::EXPORT::DEFAULT::&io-string",
+		"args": {
+			"name": "default"
+		}
+	},
+	"default-x-pattern": "%x",
+	"default-level":  "debug",
+	"default-first-level-check": true,
+	"default-wrapper": {
+		"type": "time",
+		"seconds": 60
+	},
+	"writers": [
+		{
+			"type": "std",
+			"name": "w1"
+		}
+	],
+	"filters": [
+		{
+			"type": "std",
+			"name": "f1"
+		}
+	],
+	"cliches": [
+		{
+			"name": "c1",
+			"matcher": "log",
+			"grooves": [ "w1", "f1" ]
+		},
+		{
+			"name": "c2",
+			"matcher": "gol",
+			"grooves": [ "w1", "f1" ],
+			"default-pattern": "%msg",
+			"default-auto-exceptions": true,
+			"default-handle": {
+				"type": "custom",
+				"require": "Custom",
+				"fqn-method": "Custom::EXPORT::DEFAULT::&io-string",
+				"args": {
+					"name": "cliche"
+				}
+			},
+			"default-x-pattern": "%x{ $name}",
+			"default-level":  "trace",
+			"default-first-level-check": true,
+			"default-wrapper": {
+				"type": "transparent"
+			}
+		}
+	]
+}

@@ -4,10 +4,18 @@ use LogP6::Wrapper;
 class LogP6::Cliche {
 	has Str:D $.name is required;
 	has $.matcher is required;
-	has LogP6::Level $.default-level;
+
 	has Str $.default-pattern;
+	has Bool $.default-auto-exceptions;
+	has IO::Handle $.default-handle;
+	has Str $.default-x-pattern;
+
+	has LogP6::Level $.default-level;
+	has Bool $.default-first-level-check;
+
 	has Positional $.writers;
 	has Positional $.filters;
+	has Positional $.grooves;
 	has LogP6::Wrapper $.wrapper;
 
 	method has(LogP6::Cliche:D: $name, Str:D $type where * ~~ any('writer', 'filter')

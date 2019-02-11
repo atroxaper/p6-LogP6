@@ -11,7 +11,7 @@ my LogP6::Helpers::IOString $h .= new;
 writer(:name<writer>, :handle($h), :pattern<%msg>);
 filter(:name<filter>, :level($info));
 
-set-wrapper-factory(
+set-default-wrapper(
 	LogP6::Wrapper::SyncTime::Wrapper.new(:2seconds));
 my $cliche = cliche(:name<cliche>, :matcher<main>, grooves => <writer filter>);
 

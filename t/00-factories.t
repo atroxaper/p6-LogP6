@@ -332,7 +332,7 @@ subtest {
 	filter(:name<filter>, :level($debug), :update);
 	is get-logger('log'), get-logger-pure('log'), 'not sync - same pure and log';
 
-	set-wrapper-factory(
+	set-default-wrapper(
 		LogP6::Wrapper::SyncTime::Wrapper.new(:60seconds));
 	filter(:name<filter>, :level($debug), :update);
 	isnt get-logger('log'), get-logger-pure('log'), 'pure and log with sync';
@@ -340,7 +340,7 @@ subtest {
 	does-ok get-logger('log'), LogP6::Wrapper::SyncTime,
 		'time logger instanceof';
 
-	set-wrapper-factory(LogP6::Wrapper);
+	set-default-wrapper(LogP6::Wrapper);
 	my LogP6::Helpers::IOString ($h1, $h2, $h3) =
 		(LogP6::Helpers::IOString.new xx 3).list;
 	filter(:name<of>, :level($trace));

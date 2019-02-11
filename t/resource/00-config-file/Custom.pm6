@@ -1,23 +1,52 @@
 unit module Custom;
 
 use LogP6::WriterConf::Std;
+use LogP6::FilterConf::Std;
 use LogP6::Wrapper::SyncTime;
+use LogP6::Helpers::IOString;
+
+my %strings = %();
+
+sub io-string(:$name) is export {
+	%strings{$name} //= LogP6::Helpers::IOString.new;
+}
 
 sub handle1(:$file-name) is export {
-say 'custom handle1 ', $file-name;
 	$file-name.IO.open(:create, :append);
 }
 
-sub writer1(:$name) is export {
-say 'custom writer1 ', $name;
+sub writer(:$name) is export {
 	LogP6::WriterConf::Std.new(:$name);
 }
 
+sub filter(:$name) is export {
+	LogP6::FilterConf::Std.new(:$name);
+}
+
 sub before-check1() is export {
-	my sub before($context) { True; }
-	return &before;
+	return &before1;
+}
+
+sub before-check2() is export {
+	return &before2;
+}
+
+sub after-check() is export {
+	return &after;
 }
 
 sub wrapper(Int() :$seconds) is export {
 	return LogP6::Wrapper::SyncTime::Wrapper.new(:$seconds);
+}
+
+sub before1($context) {
+	True;
+}
+
+sub before2($context) {
+	True;
+}
+
+sub after($context) {
+	True;
 }

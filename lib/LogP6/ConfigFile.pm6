@@ -7,21 +7,44 @@ use LogP6::FilterConf::Std;
 use LogP6::Level;
 use LogP6::Cliche;
 use LogP6::Wrapper::SyncTime;
+use LogP6::Wrapper::Transparent;
+
+class LogP6::Config {
+	has $.writers;
+	has $.filters;
+	has $.cliches;
+	has $.default-pattern;
+	has $.default-auto-exceptions;
+	has $.default-handle;
+	has $.default-x-pattern;
+	has $.default-level;
+	has $.default-first-level-check;
+	has $.default-wrapper;
+}
 
 sub parce-config(IO() $file-path) is export {
 	CATCH {
 		default {
 			die "Cannot read and create config from file $file-path. Cause "
-				~ $_.^name ~ ': ' ~ $_.Str
+							~ $_.^name ~ ': ' ~ $_.Str
 		}
 	}
-	my \conf = from-json(slurp($file-path));
+	my $file-content = slurp($file-path).trim;
+	die "config file $file-path is empty" if $file-path.chars == 0;
+	my \conf = from-json($file-content);
 
-	say \conf;
-	say list(conf<writers>, &writer);
-	say list(conf<filters>, &filter);
-	say list(conf<cliches>, &cliche);
-	say wrapper-factory(conf<wrapper-factory>);
+	return LogP6::Config.new(
+			writers => list(conf<writers>, &writer),
+			filters => list(conf<filters>, &filter),
+			cliches => list(conf<cliches>, &cliche),
+			default-pattern => string(conf<default-pattern>),
+			default-auto-exceptions => bool(conf<default-auto-exceptions>),
+			default-handle => handle(conf<default-handle>),
+			default-x-pattern => string(conf<default-x-pattern>),
+			default-level => level(conf<default-level>),
+			default-first-level-check => bool(conf<default-first-level-check>),
+			default-wrapper => wrapper(conf<default-wrapper>)
+	);
 }
 
 sub list(\json, &each) {
@@ -36,7 +59,7 @@ sub writer(\json) {
 				name => json<name> // Str,
 				pattern => json<pattern> // Str,
 				handle => handle(json<handle>),
-				auto-exceptions => json<auto-exceptions> // Bool
+				auto-exceptions => bool(json<auto-exceptions>)
 			);
 		}
 		when 'custom' {
@@ -70,8 +93,15 @@ sub filter(\json) {
 	json<args><name>.Str;
 }
 
-sub str(\json) {
-	return json.Str;
+sub bool(\json) {
+	return Bool without json;
+	return json if json ~~ Bool;
+	return json eq 'true';
+}
+
+sub string(\json) {
+	return json.Str with json;
+	return Str;
 }
 
 sub cliche(\json) {
@@ -80,9 +110,14 @@ sub cliche(\json) {
 	return LogP6::Cliche.new(
 		name => $name,
 		matcher => matcher(json<matcher>),
+		default-pattern => string(json<default-pattern>),
+		default-auto-exceptions => bool(json<default-auto-exceptions>),
+		default-handle => handle(json<default-handle>),
+		default-x-pattern => string(json<default-x-pattern>),
 		default-level => level(json<default-level>),
-		default-pattern => json<default-pattern> // Str,
-		grooves => list(json<grooves>, &str)
+		default-first-level-check => bool(json<default-first-level-check>),
+		grooves => list(json<grooves>, &string),
+		wrapper => wrapper(json<wrapper>)
 	);
 }
 
@@ -127,9 +162,6 @@ sub custom(\json) {
 	die 'Missing \'fqn-method\' field in custom definition' without fqn-method;
 	die '\'Args\' field are not Associative in cusom definition'
 		unless args ~~ Associative;
-say 'my-require ', my-require;
-say 'my-method ', fqn-method;
-say 'args ', args;
 
 	require ::(my-require);
 	my &method = ::(fqn-method);
@@ -144,6 +176,7 @@ sub level(\json) {
 		when 'info'  { return info;  }
 		when 'warn'  { return warn;  }
 		when 'error' { return error; }
+		default { die 'wrong level value ' ~ json; }
 	}
 }
 
@@ -161,7 +194,7 @@ sub matcher(\json) {
 	}
 }
 
-sub wrapper-factory(\json) {
+sub wrapper(\json) {
 	return LogP6::Wrapper without json;
 	given json<type> {
 		when 'time' {
@@ -170,11 +203,14 @@ sub wrapper-factory(\json) {
 			return LogP6::Wrapper::SyncTime::Wrapper
 					.new(seconds => json<seconds>);
 		}
-		when 'same' {
-			return LogP6::Wrapper;
+		when 'transparent' {
+			return LogP6::Wrapper::Transparent::Wrapper.new;
 		}
 		when 'custom' {
 			return custom(json);
+		}
+		defined {
+			die 'wrong wrapper type value ' ~ json;
 		}
 	}
 }

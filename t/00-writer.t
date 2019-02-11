@@ -103,18 +103,22 @@ subtest {
 	is $full.handle.WHICH, $io-str.WHICH, 'make full writer with self handle';
 
 	my $half = writer(:name<half>, :pattern($simple-pattern))
-			.make-writer(:$default-pattern);
+			.make-writer(:$default-pattern, :default-handle($*OUT),
+					:$default-x-pattern, :default-auto-exceptions);
 	is $half.pattern, $simple-pattern ~ $default-x-pattern,
 			'make half writer with self pattern plus auto-exceptions';
 	is $half.handle, $*OUT, 'make half writer with default handle';
 
-	my $empty = writer(:name<empty>).make-writer(:$default-pattern);
+	my $empty = writer(:name<empty>)
+			.make-writer(:$default-pattern, :default-handle($*OUT),
+					:$default-x-pattern, :default-auto-exceptions);
 	is $empty.pattern, $default-pattern ~ $default-x-pattern,
 			'make empty writer with default pattern plus auto-exceptions';
 	is $empty.handle, $*OUT, 'make empty writer with default handle';
 
 	writer(:handle($io-str), :pattern($simple-pattern))
-			.make-writer(:$default-pattern)
+			.make-writer(:$default-pattern, :$default-x-pattern,
+					:default-auto-exceptions)
 			.write($context);
 	my $result = $io-str.Str.lines.grep(*.chars != 0).List;
 	is $result.elems, 2, 'writer produce two lines';

@@ -1,0 +1,138 @@
+{
+	"default-pattern": "%msg",
+	"default-auto-exceptions": false,
+	"default-handle": {
+		"type": "std",
+		"path": "err"
+	},
+	"default-x-pattern": "%x",
+	"default-level":  "trace",
+	"default-first-level-check": true,
+	"default-wrapper": {
+		"type": "time",
+		"seconds": 60
+	},
+	"writers": [
+		{
+			"type": "std",
+			"name": "w1",
+			"pattern": "%msg",
+			"handle": {
+				"type": "file",
+				"path": "./t/resource/00-config-file/handle1.after",
+				"append": false
+			},
+			"auto-exceptions": true
+		},
+		{
+			"type": "std",
+			"name": "w2",
+			"pattern": "%level | %msg",
+			"handle": {
+				"type": "std",
+				"path": "out"
+			},
+			"auto-exceptions": false
+		},
+		{
+			"type": "std",
+			"name": "w3",
+			"handle": {
+				"type": "std",
+				"path": "err"
+			}
+		},
+		{
+			"type": "std",
+			"name": "w4",
+			"handle": {
+				"type": "custom",
+				"require": "Custom",
+				"fqn-method": "Custom::EXPORT::DEFAULT::&handle1",
+				"args": {
+					"file-name": "./t/resource/00-config-file/handle2.after"
+				}
+			}
+		},
+		{
+			"type": "custom",
+			"require": "Custom",
+			"fqn-method": "Custom::EXPORT::DEFAULT::&writer",
+			"args": {
+				"name": "w5"
+			}
+		}
+	],
+	"filters": [
+		{
+			"type": "std",
+			"name": "f1",
+			"level": "error",
+			"first-level-check": false,
+			"before-check": [
+				{
+					"require": "Custom",
+					"fqn-method": "Custom::EXPORT::DEFAULT::&before-check1"
+				}
+			],
+			"after-check": []
+		},
+		{
+			"type": "std",
+			"name": "f2",
+			"level": "warn",
+			"first-level-check": true,
+			"before-check": [
+				{
+					"require": "Custom",
+					"fqn-method": "Custom::EXPORT::DEFAULT::&before-check1"
+				},
+				{
+					"require": "Custom",
+					"fqn-method": "Custom::EXPORT::DEFAULT::&before-check2"
+				}
+			],
+			"after-check": [
+				{
+					"require": "Custom",
+					"fqn-method": "Custom::EXPORT::DEFAULT::&after-check"
+				}
+			]
+		},
+		{
+			"type": "std",
+			"name": "f3"
+		},
+		{
+			"type": "custom",
+			"require": "Custom",
+			"fqn-method": "Custom::EXPORT::DEFAULT::&filter",
+			"args": {
+				"name": "f4"
+			}
+		}
+	],
+	"cliches": [
+		{
+			"name": "c1",
+			"matcher": "/bo .+ om/",
+			"default-pattern": "%level %msg",
+			"default-auto-exceptions": true,
+			"default-handle": {
+				"type": "std",
+				"path": "out"
+			},
+			"default-x-pattern": "%x{$msg}",
+			"default-level": "info",
+			"default-first-level-check": false,
+			"grooves": [ "w1", "f1", "w2", "f1" ],
+			"wrapper": {
+				"type": "transparent"
+			}
+		},
+		{
+			"name": "c2",
+			"matcher": "boom/"
+		}
+	]
+}
