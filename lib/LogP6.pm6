@@ -91,7 +91,7 @@ sub init-from-file($config-path) is export(:configure) {
 		return without $config-path;
 
 		die "log-p6 config '$config-path' is not exist" unless $config-path.IO.e;
-		my $config = parce-config($config-path);
+		my $config = parse-config($config-path);
 		set-default-pattern($_) with $config.default-pattern;
 		set-default-auto-exceptions($_) with $config.default-auto-exceptions;
 		set-default-handle($_) with $config.default-handle;

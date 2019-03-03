@@ -27,9 +27,9 @@ subtest {
 	plan 18;
 
 	my ($w, $cn);
-	$cn = parce-config('./t/resource/00-config-file/log-p6-1.json');
+	$cn = parse-config('./t/resource/00-config-file/log-p6-1.json');
 
-	is $cn.writers.elems, 5, 'parced 5 writers';
+	is $cn.writers.elems, 5, 'parsed 5 writers';
 
 	$w = $cn.writers[0];
 	is $w.name, 'w1', 'w1 name';
@@ -65,9 +65,9 @@ subtest {
 	use Custom;
 
 	my ($f, $cn);
-	$cn = parce-config('./t/resource/00-config-file/log-p6-1.json');
+	$cn = parse-config('./t/resource/00-config-file/log-p6-1.json');
 
-	is $cn.filters.elems, 4, 'parced 4 writers';
+	is $cn.filters.elems, 4, 'parsed 4 writers';
 
 	$f = $cn.filters[0];
 	is $f.name, 'f1', 'f1 name';
@@ -105,9 +105,9 @@ subtest {
 	use LogP6::Wrapper::Transparent;
 
 	my ($c, $cn);
-	$cn = parce-config('./t/resource/00-config-file/log-p6-1.json');
+	$cn = parse-config('./t/resource/00-config-file/log-p6-1.json');
 
-	is $cn.cliches.elems, 2, 'parced 2 cliches';
+	is $cn.cliches.elems, 2, 'parsed 2 cliches';
 
 	$c = $cn.cliches[0];
 	is $c.name, 'c1', 'c1 name';
@@ -142,7 +142,7 @@ subtest {
 
 	use LogP6::Wrapper::SyncTime;
 
-	my $cn = parce-config('./t/resource/00-config-file/log-p6-1.json');
+	my $cn = parse-config('./t/resource/00-config-file/log-p6-1.json');
 	is $cn.default-pattern, '%msg', 'default-pattern';
 	is $cn.default-auto-exceptions, False, 'default-auto-exceptions';
 	is $cn.default-handle, $*ERR, 'default-handle';

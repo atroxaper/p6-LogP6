@@ -22,7 +22,7 @@ class LogP6::Config {
 	has $.default-wrapper;
 }
 
-sub parce-config(IO() $file-path) is export {
+sub parse-config(IO() $file-path) is export {
 	CATCH {
 		default {
 			die "Cannot read and create config from file $file-path. Cause "
