@@ -4,7 +4,7 @@ use lib 'lib';
 use LogP6::Logger;
 use LogP6::Level;
 
-plan 65;
+plan 44;
 
 my LogP6::Context $context = get-context();
 
@@ -38,41 +38,28 @@ $context.trait-set('tr');
 is $context.trait, 'tr', 'setted trait';
 
 # ndc
-lives-ok { $context.ndc }, 'ndc without trait';
-lives-ok { $context.ndc-push('') }, 'ndc-push without trait';
-lives-ok { $context.ndc-pop }, 'ndc-pop without trait';
-lives-ok { $context.ndc-clean }, 'ndc-clean without trait';
-for Any, 'trait' -> $tr {
-	is-deeply $context.ndc($tr), [], "ndc ($($tr // ''))";
-	$context.ndc-push('p1', $tr);
-	is-deeply $context.ndc($tr), <p1>.Array, "ndc-push p1 ($($tr // ''))";
-	$context.ndc-push('p2', $tr);
-	is-deeply $context.ndc($tr), <p1 p2>.Array, "ndc-push p2 ($($tr // ''))";
-	$context.ndc-pop($tr);
-	is-deeply $context.ndc($tr), <p1>.Array, "ndc-pop ($($tr // ''))";
-	$context.ndc-clean($tr);
-	is-deeply $context.ndc($tr), [], "ndc-clean ($($tr // ''))";
-}
+is-deeply $context.ndc, [], 'ndc';
+$context.ndc-push('p1');
+is-deeply $context.ndc, <p1>.Array, 'ndc-push p1';
+$context.ndc-push('p2');
+is-deeply $context.ndc, <p1 p2>.Array, 'ndc-push p2';
+$context.ndc-pop;
+is-deeply $context.ndc, <p1>.Array, 'ndc-pop';
+$context.ndc-clean;
+is-deeply $context.ndc, [], 'ndc-clean';
 
 # mdc
-lives-ok { $context.mdc }, 'mdc without trait';
-lives-ok { $context.mdc-put('', '') }, 'mdc-put without trait';
-lives-ok { $context.mdc-get('') }, 'mdc-get without trait';
-lives-ok { $context.mdc-remove('') }, 'mdc-remove without trait';
-lives-ok { $context.mdc-clean }, 'mdc-clean without trait';
-for Any, 'trait' -> $tr {
-	is-deeply $context.mdc($tr), %(), "mdc ($($tr // ''))";
-	$context.mdc-put('k1', 'v1', $tr);
-	is-deeply $context.mdc($tr), %(:k1<v1>), "mdc-put k1 ($($tr // ''))";
-	$context.mdc-put('k2', 'v2', $tr);
-	is-deeply $context.mdc($tr), %(:k1<v1>, :k2<v2>), "mdc-put k2 ($($tr // ''))";
-	is $context.mdc-get('k1', $tr), 'v1', "mdc get k1 ($($tr // ''))";
-	is $context.mdc-get('p1', $tr), Any, "mdc get p1 ($($tr // ''))";
-	$context.mdc-remove('k1', $tr);
-	is $context.mdc-get('k1', $tr), Any, "mdc get k1 after remove ($($tr // ''))";
-	$context.mdc-clean($tr);
-	is-deeply $context.mdc($tr), %(), "mdc-clean ($($tr // ''))";
-}
+is-deeply $context.mdc, %(), 'mdc';
+$context.mdc-put('k1', 'v1');
+is-deeply $context.mdc, %(:k1<v1>), 'mdc-put k1';
+$context.mdc-put('k2', 'v2');
+is-deeply $context.mdc, %(:k1<v1>, :k2<v2>), 'mdc-put k2';
+is $context.mdc-get('k1'), 'v1', 'mdc get k1';
+is $context.mdc-get('p1'), Any, 'mdc get p1';
+$context.mdc-remove('k1');
+is $context.mdc-get('k1'), Any, 'mdc get k1 after remove';
+$context.mdc-clean;
+is-deeply $context.mdc, %(), 'mdc-clean';
 
 # date
 my $default-date = $context.date;

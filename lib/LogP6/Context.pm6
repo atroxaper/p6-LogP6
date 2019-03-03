@@ -12,7 +12,7 @@ has $!trait;
 has $!thread;
 has $!tid;
 has $!tname;
-has %!ndc = %();
+has @!ndc = [];
 has %!mdc = %();
 has %!sync = %();
 
@@ -50,45 +50,40 @@ method level-set($level) {
 	$!level = $level;
 }
 
-method ndc($trait?) {
-	%!ndc{$trait // $!trait} //= [];
+method ndc() {
+	@!ndc;
 }
 
-method ndc-push($obj, $trait?) {
-	my $ndc := %!ndc{$trait // $!trait} //= [];
-	$ndc.push: $obj;
+method ndc-push($obj) {
+	@!ndc.push: $obj;
 }
 
-method ndc-pop($trait?) {
-	my $ndc := %!ndc{$trait // $!trait} //= [];
-	$ndc.pop;
+method ndc-pop() {
+	@!ndc.pop;
 }
 
-method ndc-clean($trait?) {
-	%!ndc{$trait // $!trait} = [];
+method ndc-clean() {
+	@!ndc = [];
 }
 
-method mdc($trait?) {
-	%!mdc{$trait // $!trait} //= %();
+method mdc() {
+	%!mdc;
 }
 
-method mdc-get($key, $trait?) {
-	my $mdc := %!mdc{$trait // $!trait} //= %();
-	$mdc{$key};
+method mdc-get($key) {
+	%!mdc{$key};
 }
 
-method mdc-put($key, $obj, $trait?) {
-	my $mdc := %!mdc{$trait // $!trait} //= %();
-	$mdc{$key} = $obj;
+method mdc-put($key, $obj) {
+	%!mdc{$key} = $obj;
 }
 
-method mdc-remove($key, $trait?) {
-	my $mdc := %!mdc{$trait // $!trait} //= %();
-	$mdc{$key}:delete;
+method mdc-remove($key) {
+	%!mdc{$key}:delete;
 }
 
-method mdc-clean($trait?) {
-	%!mdc{$trait // $!trait} = %();
+method mdc-clean() {
+	%!mdc = %();
 }
 
 method date() {

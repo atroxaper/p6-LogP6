@@ -25,27 +25,27 @@ class LogP6::LoggerPure does LogP6::Logger {
 	}
 
 	method ndc-push($obj) {
-		get-context.ndc-push: $obj, $!trait;
+		get-context.ndc-push: $obj;
 	}
 
 	method ndc-pop() {
-		get-context.ndc-pop: $!trait;
+		get-context.ndc-pop;
 	}
 
 	method ndc-clean() {
-		get-context.ndc-clean: $!trait;
+		get-context.ndc-clean;
 	}
 
 	method mdc-put($key, $obj) {
-		get-context.mdc-put: $key, $obj, $!trait;
+		get-context.mdc-put: $key, $obj;
 	}
 
 	method mdc-remove($key) {
-		get-context.mdc-remove: $key, $!trait;
+		get-context.mdc-remove: $key;
 	}
 
 	method mdc-clean() {
-		get-context.mdc-clean; $!trait;
+		get-context.mdc-clean;
 	}
 
 	method trace(*@args, :$x) {
