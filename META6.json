@@ -1,8 +1,16 @@
 {
-    "license": "Artistic-2.0",
-    "source-url": "Write me!",
-    "depends": ["UUID"],
     "auth": "github:atroxaper",
+    "depends": ["UUID"],
+    "description": "Full customisable logging library inspired by idea of separate logging and logging configuration.",
+    "resources": [],
+    "version": "1.3.1",
+    "tags": [
+        "LOG",
+        "LOGGING",
+        "LOGGER"
+    ],
+    "license": "Artistic-2.0",
+    "source-url": "TODO",
     "provides": {
         "LogP6::Wrapper::SyncAbstract": "lib/LogP6/Wrapper/SyncAbstract.pm6",
         "LogP6::Helpers::IOString": "lib/LogP6/Helpers/IOString.pm6",
@@ -29,11 +37,8 @@
         "LogP6::Wrapper::Transparent": "lib/LogP6/Wrapper/Transparent.pm6",
         "LogP6::Exceptions": "lib/LogP6/Exceptions.pm6"
     },
-    "name": "Log::Fast",
-    "description": "Write me!",
-    "resources": [],
-    "perl": "6.*",
+    "name": "LogP6",
+    "perl": "6.d",
     "test-depends": ["Test"],
-    "version": "1.0.0",
     "authors": ["Mikhail Khorkov"]
 }
