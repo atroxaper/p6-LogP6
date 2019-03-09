@@ -358,7 +358,7 @@ subtest {
 	$log-foo.error('foo');
 	$general.error('general');
 	$important.error('important');
-	$default.error('to output');
+	$default.debug('to output');
 	is $h1.Str.trim, 'foo', 'foo logger detect fine';
 	is $h2.Str.trim, 'general', 'general logger detect fine';
 	is $h3.Str.trim, 'important', 'important logger detect fine';
