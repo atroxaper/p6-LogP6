@@ -10,9 +10,9 @@ use LogP6::Wrapper::SyncTime;
 use LogP6::Wrapper::Transparent;
 
 class LogP6::Config {
-	has $.writers;
-	has $.filters;
-	has $.cliches;
+	has $.writers = ();
+	has $.filters = ();
+	has $.cliches = ();
 	has $.default-pattern;
 	has $.default-auto-exceptions;
 	has $.default-handle;
@@ -29,6 +29,7 @@ sub parse-config(IO() $file-path) is export {
 							~ $_.^name ~ ': ' ~ $_.Str
 		}
 	}
+	return LogP6::Config.new unless $file-path.e;
 	my $file-content = slurp($file-path).trim;
 	die "config file $file-path is empty" if $file-path.chars == 0;
 	my \conf = from-json($file-content);

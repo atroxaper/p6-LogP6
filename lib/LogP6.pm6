@@ -88,10 +88,11 @@ sub init-from-file($config-path) is export(:configure) {
 	$lock.protect({
 		wipe-log-config();
 
-		return without $config-path;
+		if ($config-path.defined && !$config-path.IO.e) {
+			die "log-p6 config '$config-path' is not exist";
+		}
 
-		die "log-p6 config '$config-path' is not exist" unless $config-path.IO.e;
-		my $config = parse-config($config-path);
+		my $config = parse-config($config-path // './log-p6.json');
 		set-default-pattern($_) with $config.default-pattern;
 		set-default-auto-exceptions($_) with $config.default-auto-exceptions;
 		set-default-handle($_) with $config.default-handle;
