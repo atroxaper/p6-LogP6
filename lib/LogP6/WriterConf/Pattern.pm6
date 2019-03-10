@@ -59,8 +59,8 @@ class XTrace does PatternPart {
 	method show($x) { $x.backtrace }
 }
 
-my $digits = ('00', '01' ... '99').list;
-my $months = <0 Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec>.list;
+my $digits = ('00', '01' ... '99').List;
+my $months = <0 Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec>.List;
 
 class Date does PatternPart {
 	has $.pieces;
