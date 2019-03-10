@@ -4,7 +4,6 @@ my &my-get-wrap;
 my &my-get-pure;
 
 sub init-getter(:&get-wrap, :&get-pure) is export {
-	die 'Logger getter subs are setted already' with &my-get-pure;
 	&my-get-wrap = &get-wrap;
 	&my-get-pure = &get-pure;
 }

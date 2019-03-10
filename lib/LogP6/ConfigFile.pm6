@@ -31,7 +31,7 @@ sub parse-config(IO() $file-path) is export {
 	}
 	return LogP6::Config.new unless $file-path.e;
 	my $file-content = slurp($file-path).trim;
-	die "config file $file-path is empty" if $file-path.chars == 0;
+	die "config file $file-path is empty" if $file-content.chars == 0;
 	my \conf = from-json($file-content);
 
 	return LogP6::Config.new(

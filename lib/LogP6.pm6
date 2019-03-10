@@ -53,7 +53,8 @@ our $info  is export(:configure) = Level::info;
 our $warn  is export(:configure) = Level::warn;
 our $error is export(:configure) = Level::error;
 
-my Lock $lock;
+my Lock $lock .= new;
+my Bool $initialized;
 
 my @cliches;
 my $cliches-names;
@@ -76,23 +77,43 @@ my $w-manager;
 
 my role GroovesPartsManager[$lock, $part-name, ::Type, ::NilType] { ... }
 
-sub initialize() {
-	$lock .= new;
-	init-getter(
-			get-wrap => sub ($t) { get-logger($t) },
-			get-pure => sub ($t) { get-logger-pure($t) });
-	init-from-file(%*ENV<LOG_P6_JSON>);
+#| Have to call it from all (mostly) export methods.
+#| It will initialize loggers in user script context instead of on precomp
+sub try-initialize() {
+	$lock.protect({
+		unless $initialized {
+			my $env = %*ENV<LOG_P6_JSON>;
+			if $env.defined && $env.trim.Bool {
+				init-from-file($env.trim);
+			} elsif './log-p6.json'.IO.e {
+				init-from-file('./log-p6.json');
+			} else {
+				init-from-file(Any);
+			}
+		}
+	});
 }
 
 sub init-from-file($config-path) is export(:configure) {
 	$lock.protect({
+		$initialized = True;
+
+		init-getter(
+			get-wrap => sub ($t) { get-logger($t) },
+			get-pure => sub ($t) { get-logger-pure($t) });
+
 		wipe-log-config();
 
-		if ($config-path.defined && !$config-path.IO.e) {
+		return without $config-path;
+
+		unless $config-path.trim.Bool {
+			die "log-p6 config-path is blank";
+		}
+		if !$config-path.IO.e {
 			die "log-p6 config '$config-path' is not exist";
 		}
 
-		my $config = parse-config($config-path // './log-p6.json');
+		my $config = parse-config($config-path);
 		set-default-pattern($_) with $config.default-pattern;
 		set-default-auto-exceptions($_) with $config.default-auto-exceptions;
 		set-default-handle($_) with $config.default-handle;
@@ -107,6 +128,7 @@ sub init-from-file($config-path) is export(:configure) {
 }
 
 sub wipe-log-config() is export(:configure) {
+	# not need try-initialize()
 	clean-all-settings();
 	create-default-cliche();
 }
@@ -142,6 +164,7 @@ sub clean-all-settings() {
 }
 
 sub set-default-pattern(Str:D $pattern) is export(:configure) {
+	try-initialize();
 	die "wrong default pattern <$($pattern)>" unless Grammar.parse($pattern);
 	$default-pattern = $pattern;
 	update-loggers();
@@ -150,23 +173,27 @@ sub set-default-pattern(Str:D $pattern) is export(:configure) {
 sub set-default-auto-exceptions(Bool:D $auto-exceptions)
 	is export(:configure)
 {
+	try-initialize();
 	$default-auto-exceptions = $auto-exceptions;
 	update-loggers();
 }
 
 sub set-default-handle(IO::Handle:D $handle) is export(:configure)
 {
+	try-initialize();
 	$default-handle = $handle;
 	update-loggers();
 }
 
 sub set-default-x-pattern(Str:D $x-pattern) is export(:configure)
 {
+	try-initialize();
 	$default-x-pattern = $x-pattern;
 	update-loggers();
 }
 
 sub set-default-level(LogP6::Level:D $level) is export(:configure) {
+	try-initialize();
 	$default-level = $level;
 	update-loggers();
 }
@@ -174,11 +201,13 @@ sub set-default-level(LogP6::Level:D $level) is export(:configure) {
 sub set-default-first-level-check(Bool:D $first-level-check)
 	is export(:configure)
 {
+	try-initialize();
 	$default-first-level-check = $first-level-check;
 	update-loggers();
 }
 
 sub set-default-wrapper(LogP6::Wrapper $factory) is export(:configure) {
+	try-initialize();
 	$default-wrapper = $factory // LogP6::Wrapper::Transparent::Wrapper.new;
 	update-loggers();
 }
@@ -271,10 +300,12 @@ my role GroovesPartsManager[$lock, $part-name, ::Type, ::NilType] {
 }
 
 sub get-filter(Str:D $name --> LogP6::FilterConf) is export(:configure) {
+	try-initialize();
 	$f-manager.get($name);
 }
 
 sub level(Level:D $level --> LogP6::FilterConf:D) is export(:configure) {
+	try-initialize();
 	$f-manager.create(:$level);
 }
 
@@ -288,6 +319,7 @@ multi sub filter(
 		List :$after-check
 		--> LogP6::FilterConf:D
 ) {
+	try-initialize();
 	$f-manager.create(:$name, :$level, :$first-level-check,
 			:$before-check, :$after-check);
 }
@@ -301,20 +333,25 @@ multi sub filter(
 		Bool:D :$create! where *.so
 		--> LogP6::FilterConf:D
 ) {
+	try-initialize();
 	$f-manager.create(:$name, :$level, :$first-level-check,
 			:$before-check, :$after-check);
 }
 
 multi sub filter(
 	LogP6::FilterConf:D $filter,
-	--> LogP6::FilterConf:D) {
+	--> LogP6::FilterConf:D
+) {
+	try-initialize();
 	$f-manager.create($filter);
 }
 
 multi sub filter(
 	LogP6::FilterConf:D $filter,
 	Bool:D :$create! where *.so
-	--> LogP6::FilterConf:D) {
+	--> LogP6::FilterConf:D
+) {
+	try-initialize();
 	$f-manager.create($filter);
 }
 
@@ -327,6 +364,7 @@ multi sub filter(
 		Bool:D :$update! where *.so
 		--> LogP6::FilterConf:D
 ) {
+		try-initialize();
 	$f-manager.update(:$name, :$level, :$first-level-check,
 			:$before-check, :$after-check);
 }
@@ -340,6 +378,7 @@ multi sub filter(
 		Bool:D :$replace! where *.so
 		--> LogP6::FilterConf
 ) {
+	try-initialize();
 	$f-manager.replace(:$name, :$level, :$first-level-check,
 			:$before-check, :$after-check);
 }
@@ -347,17 +386,21 @@ multi sub filter(
 multi sub filter(
 	LogP6::FilterConf:D $filter,
 	Bool:D :$replace! where *.so
-	--> LogP6::FilterConf:D) {
+	--> LogP6::FilterConf:D
+) {
+	try-initialize();
 	$f-manager.replace($filter);
 }
 
 multi sub filter(Str:D :$name!, Bool:D :$remove! where *.so
 	--> LogP6::FilterConf
-	) {
+) {
+	try-initialize();
 	$f-manager.remove(:$name);
 }
 
 sub get-writer(Str:D $name --> LogP6::WriterConf) is export(:configure) {
+	try-initialize();
 	$w-manager.get($name);
 }
 
@@ -370,6 +413,7 @@ multi sub writer(
 		IO::Handle :$handle
 		--> WriterConf:D
 ) {
+	try-initialize();
 	$w-manager.create(:$name, :$pattern, :$auto-exceptions, :$handle);
 }
 
@@ -381,6 +425,7 @@ multi sub writer(
 		Bool:D :$create! where *.so
 		--> LogP6::WriterConf:D
 ) {
+	try-initialize();
 	$w-manager.create(:$name, :$pattern, :$auto-exceptions, :$handle);
 }
 
@@ -388,6 +433,7 @@ multi sub writer(
 		WriterConf:D $writer,
 		--> WriterConf:D
 ) {
+	try-initialize();
 	$w-manager.create($writer);
 }
 
@@ -396,6 +442,7 @@ multi sub writer(
 		Bool:D :$create! where *.so
 		--> LogP6::WriterConf:D
 ) {
+	try-initialize();
 	$w-manager.create($writer);
 }
 
@@ -407,6 +454,7 @@ multi sub writer(
 		Bool:D :$update! where *.so
 		--> LogP6::WriterConf:D
 ) {
+	try-initialize();
 	$w-manager.update(:$name, :$pattern, :$auto-exceptions, :$handle);
 }
 
@@ -418,23 +466,28 @@ multi sub writer(
 		Bool:D :$replace! where *.so
 		--> LogP6::WriterConf
 ) {
+	try-initialize();
 	$w-manager.replace(:$name, :$pattern, :$auto-exceptions, :$handle);
 }
 
 multi sub writer(
 	LogP6::WriterConf:D $writer,
 	Bool:D :$replace! where *.so
-	--> LogP6::WriterConf:D) {
+	--> LogP6::WriterConf:D
+) {
+	try-initialize();
 	$w-manager.replace($writer);
 }
 
 multi sub writer(Str:D :$name!, Bool:D :$remove! where *.so
 	--> LogP6::WriterConf
 ) {
+	try-initialize();
 	$w-manager.remove(:$name);
 }
 
 sub get-cliche(Str:D $name --> LogP6::Cliche) is export(:configure) {
+	try-initialize();
 	$lock.protect({
 		@cliches.grep(*.name eq $name).first // LogP6::Cliche;
 	});
@@ -443,6 +496,7 @@ sub get-cliche(Str:D $name --> LogP6::Cliche) is export(:configure) {
 proto cliche(| --> LogP6::Cliche) is export(:configure) { * }
 
 multi sub cliche(LogP6::Cliche:D $cliche --> LogP6::Cliche:D) {
+	try-initialize();
 	cliche(:name($cliche.name), :matcher($cliche.matcher),
 			:wrapper($cliche.wrapper), :grooves($cliche.grooves),
 			:default-pattern($cliche.default-pattern),
@@ -456,6 +510,7 @@ multi sub cliche(LogP6::Cliche:D $cliche --> LogP6::Cliche:D) {
 multi sub cliche(LogP6::Cliche:D $cliche, :$replace! where *.so
 	--> LogP6::Cliche:D
 ) {
+	try-initialize();
 	cliche(:name($cliche.name), :matcher($cliche.matcher),
 			:wrapper($cliche.wrapper), :grooves($cliche.grooves),
 			:default-pattern($cliche.default-pattern),
@@ -474,6 +529,7 @@ multi sub cliche(
 	Level :$default-level, Bool :$default-first-level-check
 	--> LogP6::Cliche:D
 ) {
+	try-initialize();
 	cliche(:$name, :$matcher, :$wrapper, :$grooves, :$default-pattern,
 			:$default-auto-exceptions, :$default-handle, :$default-x-pattern,
 			:$default-level, :$default-first-level-check, :create);
@@ -487,6 +543,7 @@ multi sub cliche(
 	Level :$default-level, Bool :$default-first-level-check,
 	:$create! where *.so --> LogP6::Cliche:D
 ) {
+	try-initialize();
 	$lock.protect({
 		die "cliche with name $name already exists" if $cliches-names{$name};
 		my $cliche = create-cliche(:$name, :$matcher, :$wrapper, :$grooves,
@@ -507,6 +564,7 @@ multi sub cliche(
 	Level :$default-level, Bool :$default-first-level-check,
 	:$replace! where *.so --> LogP6::Cliche
 ) {
+	try-initialize();
 	$lock.protect({
 		my $new = create-cliche(:$name, :$matcher, :$wrapper, :$grooves,
 				:$default-pattern, :$default-auto-exceptions, :$default-handle,
@@ -526,6 +584,7 @@ multi sub cliche(
 }
 
 multi sub cliche(Str:D :$name!, :$remove! where *.so --> LogP6::Cliche) {
+	try-initialize();
 	die "remove default cliche is prohibited" if $name eq '';
 	$lock.protect({
 		return LogP6::Cliche without $cliches-names{$name};
@@ -667,6 +726,7 @@ sub find-cliche-for-trait($trait) {
 }
 
 sub get-logger(Str:D $trait --> Logger:D) is export(:MANDATORY) {
+	try-initialize();
 	$lock.protect({
 		return $_ with %loggers{$trait};
 		create-and-store-logger($trait);
@@ -675,6 +735,7 @@ sub get-logger(Str:D $trait --> Logger:D) is export(:MANDATORY) {
 }
 
 sub get-logger-pure(Str:D $trait --> Logger:D) is export(:configure) {
+	try-initialize();
 	$lock.protect({
 		return $_ with %loggers-pure{$trait};
 		create-and-store-logger($trait);
@@ -682,6 +743,7 @@ sub get-logger-pure(Str:D $trait --> Logger:D) is export(:configure) {
 }
 
 sub remove-logger(Str:D $trait --> Logger) is export(:configure) {
+	try-initialize();
 	$lock.protect({
 		my $old = %loggers{$trait}:delete;
 		%loggers-pure{$trait}:delete;
@@ -698,10 +760,6 @@ sub create-and-store-logger($trait) {
 	(%cliches-to-loggers{$cliche.name} //= SetHash.new){$trait} = True;
 
 	return $logger-pure;
-}
-
-INIT {
-	initialize;
 }
 
 END {
