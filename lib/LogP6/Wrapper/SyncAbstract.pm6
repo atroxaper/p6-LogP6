@@ -1,4 +1,7 @@
+use LogP6::Wrapper;
 use LogP6::Logger;
+use LogP6::ConfigFile;
+use LogP6 :configure;
 
 class LogP6::Wrapper::SyncAbstract does LogP6::Logger {
 	has LogP6::Logger:D $.aggr is required;
@@ -30,4 +33,22 @@ class LogP6::Wrapper::SyncAbstract does LogP6::Logger {
 	method info(*@args, :$x)  { self.sync(get-context);  $!aggr.info(|@args, :$x)}
 	method warn(*@args, :$x)  { self.sync(get-context);  $!aggr.warn(|@args, :$x)}
 	method error(*@args, :$x) { self.sync(get-context); $!aggr.error(|@args, :$x)}
+}
+
+class LogP6::Wrapper::SyncAbstract::Wrapper does LogP6::Wrapper {
+	has $.config-path;
+
+	method wrap(LogP6::Logger:D $logger --> LogP6::Logger:D) { ... }
+
+	submethod TWEAK() {
+		my $path = $!config-path && $!config-path.trim;
+		$path = $path.Bool && $path.IO.e ?? $path !! Any;
+		$path //= default-config-path();
+		return without $path;
+		my $tap;
+		$tap = IO::Notification.watch-path($path).act( -> $change {
+			$tap.close;
+			init-from-file($path);
+		});
+	}
 }

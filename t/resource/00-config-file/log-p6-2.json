@@ -13,8 +13,13 @@
 	"default-level":  "debug",
 	"default-first-level-check": true,
 	"default-wrapper": {
-		"type": "time",
-		"seconds": 60
+		"type": "custom",
+		"require": "LogP6::Wrapper::SyncTime",
+		"fqn-class": "LogP6::Wrapper::SyncTime::Wrapper",
+		"args": {
+			"seconds": 60,
+			"config-path": "./t/resource/00-config-file/log-p6-1.json"
+		}
 	},
 	"writers": [
 		{

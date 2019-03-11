@@ -6,7 +6,6 @@ use LogP6::WriterConf::Std;
 use LogP6::FilterConf::Std;
 use LogP6::Level;
 use LogP6::Cliche;
-use LogP6::Wrapper::SyncTime;
 use LogP6::Wrapper::Transparent;
 
 class LogP6::Config {
@@ -20,6 +19,17 @@ class LogP6::Config {
 	has $.default-level;
 	has $.default-first-level-check;
 	has $.default-wrapper;
+}
+
+sub default-config-path() is export {
+	my $env = %*ENV<LOG_P6_JSON>;
+	if $env.defined && $env.trim.Bool {
+		return $env.trim;
+	} elsif './log-p6.json'.IO.e {
+		return './log-p6.json';
+	} else {
+		Nil;
+	}
 }
 
 sub parse-config(IO() $file-path) is export {
@@ -158,15 +168,25 @@ sub handle(\json) {
 sub custom(\json) {
 	my \my-require = json<require>;
 	my \fqn-method = json<fqn-method>;
+	my \fqn-class = json<fqn-class>;
 	my \args = json<args> // %();
 	die 'Missing \'require\' field in custom definition' without my-require;
-	die 'Missing \'fqn-method\' field in custom definition' without fqn-method;
-	die '\'Args\' field are not Associative in cusom definition'
+	die "Missing both 'fqn-method' and 'fqn-class' fields in custom definition"
+		if !fqn-method.defined && !fqn-class.defined;
+	die "Defined both 'fqn-method' and 'fqn-class' fields in custom definition"
+		if fqn-method.defined && fqn-class.defined;
+	die "'args' field are not Associative in cusom definition"
 		unless args ~~ Associative;
 
 	require ::(my-require);
-	my &method = ::(fqn-method);
-	return method(|args);
+	with fqn-method {
+		my &method = ::(fqn-method);
+		return method(|args);
+	}
+	with fqn-class {
+		my $class-name = ::(fqn-class);
+		return $class-name.new(|args);
+	}
 }
 
 sub level(\json) {
@@ -198,12 +218,6 @@ sub matcher(\json) {
 sub wrapper(\json) {
 	return LogP6::Wrapper without json;
 	given json<type> {
-		when 'time' {
-			die 'Missing \'seconds\' field in time wrapper-factory'
-				without json<seconds>;
-			return LogP6::Wrapper::SyncTime::Wrapper
-					.new(seconds => json<seconds>);
-		}
 		when 'transparent' {
 			return LogP6::Wrapper::Transparent::Wrapper.new;
 		}

@@ -17,6 +17,7 @@ unit module LogP6;
 # (22). Separate writers and filters and cliches to separate files
 # (6). init from file
 # 11. docs docs docs
+# 23. sync wrapper from file
 # 8. improve exceptions
 # 21. add params for %trait in pattern
 # 22. try make entities immutable (filters, writes, loggers)
@@ -82,14 +83,7 @@ my role GroovesPartsManager[$lock, $part-name, ::Type, ::NilType] { ... }
 sub try-initialize() {
 	$lock.protect({
 		unless $initialized {
-			my $env = %*ENV<LOG_P6_JSON>;
-			if $env.defined && $env.trim.Bool {
-				init-from-file($env.trim);
-			} elsif './log-p6.json'.IO.e {
-				init-from-file('./log-p6.json');
-			} else {
-				init-from-file(Any);
-			}
+			init-from-file(default-config-path());
 		}
 	});
 }

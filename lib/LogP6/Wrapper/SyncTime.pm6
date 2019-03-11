@@ -6,14 +6,23 @@ class LogP6::Wrapper::SyncTime is LogP6::Wrapper::SyncAbstract {
 	has Int:D $.seconds is required;
 
 	method sync($context) {
-		my DateTime $last = self.get-sync-obj // DateTime.now;
+		$context.clean();
+		my $last = self.get-sync-obj;
+		without $last {
+			$last = DateTime.now;
+			self.put-sync-obj($last);
+		}
 		my $now = $context.date;
-		self.update-aggr if $now - $last > $!seconds;
-		self.put-sync-obj($now);
+		if $now - $last > $!seconds {
+			self.update-aggr;
+			self.put-sync-obj($now);
+		}
 	}
 }
 
-class LogP6::Wrapper::SyncTime::Wrapper does LogP6::Wrapper  {
+class LogP6::Wrapper::SyncTime::Wrapper
+		is LogP6::Wrapper::SyncAbstract::Wrapper
+{
 	has Int:D $.seconds is required;
 	has &.get-logger-pure;
 
