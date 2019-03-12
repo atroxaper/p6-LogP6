@@ -5,23 +5,13 @@ use LogP6::FilterConf::Std;
 class LogP6::LoggerPure does LogP6::Logger {
 	has Str:D $.trait is required;
 	has List:D $.grooves is required;
-	has $!reactive-filter;
+	has LogP6::Level $!reactive-level;
 
 	submethod TWEAK() {
 		die 'pure logger with empty grooves: ' ~ $!trait if $!grooves.elems < 1;
-		# find minimum level of all grooves filters
-		# if any filter has no first-level-check then use trace as minimum level
-		my $min-level = error;
-		for @$!grooves -> $groove {
-			$min-level = min($groove[1].level, $min-level);
-			unless $groove[1].first-level-check {
-				$min-level = trace;
-				last;
-			}
-		}
-		# filter for decision wo we need to go to grooves or can ignore log
-		$!reactive-filter = LogP6::FilterConf::Std
-			.new(:level($min-level), :first-level-check).make-filter();
+		# use minimum level of all grooves filters reactive-level
+		$!reactive-level =
+				@$!grooves.map(-> $g {$g[1].reactive-level // LogP6::Level::trace}).min;
 	}
 
 	method ndc-push($obj) {
@@ -49,34 +39,33 @@ class LogP6::LoggerPure does LogP6::Logger {
 	}
 
 	method trace(*@args, :$x) {
-		return if !$!reactive-filter.reactive-check(trace);
-		self!log(trace, @args, :$x);
+		return if $!reactive-level > LogP6::Level::trace;
+		self!log(LogP6::Level::trace, @args, :$x);
 	}
 
 	method debug(*@args, :$x) {
-		return if !$!reactive-filter.reactive-check(debug);
-		self!log(debug, @args, :$x);
+		return if $!reactive-level > LogP6::Level::debug;
+		self!log(LogP6::Level::debug, @args, :$x);
 	}
 
 	method info(*@args, :$x) {
-		return if !$!reactive-filter.reactive-check(info);
-		self!log(info, @args, :$x);
+		return if $!reactive-level > LogP6::Level::info;
+		self!log(LogP6::Level::info, @args, :$x);
 	}
 
 	method warn(*@args, :$x) {
-		return if !$!reactive-filter.reactive-check(warn);
-		self!log(warn, @args, :$x);
+		return if $!reactive-level > LogP6::Level::warn;
+		self!log(LogP6::Level::warn, @args, :$x);
 	}
 
 	method error(*@args, :$x) {
-		return if !$!reactive-filter.reactive-check(error);
-		self!log(error, @args, :$x);
+		return if $!reactive-level > LogP6::Level::error;
+		self!log(LogP6::Level::error, @args, :$x);
 	}
 
 	submethod !log($level, @args, :$x) {
 		my LogP6::Context $context = get-context();
 		$context.trait-set($!trait);
-		$context.x-set($x);
 		my $msg = msg(@args);
 		my ($writer, $filter);
 		for @$!grooves -> $groove {

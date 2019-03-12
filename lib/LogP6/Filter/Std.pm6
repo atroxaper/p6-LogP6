@@ -3,10 +3,9 @@ use LogP6::FilterConf;
 use LogP6::Level;
 
 class LogP6::Filter::Std does LogP6::Filter {
-	has LogP6::Level:D $.level is required;
+	has LogP6::Level:D $.reactive-level is required;
 	has List:D $.before-check is required;
 	has List:D $.after-check is required;
-	has Bool:D $.first-level-check is required;
 
 	only method new(LogP6::FilterConf:D $conf, *%defaults) {
 		my $first-level-check = $conf.first-level-check //
@@ -19,15 +18,14 @@ class LogP6::Filter::Std does LogP6::Filter {
 				!! $before.push(&level-check);
 		$before = $before.list;
 		self.bless(
-			level => $level,
+			reactive-level => $first-level-check ?? $level !! LogP6::Level::trace,
 			before-check => $before,
 			after-check => $conf.after-check // (),
-			:$first-level-check
 		);
 	}
 
-	method reactive-check($level) {
-		!$!first-level-check || $!level <= $level;
+	method reactive-level() {
+		$!reactive-level;
 	}
 
 	method do-before($context) {

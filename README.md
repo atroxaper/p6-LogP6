@@ -1,22 +1,30 @@
 [![Build Status](https://travis-ci.org/TODO)](https://travis-ci.org/TODO)
 
-NAME
-====
+# NAME
 
 LogP6 - full customisable and fast logging library inspired by idea of separate
 logging and logging configuration. You can use it not only in apps but even in
 your own libraries.
 
-SYNOPSIS
-========
+# TABLE OF CONTENTS
+- [NAME](#name)
+- [SYNOPSIS](#synopsis)
+- [DESCRIPTION](#description)
+	- [Features](#features)
+	- [Concepts](#concepts)
+	- [Example](#example)
+	- [Context](#context)
+	- [Configuration](#configuration)
+		-[Writer](#configure-writer)
+
+# SYNOPSIS
 
     
 
-DESCRIPTION
-===========
+# DESCRIPTION
 
-Features:
----------
+## Features
+
 1. Possibility to change logger configuration and its behaviour without touching
 the code;
 2. Configuring from the code and/or configuration files;
@@ -28,15 +36,15 @@ the code;
 values from it in the logger;
 8. Pretty fast work. Using pre-calculation as much as it can be done - parse
 logger layout pattern only once, reuse current DateTime objects and so on; 
-9. Possibility to use logger while development - dynamically change logger
-settings in runtime, and while production work - maximum fast, without any lock
-excepts possible IO::Handle implementation's;
+9. Possibility to use logger while development (dynamically change logger
+settings in runtime), and while production work (maximum fast, without any lock
+excepts possible IO::Handle implementation's);
 10. TODO stateless and immutable
 
-Concepts:
----------
+## Concepts
+
 - **Writer** - an object which know how and where logs must be written. In simple
-case - which file and string format will be used. 
+case - which file and string format pattern will be used. 
 - **Filter** - an object which know which logs must be written. In simple case -
 logs with which levels are allowed to pass to the Writer.
 - **Cliche** - template for creating Logger. Contains writers, filters and other
@@ -55,14 +63,14 @@ for logging like final user log message, user's exception, log level user want,
 current date, thread name and so on. Context can be used for storing some
 specific information you (and logger system) need while logging. 
 
-Example:
---------
+## Example
+
 Using logger:
 ```perl6
-use LogP6;                     # use library in general mode
-my \log = get-logger('audit'); # create or get logger with 'audit' trait
-log.info('property ' ~ 'foo' ~ ' setted as ' ~ 5); # log string with concatenation
-log.info('property %s setted as %d', 'foo', 5);    # log sprintf like style
+use LogP6;                     				# use library in general mode
+my \log = get-logger('audit'); 				# create or get logger with 'audit' trait
+log.info('property ' ~ 'foo' ~ ' setted as ' ~ 5); 	# log string with concatenation
+log.info('property %s setted as %d', 'foo', 5);    	# log sprintf like style
 ```
 
 Configure in the code style:
@@ -71,21 +79,21 @@ use LogP6 :configure;   # use library in configure mode
 cliche(                 # create a cliche
   :name<cl>,            # obligatory unique cliche name
   :matcher<audit>,      # obligatory matcher
-  grooves => (          # optional list of writer-filter pairs (or their names)
-    writer(:pattern('%level| %msg'), :handle($*ERR)),   # create anonymous (w/o name) writer
-    filter(:level($debug))));                           # create anonymous (w/o name) filter
+  grooves => (          				# optional list of writer-filter pairs (or their names)
+    writer(:pattern('%level| %msg'), :handle($*ERR)),   # create anonymous (w/o name) writer configuration
+    filter(:level($debug))));                           # create anonymous (w/o name) filter configuration
 ```
 
-Configure in the configuration file style:
+Configure in the configuration file style (same as above):
 ```json
 {
-  "writers": [{               # describe all your writes
+  "writers": [{               # describe all your writer configurations
     "type": "std",
     "name": "w",              # obligatory unique writer name
     "pattern": "%level | %msg",
     "handle": { "type": "std", "path": "err" }
   }],
-  "filters": [{               # describe all your filters
+  "filters": [{               # describe all your filter configurations
     "type": "std",
     "name": "f",              # obligatory unique filter name
     "level": "debug"
@@ -93,31 +101,62 @@ Configure in the configuration file style:
   "cliches": [{               # describe all your cliches
     "name": "cl",             # obligatory unique cliche name
     "matcher": "audit",       # obligatory matcher
-    "grooves": [ "w", "f" ]   # optional list of writer-filter names pairs 
+    "grooves": [ "w", "f" ]   # optional list of writer-filter configurations names pairs 
   }]
 }
 ```
 
-Context:
---------
+## Context
 
-Writer:
--------
+LogP6 library adds an object associated with each Thread - `Logger Context` or
+just `Context`. User can work with the `Context` directly in `Filter` subsystem
+or in custom `Writer` implementations. Also `Logger` has special methods
+for working with `NDC` and `MDC` (see below in [Logger](#logger)). For more
+information please look at methods' declarators in `LogP6::Context`.
 
-Filter:
--------
+## Writer
+
+`Writer` is responsible to write all corresponding data to corresponding output
+in some format. It has only one method `write($context){...}`. All data can be
+retrieved from specified `Context`.
+
+`Writer` creates by `WriterConf` - a configuration object which contains all
+necessary information and algorithm for creating a concrete `Writer` instance.
+(see below in [Configure Writer](#configure-writer)).
+
+## Filter
+
+`Filter` is responsible to decide allow the corresponding `Writer` to write log
+or not. It has three methods:
+
+- `do-before($context){...}` - some code which decides allow log or not.
+If the method returns False the log are forbidden; otherwise True;
+- `reactive-check($level){...}` - in most cases filtering can be done only by
+log level. This method will be called before `do-before` method. If the method
+returns False the log are forbidden; otherwise True;
+
+`Filter` creates by `FilterConf` - a configuration object which contains all
+necessary information and algorithm for creating a concrete `Filter` instance.
+(see below in [Configure Filter](#configure-filter)).
+
+## NDC
+
+## MDC
 
 Cliche:
 -------
 
-Logger:
--------
+## Logger
+
 
 Logger Wrapper:
 ---------------
 
+## Synchronisation of configuration and Logger instance
+
 Configuration:
 --------------
+Изменения вступают в силу сразу.
 
 AUTHOR
 ======
