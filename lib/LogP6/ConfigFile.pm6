@@ -218,6 +218,19 @@ sub matcher(\json) {
 sub wrapper(\json) {
 	return LogP6::Wrapper without json;
 	given json<type> {
+		when 'time' {
+			die "Missing 'seconds' field in time wrapper-factory"
+				without json<seconds>;
+			return custom(%(
+				:type<custom>,
+				:require<LogP6::Wrapper::SyncTime>,
+				:fqn-class<LogP6::Wrapper::SyncTime::Wrapper>,
+				args =>  %(
+					seconds => json<seconds>,
+					config-path => json<config-path>
+				)
+			));
+		}
 		when 'transparent' {
 			return LogP6::Wrapper::Transparent::Wrapper.new;
 		}

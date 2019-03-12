@@ -6,7 +6,7 @@ class LogP6::Wrapper::SyncTime is LogP6::Wrapper::SyncAbstract {
 	has Int:D $.seconds is required;
 
 	method sync($context) {
-		$context.clean();
+		$context.date-clean();
 		my $last = self.get-sync-obj;
 		without $last {
 			$last = DateTime.now;
