@@ -117,12 +117,23 @@ information please look at methods' declarators in `LogP6::Context`.
 ## Writer
 
 `Writer` is responsible to write all corresponding data to corresponding output
-in some format. It has only one method `write($context){...}`. All data can be
-retrieved from specified `Context`.
+in some format. It has only one method: 
+
+- `write($context){...}` - this method have to take all necessary data from the
+specified `Context` and use it for writing. Note: the specified `Context` will
+change its data after method call. Do not cache the context itself (for example
+for asynchronous writing) but only its data.
 
 `Writer` creates by `WriterConf` - a configuration object which contains all
 necessary information and algorithm for creating a concrete `Writer` instance.
 (see below in [Configure Writer](#configure-writer)).
+`WriterConf` has methods:
+
+- `method name(){...}` -
+- `clone-with-name($name){...}` -
+- `self-check(){}` - 
+- `make-writer(){...}`
+- `close(){...}`
 
 ## Filter
 
@@ -131,9 +142,10 @@ or not. It has three methods:
 
 - `do-before($context){...}` - some code which decides allow log or not.
 If the method returns False the log are forbidden; otherwise True;
-- `reactive-check($level){...}` - in most cases filtering can be done only by
+- `reactive-level(){}` - in most cases filtering can be done only by
 log level. This method will be called before `do-before` method. If the method
 returns False the log are forbidden; otherwise True;
+- `do-after($context){}` - 
 
 `Filter` creates by `FilterConf` - a configuration object which contains all
 necessary information and algorithm for creating a concrete `Filter` instance.
