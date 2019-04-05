@@ -1,12 +1,12 @@
 use LogP6::Level;
 
 role LogP6::Filter {
-	#|[Log level which allows logger to call do-before method. If log level
-	#| importance is less then reactive level then the log will be discarded
-	#| without calling do-before method. Default value is 'trace'.
+	#|[Log level which allows logger to call do-before method. If filtering log's
+	#| level importance is less then returned reactive level then the log will be
+	#| discarded without calling do-before method. Default value is 'trace'.
 	#|
 	#| Note: the method can be called only ones and the result can be cached
-	#| in the logger.]
+	#	#| in the logger.]
 	method reactive-level() { #`[is not a stub] }
 
 	#|[Decide allow log to be pass to the writer or not. If it returns True then

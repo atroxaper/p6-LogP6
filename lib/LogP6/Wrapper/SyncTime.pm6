@@ -2,7 +2,9 @@ use LogP6::Wrapper;
 use LogP6::Wrapper::SyncAbstract;
 use LogP6::LogGetter;
 
+#| Wrapper for synchronize a logger each X seconds itself.
 class LogP6::Wrapper::SyncTime is LogP6::Wrapper::SyncAbstract {
+	#| How often a logger have to be updated
 	has Int:D $.seconds is required;
 
 	method sync($context) {
@@ -20,10 +22,12 @@ class LogP6::Wrapper::SyncTime is LogP6::Wrapper::SyncAbstract {
 	}
 }
 
+#| Wrapper logic for synchronize a logger each X seconds.
 class LogP6::Wrapper::SyncTime::Wrapper
-		is LogP6::Wrapper::SyncAbstract::Wrapper
-{
+		is LogP6::Wrapper::SyncAbstract::Wrapper {
+	#| How often a logger have to be updated
 	has Int:D $.seconds is required;
+	#| Method for retrieving the new logger
 	has &.get-logger-pure;
 
 	method wrap(LogP6::Wrapper::SyncTime::Wrapper:D:

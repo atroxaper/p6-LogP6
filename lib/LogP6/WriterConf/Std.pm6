@@ -9,15 +9,15 @@ class LogP6::WriterConf::Std does LogP6::WriterConf {
 	has IO::Handle $.handle;
 	has Bool $.auto-exceptions;
 
-	method name() {
+	method name(--> Str) {
 		$!name;
 	}
 
-	method clone-with-name($name) {
+	method clone-with-name($name --> LogP6::WriterConf:D) {
 		self.clone(:$name);
 	}
 
-	method self-check() {
+	method self-check(--> Nil) {
 		return True without $!pattern;
 		X::LogP6::PatternIsNotValid.new(:$!pattern).throw
 				unless so Grammar.parse($!pattern);
@@ -27,7 +27,7 @@ class LogP6::WriterConf::Std does LogP6::WriterConf {
 		LogP6::Writer::Std.new(self, |%defaults);
 	}
 
-	method close() {
+	method close(--> Nil) {
 		with $!handle {
 			$!handle.close unless $!handle eqv $*OUT || $!handle eqv $*ERR
 		}

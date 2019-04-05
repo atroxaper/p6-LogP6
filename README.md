@@ -14,8 +14,19 @@ your own libraries.
 	- [Concepts](#concepts)
 	- [Example](#example)
 	- [Context](#context)
-	- [Configuration](#configuration)
-		-[Writer](#configure-writer)
+	- [Writer](#writer)
+	- [Filter](#filter)
+	- [Nested Diagnostic Context (NDC) and Mapped Diagnostic Context (MDC)](#nested-diagnostic-context-ndc-and-mapped-diagnostic-context-mdc)
+	- [Logger](#logger)
+	- [Logger Wrapper](#logger-wrapper)
+		- [Synchronisation of configuration and Logger instance](#synchronisation-of-configuration-and-logger-instance)
+- [CONFIGURATION](#configuration)
+- [EXAMPLES](#examples)
+- [BEST PRACTICE](#best-practice)
+- [KNOWN ISSUES](#known-issues)
+- [ROADMAP](#roadmap)
+- [AUTHOR](#author)
+- [COPYRIGHT AND LICENSE](#copyright-and-license)
 
 # SYNOPSIS
 
@@ -126,59 +137,116 @@ for asynchronous writing) but only its data.
 
 `Writer` creates by `WriterConf` - a configuration object which contains all
 necessary information and algorithm for creating a concrete `Writer` instance.
-(see below in [Configure Writer](#configure-writer)).
-`WriterConf` has methods:
-
-- `method name(){...}` -
-- `clone-with-name($name){...}` -
-- `self-check(){}` - 
-- `make-writer(){...}`
-- `close(){...}`
+(see below in [Writer configuration](#writer-configuration)).
 
 ## Filter
 
 `Filter` is responsible to decide allow the corresponding `Writer` to write log
 or not. It has three methods:
 
-- `do-before($context){...}` - some code which decides allow log or not.
-If the method returns False the log are forbidden; otherwise True;
+- `do-before($context){...}` - some code which decides allow log to be pass to
+the writer or not. If it returns True then the log will be pass to the writer.
+Otherwise the log will be discarded.
 - `reactive-level(){}` - in most cases filtering can be done only by
-log level. This method will be called before `do-before` method. If the method
-returns False the log are forbidden; otherwise True;
-- `do-after($context){}` - 
+log level. This method returns a log level which allows logger to call
+`do-before` method. If filtering log's level importance is less then returned
+reactive level then the log will be discarded without calling `do-before`
+method.
+- `do-after($context){}` - any code which have to be executed after the writer
+work in case when `do-before` method returns True.
 
 `Filter` creates by `FilterConf` - a configuration object which contains all
 necessary information and algorithm for creating a concrete `Filter` instance.
 (see below in [Configure Filter](#configure-filter)).
 
-## NDC
+## Nested Diagnostic Context (NDC) and Mapped Diagnostic Context (MDC)
 
-## MDC
-
-Cliche:
--------
+There are cases when we want to trace some information through group of log
+message, but not only in one message. For example, used id, http session
+number or so. In such cases we have to store the information somewhere, pass
+it through logic subs and methods and pass to log methods over and over again.
+Since log system have to be separated from the main logic then we need a special
+place to store the information. That place is a Nested Diagnostic Context
+(`NDC`) - a stack structure and a Mapped Diagnostic Context (`MDC`) - a map
+structure. User can push/pop values in `NDC` and put/delete values in `MDC`.
+Standard writer has special placeholders for message pattern
+(see below in [Writer configuration](#writer-configuration)) for put all values from
+`NDC` or some kay associated value from `MDC` to final log message string.
 
 ## Logger
 
+The logger is an immutable object that contains from zero to several pairs of 
+writer and filter. For each time the user want to log some message (with or
+without arguments) the logger compiles message+arguments in one `msg string`,
+updates the [logger context](#context) and goes through `writer-filter` pairs -
+call `filter`'s methods and if it pass then ask a writer to write `msg string`.
+The `writer` takes all necessary information such as `msg string`, log level,
+`ndc/mdc` values, current date-time and so from the `context`.
 
-Logger Wrapper:
----------------
+## Logger Wrapper
 
-## Synchronisation of configuration and Logger instance
+System to wrap (or decorate) logger object into another and add additional
+logic. User can describe `logger wrapper factory` which will wrap any created
+`logger`.
 
-Configuration:
---------------
-Изменения вступают в силу сразу.
+### Synchronisation of configuration and Logger instance
 
-AUTHOR
-======
+An example of usage a logger wrapper is synchronisation a logger configuration
+and logger instance. It may be useful in case of development or debug session
+when a user what to change logger configuration dynamically.
+
+Since a logger object are immutable and cannot know about changes in
+configuration it produced, we need a logic for checking if user updated
+corresponding configuration and updating the logger instance.
+
+User can specify any kind of wrapper for synchronization a logger. There are
+helper class `LogP6::Wrapper::SyncAbstract` to create your own synchronization
+wrappers.
+
+For now there is only one synchronization wrapper -
+`LogP6::Wrapper::SyncTime::Wrapper`. The wrapper check the new configuration
+(in a configuration file or in code) each `X` seconds.
+
+# CONFIGURATION
+
+## Retrieve logger
+
+## Factory methods....
+
+## Configuration file....
+
+## Writer configuration
+### WriterConf
+### Std
+### Pattern
+### Writer factory methods
+### Writer configuration file
+
+## Filter configuration
+### FilterConf
+### Std
+### Filter factory methods
+### Filter configuration file
+
+## Cliche
+### Cliche factory methods
+### Cliche configuration file
+
+# EXAMPLES
+
+# BEST PRACTICE
+
+# KNOWN ISSUES
+
+# ROADMAP
+
+# AUTHOR
 
 Mikhail Khorkov <atroxaper@cpan.org>
 
 Source can be located at: https://github.com/TODO . Comments and Pull Requests are welcome.
 
-COPYRIGHT AND LICENSE
-=====================
+# COPYRIGHT AND LICENSE
 
 Copyright 2018 Mikhail Khorkov
 
