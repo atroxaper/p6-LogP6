@@ -179,7 +179,7 @@ grammar Grammar is export {
 	token date-param:sym<msecond> { '$mss' }
 	token date-param:sym<zone> { '$z' }
 	token date-param:sym<glue> { $<text>=<-[$}]>+ }
-	# %level{WARN=W, DEBUG=D, ERROR=E, TRACE=T, INFO=I, length=2}
+	# %level{WARN=W DEBUG=D ERROR=E TRACE=T INFO=I length=2}
 	token item:sym<level> { '%level'<level-params>? }
 	token level-params { \{ <level-param>+ \} }
 	proto rule level-param { * }

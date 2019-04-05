@@ -21,6 +21,15 @@ your own libraries.
 	- [Logger Wrapper](#logger-wrapper)
 		- [Synchronisation of configuration and Logger instance](#synchronisation-of-configuration-and-logger-instance)
 - [CONFIGURATION](#configuration)
+	- [Logger retrieve](#logger-retrieve)
+	- [Factory methods](#factory-methods)
+	- [Configuration file](#configuration-file)
+	- [Writer configuration](#writer-configuration)
+		- [WriterConf](#writerconf)
+		- [Standard WriterConf](#standard-writerconf)
+		- [Pattern](#pattern)
+		- [Writer factory methods](#writer-factory-methods)
+		- [Writer configuration file](#writer-configuration-file)
 - [EXAMPLES](#examples)
 - [BEST PRACTICE](#best-practice)
 - [KNOWN ISSUES](#known-issues)
@@ -135,10 +144,6 @@ specified `Context` and use it for writing. Note: the specified `Context` will
 change its data after method call. Do not cache the context itself (for example
 for asynchronous writing) but only its data.
 
-`Writer` creates by `WriterConf` - a configuration object which contains all
-necessary information and algorithm for creating a concrete `Writer` instance.
-(see below in [Writer configuration](#writer-configuration)).
-
 ## Filter
 
 `Filter` is responsible to decide allow the corresponding `Writer` to write log
@@ -176,12 +181,26 @@ Standard writer has special placeholders for message pattern
 ## Logger
 
 The logger is an immutable object that contains from zero to several pairs of 
-writer and filter. For each time the user want to log some message (with or
-without arguments) the logger compiles message+arguments in one `msg string`,
-updates the [logger context](#context) and goes through `writer-filter` pairs -
-call `filter`'s methods and if it pass then ask a writer to write `msg string`.
-The `writer` takes all necessary information such as `msg string`, log level,
-`ndc/mdc` values, current date-time and so from the `context`.
+`writer` and `filter` (`grooves`). For each time the user want to log some
+message (with or without arguments) the logger compiles message+arguments in
+one `msg string`, updates the [logger context](#context) and goes through
+`grooves` - call `filter`'s methods and if it pass then ask a writer to write 
+`msg string`. The `writer` takes all necessary information such as `msg string`,
+log level, `ndc/mdc` values, current date-time and so from the `context`.
+
+Logger has the following methods:
+
+- `trait(){...}` - returns logger trait;
+- `ndc-push($obj){...}`, `ndc-pop(){...}`, `ndc-clean(){...}` - working with
+NDC;
+- `mdc-put($key, $obj){...}`, `mdc-remove($key){...}`, `mdc-clean(){...}` - 
+working with MDC;
+- `trace(*@args, :$x){...}`, `debug(*@args, :$x){...}`,
+`info(*@args, :$x){...}`, `warn(*@args, :$x){...}`, `error(*@args, :$x){...}` -
+log arguments with specified importance log level. `:$x` is an optional
+exception argument. `@args` - data for logging. If the array has more then one
+element then the first element is used as format for sprintf sub and the rest
+element as sprintf args;
 
 ## Logger Wrapper
 
@@ -209,18 +228,196 @@ For now there is only one synchronization wrapper -
 
 # CONFIGURATION
 
-## Retrieve logger
+For working with `LogP6` system a user have to `use LogP6;` module. Without any
+tags it provides sub for only retrieving a logger. `:configure` tag provides
+factory methods for configuring loggers from the code. Another option to
+configure logger is using configuration file.
 
-## Factory methods....
+## Logger retrieve
 
-## Configuration file....
+For retrieve a logger user have to use `LogP6` module and call `get-logger` sub
+with logger trait he need. Example:
+
+```perl6
+use LogP6;
+
+my $log = get-logger('main');
+# using $log ...
+```
+
+If user did not configure a `Cliche`
+(see [Standard configuration](#standard-configuration)) for specified logger
+trait ('main' in example), the default logger will be returned. In other case
+the logger created by the cliche with matcher the trait satisfy will be
+returned.
+
+## Factory methods
+
+`LogP6` provides method for configure loggers from the code dynamically.
+To get access to them you have to `use LogP6` with `:configure` tag. There are 
+methods for configuring `filters`, `writers`, `cliches` and any default values
+like `writer pattern`, `logger wrapper` or so. Concrete methods will be
+described in corresponding sections below. Example:
+
+```perl6
+use LogP6 :configure;
+
+set-default-level($debug);    # set default logger level as debug
+my $log = get-logger('main');
+$log.debug('msg');
+```
+
+## Configuration file
+
+Better alternative (especially for production using) or configuration by factory
+methods is configuration file. You can specify path to it through `LOG_P6_JSON`
+system environment variable. In case the variable is empty then standard path
+`./log-p6.json` will be used. If the file will be missed then standard
+configuration will be used.
+
+Configuration file is json like formatted file like:
+
+```json
+{
+  "default-pattern": "%msg",
+  "default-level":  "trace",
+  "default-handle": { "type": "std", "path": "err" },
+  "writers": [{ "type": "std", "name": "w" }],
+  "filters": [{ "type": "std", "name": "f" }],
+  "cliches": [{ "name": "c2", "matcher": "main" }]
+}
+```
+Concrete format for concrete objects will be described in corresponding
+sections below.
+
+Some object like `writers`, `wrappers` or so have a `type` filed. Each object
+has its own list of available types. There are type which can be used in any 
+object - `custom`. It uses to describe factory method or class which will be
+used to produce the object. It require additional fields:
+- `require` - name of module with method or class;
+- `fqn-method` or `fqn-class` - full qualified name of method or class in
+`require` module;
+- `args` - list of named arguments which will pass to `fqn-method()` or
+`fqn-class.new()`.
+
+For example, creating IO::Handle by `create-handle` method in `MyModule` with
+arguments `:path<out.txt>, :trait<rw>`:
+
+```json
+{
+  "default-handle": {
+    "type": "custom",
+    "require": "MyModule",
+    "fqn-method": "MyModule::EXPORT::DEFAULT::&create-handle",
+    "args": { "path": "out.txt", "trait": "rw" }
+  }
+}
+``` 
 
 ## Writer configuration
+
 ### WriterConf
-### Std
+
+`WriterConf` is a configuration object which contains all necessary information
+and algorithm for creating a concrete `Writer` instance. For more
+information please look at methods' declarators in `LogP6::WriterConf`.
+	
+### Standard WriterConf
+
+Standard `WriterConf` (`LogP6::WriterConf::Std`) writes log message to abstract
+`IO::Handle`. It has a `pattern` - string with special placeholders for
+values like `ndc`, current `Thread` name, log message and so. `Writer` will 
+put all necessary values into `pattern` and write it to handle. Also standard
+`WriterConf` has boolean `auto-exceptions` property - if it is `True` then
+placeholder for exception will be concatenated to the `pattern` automatically.
+Form of the exception placeholder can be configured separately
+(see [Defaults](#defaults) and [Cliche](#cliche)).
+
 ### Pattern
+
+Pattern placeholders starts with `%` symbol following placeholder name. If
+placeholder has arguments they can be passed in curly brackets following
+placeholder name.
+ 
+Pattern can has the following placeholders:
+
+- `%trait` - for name of logger trait;
+- `%tid` - for current `Thread` id;
+- `%tname` - for current `Thread` name;
+- `%msg` - for log message;
+- `%ndc` - for full NDC array joined by space symbol;
+- `%mdc{obj_key}` - for MDC value with `obj_key` key;
+- `%x{$msg $name $trace}` - for exception. String in curly brackets is used as
+subpattern. `$msg` - optional exception message, `$name` - optional exception
+name, `$trace` - optional exception stacktrace. For example,
+`%x{($name '$msg') Trace: $trace}` can be converted into
+`(X::AdHoc 'test exception') Trace: ...`;
+- `%level{WARN=W DEBUG=D ERROR=E TRACE=T INFO=I length=2}` - log importance
+level. By default logger will use level name in upper case but you can
+specify synonyms for all (or part) of them in curly brackets in format
+`<LEVEL_NAME>=<sysnonym>`. Also you can specify a length of log level name.
+Default length is 5. For example `[%level{WARN=hmm ERROR=alarm length=5}]` can
+be converted into `[hmm  ]`, `[alarm]`, `[INFO ]`, `[DEBUG]`;
+- `%date{$yyyy-$yy-$MM-$MMM-$dd $hh:$mm:$ss:$mss $z}` - current date and time.
+String in curly brackets is used as
+subpattern.
+	- `$yyyy`, `$yy` - year in 4 and 2 digits format;
+	- `$MM`, `$MMM` - month in 2 digits and short name format;
+	- `$dd` - day in 2 digit format;
+	- `$hh`, `$mm`, `$ss`, `$mss` - hours, minutes, seconds and milliseconds
+	- `$z` - timezone
+
 ### Writer factory methods
+
+`LogP6` module has the following subs for manage writers configurations:
+
+- `get-writer(Str:D $name --> LogP6::WriterConf)` - gets writer with specified
+name
+- `writer(:$name, :$pattern, :$handle, :$auto-exceptions, :create, :update, :replace)` -
+create, update or replace standard `WriterConf` with specified name. If you want
+to `:update` only concrete fields in already created configuration then the rest
+fields will not be changed. In case of `:replace` the new configuration will be
+created and replaced the old one. You can create configuration without name -
+then the configuration will not be stored, but only returned to you. The method
+returns the old writer configuration (`:update`, `:replace`) and the new one
+(`:create`);
+- `writer(LogP6::WriterConf:D $writer-conf, :create, :replace)` -
+create or replace any implementation of `WriterConf`. The configuration name
+will be retrieved from the argument itself; The method returns the old writer
+configuration (`:replace`) and the new one (`:create`);
+- `writer(:$name, :$remove)` - remove and return a configuration with specified
+name.
+
 ### Writer configuration file
+
+In configuration file writer configurations have to be listed in `writers`
+array. Only `std` (for standard configuration) and `custom` types are supported.
+
+In case of standard configuration all field are optional excepts `name`. Handle
+can be:
+
+- `file` type for output into file. You can specify `path` and `append`
+arguments;
+- `std` type for output into `$*OUT` or `$*ERR`. You can specify `path` as `out` or
+`err`.
+- `custom` type.
+
+In case of `custom` writer type the result writer configuration have to returns
+not empty name.
+
+Example:
+
+```json
+{
+  ...,
+  "writers": [
+    {"type": "std", "name": "w1", "pattern": "%msg", "handle": {"type": "std", "path": "out"}},
+    {"type": "std", "name": "w2", "handle": {"type": "file", "path": "log.txt", "append": false}},
+    {"type": "custom", "require": "Module", "fqn-method": "Module::EXPORT::DEFAULT::&writer", "args": { "name": "w3" }
+  ],
+  ...
+}
+```
 
 ## Filter configuration
 ### FilterConf
@@ -231,6 +428,12 @@ For now there is only one synchronization wrapper -
 ## Cliche
 ### Cliche factory methods
 ### Cliche configuration file
+
+## Change configuration
+
+## Defaults
+
+## Standard configuration
 
 # EXAMPLES
 
