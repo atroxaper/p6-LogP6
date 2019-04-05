@@ -18,7 +18,7 @@ class LogP6::WriterConf::Std does LogP6::WriterConf {
 	}
 
 	method self-check(--> Nil) {
-		return True without $!pattern;
+		return without $!pattern;
 		X::LogP6::PatternIsNotValid.new(:$!pattern).throw
 				unless so Grammar.parse($!pattern);
 	}
