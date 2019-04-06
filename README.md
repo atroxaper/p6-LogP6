@@ -44,6 +44,11 @@ even in your own libraries.
 	- [Default logger](#default-logger)
 	- [Change configuration](#change-configuration)
 - [EXAMPLES](#examples)
+	- [Use external library witch uses LogP6](#use-external-library-witch-uses-logp6)
+	- [Change console application verbosity level](#change-console-application-verbosity-level)
+	- [Associate logs with concrete user](#associate-logs-with-concrete-user)
+	- [Filter log by its content](#filter-log-by-its-content)
+	- [Use different logger configuration for different logic area](#use-different-logger-configuration-for-different-logic-area)
 - [BEST PRACTICE](#best-practice)
 - [KNOWN ISSUES](#known-issues)
 - [ROADMAP](#roadmap)
@@ -52,7 +57,11 @@ even in your own libraries.
 
 # SYNOPSIS
 
-
+Logger system have to be as much transparent as possible. At the same time it
+have to be fully customisable. It have to provide possibility to change logging
+logic without changing any line of code. It is amazing when you can use logger
+system during developing a library and its user do not feel discomfort of it.
+`LogP6` logger system is all about that.
 
 # DESCRIPTION
 
@@ -71,8 +80,7 @@ values from it in the logger;
 logger layout pattern only once, reuse current DateTime objects and so on; 
 9. Possibility to use logger while development (dynamically change logger
 settings in runtime), and while production work (maximum fast, without any lock
-excepts possible IO::Handle implementation's);
-10. TODO stateless and immutable
+excepts possible IO::Handle implementation's).
 
 ## Concepts
 
@@ -644,12 +652,11 @@ matcher logger trait satisfies then exception will be thrown.
 
 ## Change configuration
 
-Sometimes you may need to change logger configuration during a program
-execution. It can be simply done by factory methods. After calling any factory
-method all loggers for already used `logger traits` will be recreated and you
-can get it by `get-logger($trait)` method. If your already got logger use
-synchronisation wrapper then the wrapper will sync the logger himself
-correspond its algorithm.
+Sometimes you may need to change logger configuration runtime execution. It can 
+be simply done by factory methods. After calling any factory method all loggers
+for already used `logger traits` will be recreated and you can get it by
+`get-logger($trait)` method. If your already got logger use synchronisation
+wrapper then the wrapper will sync the logger himself correspond its algorithm.
 
 Another way of change configuration is using configuration file modification.
 Changes in configuration file will be detected only if you already using any of
@@ -659,11 +666,219 @@ created the new for the file.
 
 # EXAMPLES
 
+Lets explore a few general use cases:
 
+## Use external library witch uses LogP6
+
+`LogP6` can be used during library development and a user of the library wants
+fully turn off any logs from the library. Lets imagine that all libraries
+loggers traits starts with `LIBNAME` letters. In such case we can create a
+`cliche` with corresponding `matcher` and empty `grooves` - all library logs
+will be dropped.
+
+In `Perl 6`:
+
+```perl6
+use LogP6 :configure;
+cliche(:name('turn off LIBNAME'), :matcher(/^LIBNAME .*/), :wrapper(LogP6::Wrapper::Transparent::Wrapper.new));
+```
+
+Or in configuration file:
+
+```json
+{ "cliches": [{"name": "turn off LIBNAME", "matcher": "/^LIBNAME .*/", "wrapper": {"type": "transparent"}}] }
+```
+
+We use wrapper without synchronisation (transparent) because we do not plan to
+change configuration for the library loggers.
+
+## Change console application verbosity level
+
+Lets imagine we writing console application and we want to add flag `--verbose`
+for getting more detail output. Lets using special logger in purpose of
+application console output instead of using simple `say`, and change filter
+level according users choice:
+
+In `Perl 6`:
+
+```perl6
+use LogP6 :configure;
+
+cliche(:name<output>, :matcher<say>, grooves => (writer(:pattern('%msg'), :handle($*OUT)), filter(:name<verbosity>, :level($info))));
+
+sub MAIN(Bool :$verbose) {
+  filter(:name<verbosity>, :level($debug), :update) if $verbose;
+  my $say = get-logger('say');
+  $say.info('Greetings');
+  $say.debug('You set verbose flag to %s value', $verbose);
+}
+```
+
+In that case we do not need to use configuration file. But if ouy want then you
+can remove line with `cliche` creation and add the following configuration file:
+
+```json
+{
+  "writers": [{ "type": "std", "name": "say", "pattern": "%msg", "handle": { "type": "std", "path": "out" }}],
+  "filters": [{ "type": "std", "name": "verbosity", "level": "info"}],
+  "cliches": [{ "name": "output", "matcher": "say", "grooves": [ "say", "verbosity" ]}]
+}
+```
+
+## Associate logs with concrete user
+
+Lets imagine we write a server application. Many users at the same time can
+connect to the server and do some action which produces some logs in log file.
+If some exception will be caught and log we want to reconstruct users execution
+flow to understand what went wrong. But needful logs in log file will be
+alongside with logs from other users actions. In such cases we need to associate
+each log entry with some user id. Then we just can grep log file for the user
+id. For that just use `MDC`.
+
+In `Perl 6`:
+
+```perl6
+use LogP6 :configure;
+
+cliche(:name<logfile>, :matcher<server-log>, grooves => (
+  writer(
+    :pattern('[%date{$hh:$mm:$ss:$mss}][user:%mdc{user-id}]: %msg'),
+    :handle('logfile.log'.IO.open)),
+  level($info)
+));
+
+my $server-log = get-logger('server-log');
+
+sub database-read() { # note we do not pass $user in the sub
+  $server-log.info('read from database'); # [23:35:43:1295][user:717]: read from database
+  # read
+}
+
+sub enter(User $user) {
+  $server-log.mdc-put('user-id', $user.id);
+  $server-log.info('connected');     # [23:35:43:1245][user:717]: connected
+
+  database-read();
+
+  $server-log.info('disconnected');  # [23:35:44:9850][user:717]: disconnected
+  $server-log.mdc-remove('user-id'); # it is not necessary to remove 'user-id' value from MDC 
+}
+```
+
+The same configuration you can write in configuration file:
+
+```json
+{
+  "writers": [{ "type": "std", "name": "logfile", "pattern": "[%date{$hh:$mm:$ss:$mss}][user:%mdc{user-id}]: %msg",
+    "handle": { "type": "file", "path": "logfile.log" }}],
+  "filters": [{ "type": "std", "name": "logfile", "level": "info"}],
+  "cliches": [{ "name": "logfile", "matcher": "server-log", "grooves": [ "logfile", "logfile" ]}]
+}
+```
+
+## Filter log by its content
+
+Lets imagine we have an application which may writes sensible content to log
+file. For example, user passwords. And we want to drop such sensible logs.
+In such case we can use special sub in `do-before` action of log's `filter`.
+
+In `Perl 6`;
+
+```perl6
+unit module Main;
+use LogP6 :configure;
+
+our sub drop-passwords($context) {...}
+
+cliche(:name<sensible>, :matcher<log>, grooves => (
+  writer(:pattern('%msg'), :handle('logfile.log'.IO.open)),
+  filter(:level($info), before-check => (&drop-passwords))
+));
+
+our sub drop-passwords($context) {
+  return False if $context.msg ~~ / password /;
+  # If you want remove password from the log entry instead of drop it
+  # you can remove the password from the message and store in in the context
+  # like:
+  # $context.msg-set(remove-password($context.msg));
+  True;
+}
+
+sub connect(User $user) {
+  get-logger('log').info('user with name %s and password %s connected', $user.id, $user.passwd);
+}
+```
+
+The same configuration you can write in configuration file:
+
+```json
+{
+  "writers": [{ "type": "std", "name": "writer", "pattern": "%msg",
+    "handle": { "type": "file", "path": "logfile.log" }}],
+  "filters": [{ "type": "std", "name": "pass-filter", "level": "info",
+    "before-check": [{ "require": "Main", "fqn-method": "Main::EXPORT::DEFAULT::&drop-passwords" }]}],
+  "cliches": [{ "name": "logfile", "matcher": "server-log", "grooves": [ "writer", "pass-filter" ]}]
+}
+```
+
+## Use different logger configuration for different logic area
+
+Lets imagine we have an application which works with several types of databases.
+For example, Oracle and SQLite. We want to log of work with databases. But we
+want that Oracle related logs stored in `oracle.log` and `database.log` files,
+but SQLite related log stored only in `database.log`. In such case we need one
+simple logger for SQLite related logs and another one (with two grooves) for
+Oracle related logs.
+
+In `Perl 6`:
+
+```perl6
+use LogP6 :configure;
+
+set-default-pattern('%msg');
+writer(:name<database>, :handle('database.log'.IO.open));
+writer(:name<oracle>,   :handle(  'oracle.log'.IO.open));
+filter(:name<filter>, :level($info));
+cliche(:name<oracle>, :matcher<oracle>, grooves => ('database', 'filter', 'oracle', 'filter'));
+cliche(:name<sqlite>, :matcher<sqlite>, grooves => ('database', 'filter'));
+
+sub oracle-db-fetch() {
+  get-logger('oracle').info('fetch data');
+  # fetch
+}
+
+sub sqlite-db-fetch() {
+  get-logger('sqlite').info('fetch data');
+  # fetch
+}
+```
+
+The same configuration you can write in configuration file:
+
+```json
+{
+  "default-pattern": "%msg",
+  "writers": [
+    { "name": "database", "type": "std", "handle": { "type": "file", "path": "database.log"}},
+    { "name": "oracle",   "type": "std", "handle": { "type": "file", "path": "oracle.log"  }}
+  ],
+  "filters": [{ "name": "filter", "type": "std", "level": "info" }],
+  "cliches": [
+    { "name": "oracle", "matcher": "oracle", "grooves": [ "database", "filter", "oracle", "filter" ]},
+    { "name": "sqlite", "matcher": "sqlite", "grooves": [ "database", "filter" ]}
+  ]
+}
+
+```
 
 # BEST PRACTICE
 
+trait in libs
+
 # KNOWN ISSUES
+
+has, sub
+nano watch
 
 # ROADMAP
 
