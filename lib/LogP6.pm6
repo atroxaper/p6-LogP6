@@ -475,6 +475,20 @@ multi sub cliche(LogP6::Cliche:D $cliche --> LogP6::Cliche:D) {
 			:default-first-level-check($cliche.default-first-level-check), :create);
 }
 
+multi sub cliche(LogP6::Cliche:D $cliche, :$create! where *.so
+	--> LogP6::Cliche:D
+) {
+	try-initialize();
+	cliche(:name($cliche.name), :matcher($cliche.matcher),
+			:wrapper($cliche.wrapper), :grooves($cliche.grooves),
+			:default-pattern($cliche.default-pattern),
+			:default-auto-exceptions($cliche.default-auto-exceptions),
+			:default-handle($cliche.default-handle),
+			:default-x-pattern($cliche.default-x-pattern),
+			:default-level($cliche.default-level),
+			:default-first-level-check($cliche.default-first-level-check), :create);
+}
+
 multi sub cliche(LogP6::Cliche:D $cliche, :$replace! where *.so
 	--> LogP6::Cliche:D
 ) {

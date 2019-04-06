@@ -3,8 +3,8 @@
 # NAME
 
 LogP6 - full customisable and fast logging library inspired by idea of separate
-logging and logging configuration. You can use it not only in apps but even in
-your own libraries.
+a logging and its logging configuration. You can use it not only in apps but
+even in your own libraries.
 
 # TABLE OF CONTENTS
 - [NAME](#name)
@@ -38,6 +38,11 @@ your own libraries.
 	- [Defaults](#defaults)
 		- [Defaults factory methods](#defaults-factory-methods)
 		- [Defaults configuration file](#defaults-configuration-file)
+	- [Cliche](#cliche)
+		- [Cliche factory methods](#cliche-factory-methods)
+		- [Cliche configuration file](#cliche-configuration-file)
+	- [Default logger](#default-logger)
+	- [Change configuration](#change-configuration)
 - [EXAMPLES](#examples)
 - [BEST PRACTICE](#best-practice)
 - [KNOWN ISSUES](#known-issues)
@@ -47,7 +52,7 @@ your own libraries.
 
 # SYNOPSIS
 
-    
+
 
 # DESCRIPTION
 
@@ -261,16 +266,19 @@ returned.
 To get access to them you have to `use LogP6` with `:configure` tag. There are 
 methods for configuring `filters`, `writers`, `cliches` and any default values
 like `writer pattern`, `logger wrapper` or so. Concrete methods will be
-described in corresponding sections below. Also five variables for five
+described in corresponding sections below. There is `get-logger-pure($trait)`
+sub for retrieve pure logger without any wrappers. Also five variables for five
 `LogP6::Level` enum values are exported as `$trace`, `$debug`, `$info`, `$warn`
 and `$error`. Example:
 
 ```perl6
 use LogP6 :configure;
 
+set-default-wrapper(LogP6::Wrapper::SyncTime::Wrapper.new); # set default wrapper
 set-default-level($debug);    # set default logger level as debug
-my $log = get-logger('main');
+my $log = get-logger('main'); # get wrapped logger
 $log.debug('msg');
+my $pure-log = get-logger-pure('main'); # this logger will not synchronize its configurations
 ```
 
 ## Configuration file
@@ -553,22 +561,105 @@ filters with `std` type;
 
 `Wrapper` can be:
 
-- `time` type for `LogP6::Wrapper::SyncTime::Wrapper`. It takes required
+- `time` type for `LogP6::Wrapper::SyncTime::Wrapper`. It takes obligatory
 `"seconds": <num>` and optional `"config-path": <string>` addition fields;
 - `transparent` type for `LogP6::Wrapper::Transparent::Wrapper`;
 - `custom` type.
 
 ## Cliche
+
+`Cliche` is a template for creating Logger. Each `Cliche` has
+`Cliche's matcher` - literal or regex field. When you what to get logger for
+some `logger trait` then logger system try to find a `Cliche` with `matcher` the
+the `trait` satisfies (by smartmatch). It there are more then one such `Cliche`
+then the most resent created will be picked. The picked `Cliche`'s content will
+be used for creating the new logger.
+
+`Cliche` contains writers and filters configurations pairs called `grooves` and
+own `defaults` values which overrides global `defaults` values
+(see [Defaults](#defaults)). You can use the same writer and/or filter in
+several `grooves`. It the `grooves` list is empty or missed the created logger
+will drop the all logs you pass to it;
+
 ### Cliche factory methods
+
+`LogP6` module has the following subs for manage cliches configurations:
+
+- `cliche(:$name!, :$matcher!, Positional :$grooves, :$wrapper, :$default-pattern, :$default-auto-exceptions, :$default-handle, :$default-x-pattern, :$default-level, :$default-first-level-check, :create, :$replace)` -
+create or replace cliche with specified name and matcher. All passed `defaults`
+overrides globals `defaults` in withing the `Cliche`. `$grooves` is a
+`Positional` variable with alternating listed `writers` and `filters`. 
+`$grooves` will be flatted before analyze - you can pass into it a list of two
+elements lists or any structure you want. Elements of `$grooves` can be either
+a names of already stored `writers` and `filters`, already stored `writers` and
+`filters` with names or `writers` and `filters` without names. In the last case
+the `writer` or `filter` will be stored with generated UUID name automatically.
+The method returns the old cliche (`:update`, `:replace`) and the new one
+(`:create`);
+- `cliche(LogP6::Cliche:D $cliche, :create, :replace)` - create or replace
+cliche;
+- `cliche(:$name!, :remove)` - remove and return a cliche with specified name.
+
 ### Cliche configuration file
+
+In configuration file cliches have to be listed in `cliches` array. It has the
+following fields:
+
+- `"name": <string>` - obligatory name of cliche;
+- `"matcher": <string>` - cliche matcher. If the matcher value start and ends
+with `/` symbol then the matcher is interpreted as regex; in other case it is a
+literal;
+- `"grooves": [<writer1-name>, <filter1-name>, <writer2-name>, <filter2-name>, ... ]` -
+grooves, name list of writers and filters;
+- defaults - the same fields with the same possible values as described in
+[Defaults configuration file](#defaults-configuration-file) excepts
+`default-wrapper` - you can use just `wrapper` field name.
+
+Example:
+
+```json
+{
+  ...
+  "cliches": [{
+    "name": "c1", "matcher": "/bo .+ om/", "grooves": [ "w1", "f1", "w2", "f1" ],
+    "wrapper": { "type": "transparent" }, "default-pattern": "%level %msg",
+  }]
+  ...
+}
+```
 
 ## Default logger
 
+In any way you configured your loggers by the factory methods or configuration
+file or did not use non of them the `default cliche` will be in the logger
+system. Default cliche corresponds the following configuration:
+`cliche(:name(''), :matcher(/.*/), grooves => (writer(:name('')), filter(:name(''))))`.
+In another words, default cliche has empty string name, matches any trait, has
+only one groove with empty (uses all defaults) writer with empty string name and
+with empty (uses all defaults) filter with empty string name. It means,
+by default you do not need to configure nothing at all. But you can change the
+default cliche or default writer and filter by factory methods or in
+configuration file. Note that if `LogP6` module will not find cliche with
+matcher logger trait satisfies then exception will be thrown.
+
 ## Change configuration
 
-configuration options priority
+Sometimes you may need to change logger configuration during a program
+execution. It can be simply done by factory methods. After calling any factory
+method all loggers for already used `logger traits` will be recreated and you
+can get it by `get-logger($trait)` method. If your already got logger use
+synchronisation wrapper then the wrapper will sync the logger himself
+correspond its algorithm.
+
+Another way of change configuration is using configuration file modification.
+Changes in configuration file will be detected only if you already using any of
+synchronisation wrapper (in `defaults` or in one of `cliches`). After any
+change detection all already configured configuration will be dropped and
+created the new for the file.
 
 # EXAMPLES
+
+
 
 # BEST PRACTICE
 
@@ -580,10 +671,12 @@ configuration options priority
 
 Mikhail Khorkov <atroxaper@cpan.org>
 
-Source can be located at: https://github.com/TODO . Comments and Pull Requests are welcome.
+Source can be located at: https://github.com/TODO . Comments and Pull Requests
+are welcome.
 
 # COPYRIGHT AND LICENSE
 
 Copyright 2018 Mikhail Khorkov
 
-This library is free software; you can redistribute it and/or modify it under the Artistic License 2.0.
+This library is free software; you can redistribute it and/or modify it under
+the Artistic License 2.0.
