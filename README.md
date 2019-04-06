@@ -30,6 +30,14 @@ your own libraries.
 		- [Pattern](#pattern)
 		- [Writer factory methods](#writer-factory-methods)
 		- [Writer configuration file](#writer-configuration-file)
+	- [Filter configuration](#filter-configuration)
+		- [FilterConf](#filterconf)
+		- [Standard FilterConf](#standard-filterconf)
+		- [Filter factory methods](#filter-factory-methods)
+		- [Filter configuration file](#filter-configuration-file)
+	- [Defaults](#defaults)
+		- [Defaults factory methods](#defaults-factory-methods)
+		- [Defaults configuration file](#defaults-configuration-file)
 - [EXAMPLES](#examples)
 - [BEST PRACTICE](#best-practice)
 - [KNOWN ISSUES](#known-issues)
@@ -160,10 +168,6 @@ method.
 - `do-after($context){}` - any code which have to be executed after the writer
 work in case when `do-before` method returns True.
 
-`Filter` creates by `FilterConf` - a configuration object which contains all
-necessary information and algorithm for creating a concrete `Filter` instance.
-(see below in [Configure Filter](#configure-filter)).
-
 ## Nested Diagnostic Context (NDC) and Mapped Diagnostic Context (MDC)
 
 There are cases when we want to trace some information through group of log
@@ -257,7 +261,9 @@ returned.
 To get access to them you have to `use LogP6` with `:configure` tag. There are 
 methods for configuring `filters`, `writers`, `cliches` and any default values
 like `writer pattern`, `logger wrapper` or so. Concrete methods will be
-described in corresponding sections below. Example:
+described in corresponding sections below. Also five variables for five
+`LogP6::Level` enum values are exported as `$trace`, `$debug`, `$info`, `$warn`
+and `$error`. Example:
 
 ```perl6
 use LogP6 :configure;
@@ -273,7 +279,7 @@ Better alternative (especially for production using) or configuration by factory
 methods is configuration file. You can specify path to it through `LOG_P6_JSON`
 system environment variable. In case the variable is empty then standard path
 `./log-p6.json` will be used. If the file will be missed then standard
-configuration will be used.
+configuration will be used (if it exists).
 
 Configuration file is json like formatted file like:
 
@@ -324,13 +330,13 @@ information please look at methods' declarators in `LogP6::WriterConf`.
 	
 ### Standard WriterConf
 
-Standard `WriterConf` (`LogP6::WriterConf::Std`) writes log message to abstract
-`IO::Handle`. It has a `pattern` - string with special placeholders for
-values like `ndc`, current `Thread` name, log message and so. `Writer` will 
-put all necessary values into `pattern` and write it to handle. Also standard
-`WriterConf` has boolean `auto-exceptions` property - if it is `True` then
-placeholder for exception will be concatenated to the `pattern` automatically.
-Form of the exception placeholder can be configured separately
+Standard `WriterConf` (`LogP6::WriterConf::Std`) makes a writer which writes log
+message to abstract `IO::Handle`. It has a `pattern` - string with special
+placeholders for values like `ndc`, current `Thread` name, log message and so.
+`Writer` will put all necessary values into `pattern` and write it to handle.
+Also standard `WriterConf` has boolean `auto-exceptions` property - if it is
+`True` then placeholder for exception will be concatenated to the `pattern`
+automatically. Form of the exception placeholder can be configured separately
 (see [Defaults](#defaults) and [Cliche](#cliche)).
 
 ### Pattern
@@ -373,7 +379,7 @@ subpattern.
 
 - `get-writer(Str:D $name --> LogP6::WriterConf)` - gets writer with specified
 name
-- `writer(:$name, :$pattern, :$handle, :$auto-exceptions, :create, :update, :replace)` -
+- `writer(:$name, :$pattern, :$handle, :$auto-exceptions, :create, :update, :replace --> LogP6::WriterConf)` -
 create, update or replace standard `WriterConf` with specified name. If you want
 to `:update` only concrete fields in already created configuration then the rest
 fields will not be changed. In case of `:replace` the new configuration will be
@@ -381,12 +387,12 @@ created and replaced the old one. You can create configuration without name -
 then the configuration will not be stored, but only returned to you. The method
 returns the old writer configuration (`:update`, `:replace`) and the new one
 (`:create`);
-- `writer(LogP6::WriterConf:D $writer-conf, :create, :replace)` -
+- `writer(LogP6::WriterConf:D $writer-conf, :create, :replace --> LogP6::WriterConf)` -
 create or replace any implementation of `WriterConf`. The configuration name
 will be retrieved from the argument itself; The method returns the old writer
 configuration (`:replace`) and the new one (`:create`);
-- `writer(:$name, :$remove)` - remove and return a configuration with specified
-name.
+- `writer(:$name, :$remove --> LogP6::WriterConf)` - remove and return a
+configuration with specified name.
 
 ### Writer configuration file
 
@@ -409,31 +415,158 @@ Example:
 
 ```json
 {
-  ...,
+  ...
   "writers": [
     {"type": "std", "name": "w1", "pattern": "%msg", "handle": {"type": "std", "path": "out"}},
     {"type": "std", "name": "w2", "handle": {"type": "file", "path": "log.txt", "append": false}},
     {"type": "custom", "require": "Module", "fqn-method": "Module::EXPORT::DEFAULT::&writer", "args": { "name": "w3" }
-  ],
+  ]
   ...
 }
 ```
 
 ## Filter configuration
+
 ### FilterConf
-### Std
+
+`Filter` creates by `FilterConf` - a configuration object which contains all
+necessary information and algorithm for creating a concrete `Filter` instance.
+For more information please look at methods' declarators in `LogP6::FilterConf`.
+
+### Standard FilterConf
+
+Standard `FilterConf` (`LogP6::FilterConf::Std`) has array for `do-before` subs
+and array for `do-after` subs. `Filter` made by standard `FilterConf` calls 
+each `do-before` sub and stop at the first `False` returned value. If all all
+`do-before` subs returned `True`, then the `filter`'s `do-before` method returns
+`True`. The `do-after` work in the same way. Also there is `first-level-check`
+property. If it set to `True` then the sub for checking log level will be added
+automatically as the first element in `do-before` array; if the property set to
+`False` then the sub will be added automatically as the last in `do-before`
+array.
+
 ### Filter factory methods
+
+`LogP6` module has the following subs for manage filters configurations:
+
+- `get-filter(Str:D $name --> LogP6::FilterConf)` - gets writer with specified
+name
+- `filter(:$name, :$level, :$first-level-check, List :$before-check, List :$after-check, :create, :update, :replace --> LogP6::FilterConf)` -
+create, update or replace standard `FilterConf` with specified name. If you want
+to `:update` only concrete fields in already created configuration then the rest
+fields will not be changed. In case of `:replace` the new configuration will be
+created and replaced the old one. You can create configuration without name -
+then the configuration will not be stored, but only returned to you. The method
+returns the old filter configuration (`:update`, `:replace`) and the new one
+(`:create`);
+- `level($level --> LogP6::FilterConf:D)` - the short form for
+`filter(:level($level), :create)`;
+- `filter(LogP6::FilterConf:D $filter-conf, :create, :replace)` -
+create or replace any implementation of `FilterConf`. The configuration name
+will be retrieved from the argument itself; The method returns the old filter
+configuration (`:replace`) and the new one (`:create`);
+- `filter(:$name, :$remove)` - remove and return a configuration with specified
+name.
+
 ### Filter configuration file
+
+In configuration file filter configurations have to be listed in `filters`
+array. Only `std` (for standard configuration) and `custom` types are supported.
+
+In case of standard configuration all field are optional excepts `name`.
+`before-check` and `after-check` are arrays with `custom` typed elements.
+
+In case of `custom` filter type the result filter configuration have to returns
+not empty name.
+
+Example:
+
+```json
+{
+  ...
+  "filters": [
+    {"type": "std", "name": "f1", "level": "error", "first-level-check": false},
+    {"type": "std", "name": "f2", "level": "info", "before-check": [{ "require": "MyModule", "fqn-method": "MyModule::EXPORT::DEFAULT::&before-check" }]},
+    {"type": "custom", "require": "MyModule", "fqn-class": "MyModule::MyFilter", "args": { "name": "f3" }
+  ]
+  ...
+}
+```
+
+## Defaults
+
+Standard filters and writers has fields and options which affect their work.
+Some of them you can specify in factory methods or configuration file fields.
+If such arguments are omitted then the default values of it will be used.
+Another fields and options cannot be setter this way. For example, pattern for
+exception which will be concatenated to main pattern in standard writer when
+`auto-exceptions` sets to `True`
+(see [Standard WriterConf](#standard-writerconf)). Such properties have default
+values too. All the defaults can be set through factory methods or filed in
+configuration file.
+
+Configuring default values are useful in case you what to avoid many boilerplate
+configurations
+
+### Defaults factory methods
+
+There are the following factory methods for set defaults values:
+
+- `set-default-pattern(Str:D $pattern)` - set default pattern for standard
+`WriterConf`. Default value is `'[%date{$hh:$mm:$ss}][%level{length=5}] %msg'`;
+- `set-default-auto-exceptions(Bool:D $auto-exceptions)` - set default
+`auto-exceptions` property value for standard `WriterConf`. Default value is
+`True`;
+- `set-default-handle(IO::Handle:D $handle)` - set default handle for standard
+`WriterConf`. Default value is `$*OUT`;
+- `set-default-x-pattern(Str:D $x-pattern)` - set pattern for exception which
+will be concatenated to the main pattern in standard `WriterConf` in case
+`auto-exceptions` sets to `True`
+(see [Standard WriterConf](#standard-writerconf)). Default value is
+`'%x{ Exception $name: $msg' ~ "\n" ~'$trace}'`
+- `set-default-level(LogP6::Level:D $level)` - set default level for standard
+`WriterConf`. Default value is `LogP6::Level::error`;
+- `set-default-first-level-check(Bool:D $first-level-check)` - set default value
+of `first-level-check` property of standard `FilterConf`
+(see [Standard FilterConf](#standard-filterconf)). Default value is `True`;
+- `set-default-wrapper(LogP6::Wrapper $wrapper)` - set wrapper for loggers
+(see [Logger Wrapper](#logger-wrapper)). Default value is
+`LogP6::Wrapper::Transparent::Wrapper.new`.
+
+### Defaults configuration file
+
+You can configure default values in configuration file through the following
+json fields of root object:
+
+- `"default-pattern": <string>` - for default pattern for writers with `std`
+type;
+- `"default-auto-exceptions": <boolean>` - for default `auto-exceptions` field
+value for writers with `std` type;
+- `"default-handle": <handle>` - for default handle for writers with `std` type;
+- `"default-x-pattern": <string>` - for default exceptions pattern for writers
+with `std` type;
+- `"default-level": <level-name>` - for default level for filters with `std`
+type;
+- `"default-first-level-check": <boolean>` - for `first-level-check` value for
+filters with `std` type;
+- `"default-wrapper": <wrapper>` - for wrapper for loggers.
+
+`Wrapper` can be:
+
+- `time` type for `LogP6::Wrapper::SyncTime::Wrapper`. It takes required
+`"seconds": <num>` and optional `"config-path": <string>` addition fields;
+- `transparent` type for `LogP6::Wrapper::Transparent::Wrapper`;
+- `custom` type.
 
 ## Cliche
 ### Cliche factory methods
 ### Cliche configuration file
 
+## Default logger
+
 ## Change configuration
 
-## Defaults
-
-## Standard configuration
+configuration options priority
 
 # EXAMPLES
 
