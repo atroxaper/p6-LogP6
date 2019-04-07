@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/atroxaper/p6-LogP6)](https://travis-ci.org/atroxaper/p6-LogP6)
+[![Build Status](https://travis-ci.org/atroxaper/p6-LogP6.svg?branch=master)](https://travis-ci.org/atroxaper/p6-LogP6)
 
 # NAME
 
