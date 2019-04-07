@@ -1,6 +1,6 @@
 {
     "auth": "github:atroxaper",
-    "depends": ["UUID"],
+    "depends": ["UUID", "JSON::Fast"],
     "description": "Full customisable logging library inspired by idea of separate logging and its configuration.",
     "resources": [],
     "version": "1.3.1",
