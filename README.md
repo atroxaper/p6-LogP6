@@ -51,6 +51,7 @@ even in your own libraries.
 	- [Filter log by its content](#filter-log-by-its-content)
 	- [Write one log in several outputs](#write-one-log-in-several-outputs)
 - [BEST PRACTICE](#best-practice)
+- [ROADMAP](#roadmap)
 - [AUTHOR](#author)
 - [COPYRIGHT AND LICENSE](#copyright-and-license)
 
@@ -128,21 +129,21 @@ cliche(                 # create a cliche
 Configure in the configuration file style (same as above):
 ```json
 {
-  "writers": [{               # describe all your writer configurations
+  "writers": [{
     "type": "std",
-    "name": "w",              # obligatory unique writer name
+    "name": "w",
     "pattern": "%level | %msg",
     "handle": { "type": "std", "path": "err" }
   }],
-  "filters": [{               # describe all your filter configurations
+  "filters": [{
     "type": "std",
-    "name": "f",              # obligatory unique filter name
+    "name": "f",
     "level": "debug"
   }],
-  "cliches": [{               # describe all your cliches
-    "name": "cl",             # obligatory unique cliche name
-    "matcher": "audit",       # obligatory matcher
-    "grooves": [ "w", "f" ]   # optional list of writer-filter configurations names pairs 
+  "cliches": [{
+    "name": "cl",
+    "matcher": "audit",
+    "grooves": [ "w", "f" ] 
   }]
 }
 ```
@@ -430,13 +431,11 @@ Example:
 
 ```json
 {
-  ...
   "writers": [
     {"type": "std", "name": "w1", "pattern": "%msg", "handle": {"type": "std", "path": "out"}},
     {"type": "std", "name": "w2", "handle": {"type": "file", "path": "log.txt", "append": false}},
-    {"type": "custom", "require": "Module", "fqn-method": "Module::EXPORT::DEFAULT::&writer", "args": { "name": "w3" }
+    {"type": "custom", "require": "Module", "fqn-method": "Module::EXPORT::DEFAULT::&writer", "args": { "name": "w3" }}
   ]
-  ...
 }
 ```
 
@@ -498,13 +497,11 @@ Example:
 
 ```json
 {
-  ...
   "filters": [
     {"type": "std", "name": "f1", "level": "error", "first-level-check": false},
     {"type": "std", "name": "f2", "level": "info", "before-check": [{ "require": "MyModule", "fqn-method": "MyModule::EXPORT::DEFAULT::&before-check" }]},
-    {"type": "custom", "require": "MyModule", "fqn-class": "MyModule::MyFilter", "args": { "name": "f3" }
+    {"type": "custom", "require": "MyModule", "fqn-class": "MyModule::MyFilter", "args": { "name": "f3" }}
   ]
-  ...
 }
 ```
 
@@ -627,12 +624,10 @@ Example:
 
 ```json
 {
-  ...
   "cliches": [{
     "name": "c1", "matcher": "/bo .+ om/", "grooves": [ "w1", "f1", "w2", "f1" ],
     "wrapper": { "type": "transparent" }, "default-pattern": "%level %msg"
   }]
-  ...
 }
 ```
 
@@ -891,7 +886,7 @@ subroutines logic then make a special sub for retrieve logger like
 `sub log() { state $log = get-logger('trait'); }`. Then use it like
 `log.info('msg');` It prevents any side effects caused by precompilation.
 
-ROADMAP
+# ROADMAP
 
 - Make IO::Handle for write log in databases;
 - Make IO::Handle rollover support - change log file after some period of time
