@@ -51,8 +51,9 @@
 			"default-x-pattern": "%x{ $name}",
 			"default-level":  "trace",
 			"default-first-level-check": true,
-			"default-wrapper": {
-				"type": "transparent"
+			"wrapper": {
+				"type": "each",
+				"config-path": "./t/resource/00-config-file/log-p6-2.json"
 			}
 		}
 	]

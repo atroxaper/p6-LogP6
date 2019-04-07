@@ -156,10 +156,11 @@ subtest {
 }, 'defaults';
 
 subtest {
-	plan 4;
+	plan 6;
 
 	use lib './t/resource/00-config-file';
 	use Custom;
+	use LogP6::Wrapper::SyncEach;
 
 	my $x;
 	{
@@ -185,6 +186,11 @@ subtest {
 	ok defined($cliche-io), 'cliche io ok';
 	is $cliche-io.writed.trim, "goltrace X::AdHoc\ngoldebug X::AdHoc",
 			'cliche ok';
+
+	my $wrapper = get-cliche('c2').wrapper;
+	does-ok $wrapper, LogP6::Wrapper::SyncEach::Wrapper, 'each wrapper parced';
+	is $wrapper.config-path, './t/resource/00-config-file/log-p6-2.json',
+			'each wpapper parced config-path';
 }, 'integration defaults';
 
 END {

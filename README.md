@@ -237,9 +237,12 @@ User can specify any kind of wrapper for synchronization a logger. There are
 helper class `LogP6::Wrapper::SyncAbstract` to create your own synchronization
 wrappers.
 
-For now there is only one synchronization wrapper -
-`LogP6::Wrapper::SyncTime::Wrapper`. The wrapper check the new configuration
-(in a configuration file or in code) each `X` seconds.
+For now there is only tow synchronization wrappers:
+
+- `LogP6::Wrapper::SyncTime::Wrapper` - checks the new configuration change each
+`X` seconds;
+- `LogP6::Wrapper::SyncEach::Wrapper` - checks the new configuration change each
+time you use logger.
 
 # CONFIGURATION
 

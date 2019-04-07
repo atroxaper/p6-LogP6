@@ -231,6 +231,16 @@ sub wrapper(\json) {
 				)
 			));
 		}
+		when 'each' {
+			return custom(%(
+				:type<custom>,
+				:require<LogP6::Wrapper::SyncEach>,
+				:fqn-class<LogP6::Wrapper::SyncEach::Wrapper>,
+				args =>  %(
+					config-path => json<config-path>
+				)
+			));
+		}
 		when 'transparent' {
 			return LogP6::Wrapper::Transparent::Wrapper.new;
 		}
