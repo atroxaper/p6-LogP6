@@ -120,7 +120,7 @@ sub clean-all-settings() {
 		unless Grammar.parse($default-pattern);
 	$default-auto-exceptions = True;
 	$default-handle = $*OUT;
-	$default-x-pattern = '%x{ Exception $name: $msg' ~ "\n" ~'$trace}';
+	$default-x-pattern = '%x{ Exception $name: $msg' ~ "\n" ~ '$trace}';
 
 	$default-level = Level::error;
 	$default-first-level-check = True;
