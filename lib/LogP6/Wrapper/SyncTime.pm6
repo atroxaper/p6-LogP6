@@ -13,6 +13,7 @@ class LogP6::Wrapper::SyncTime is LogP6::Wrapper::SyncAbstract {
 		without $last {
 			$last = DateTime.now;
 			self.put-sync-obj($last);
+			self.update-aggr;
 		}
 		my $now = $context.date;
 		if $now - $last > $!seconds {

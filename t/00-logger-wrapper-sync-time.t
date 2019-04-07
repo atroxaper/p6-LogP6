@@ -5,7 +5,7 @@ use LogP6 :configure;
 use LogP6::Helpers::IOString;
 use LogP6::Wrapper::SyncTime;
 
-plan 2;
+plan 3;
 
 my LogP6::Helpers::IOString $h .= new;
 writer(:name<writer>, :handle($h), :pattern<%msg>);
@@ -58,5 +58,18 @@ subtest {
 	$logger.info('log this');
 	is $h.clean.trim, 'log this', 'general logger worked again';
 }, 'general sync';
+
+subtest {
+	plan 1;
+
+	my $cliche =
+			cliche(:name<first-sync>, :matcher<first>, grooves => <writer filter>);
+
+	my $loggger = get-logger('first');
+	filter(:name<filter>, :level($warn), :replace);
+	$loggger.info('dropped');
+
+	nok $h.clean, 'sync logger before its first use';
+}, 'first sync';
 
 done-testing;
