@@ -48,10 +48,8 @@ even in your own libraries.
 	- [Change console application verbosity level](#change-console-application-verbosity-level)
 	- [Associate logs with concrete user](#associate-logs-with-concrete-user)
 	- [Filter log by its content](#filter-log-by-its-content)
-	- [Use different logger configuration for different logic area](#use-different-logger-configuration-for-different-logic-area)
+	- [Write one log in several outputs](#write-one-log-in-several-outputs)
 - [BEST PRACTICE](#best-practice)
-- [KNOWN ISSUES](#known-issues)
-- [ROADMAP](#roadmap)
 - [AUTHOR](#author)
 - [COPYRIGHT AND LICENSE](#copyright-and-license)
 
@@ -821,14 +819,14 @@ The same configuration you can write in configuration file:
 }
 ```
 
-## Use different logger configuration for different logic area
+## Write one log in several outputs
 
 Lets imagine we have an application which works with several types of databases.
-For example, Oracle and SQLite. We want to log of work with databases. But we
-want that Oracle related logs stored in `oracle.log` and `database.log` files,
-but SQLite related log stored only in `database.log`. In such case we need one
-simple logger for SQLite related logs and another one (with two grooves) for
-Oracle related logs.
+For example, Oracle and SQLite. We want to log of work with the databases. But
+we want that Oracle related logs stored in `oracle.log` and `database.log`
+files, but SQLite related log stored only in `database.log`. In such case we
+need one simple logger for SQLite related logs and another one (with two
+grooves) for Oracle related logs.
 
 In `Perl 6`:
 
@@ -868,19 +866,23 @@ The same configuration you can write in configuration file:
     { "name": "sqlite", "matcher": "sqlite", "grooves": [ "database", "filter" ]}
   ]
 }
-
 ```
 
 # BEST PRACTICE
 
-trait in libs
+Try to use good traits for your loggers. If you use loggers in your library then
+probably using one prefix in all your traits is the best option. It allows users
+of your library manage your loggers easily.
 
-# KNOWN ISSUES
+Try to choice logger trait according logger semantic or location. For example,
+you can use `$?CLASS.^name` as logger trait in any your classes or traits like
+`database`, `user management` or so.
 
-has, sub
-nano watch
-
-# ROADMAP
+If you use logger within a class then make the logger be a class field like
+`has $!log = get-logger('$?CLASS.^name');` If you use logger withing a
+subroutines logic then make a special sub for retrieve logger like
+`sub log() { state $log = get-logger('trait'); }`. Then use it like
+`log.info('msg');` It prevents any side effects caused by precompilation.
 
 # AUTHOR
 
