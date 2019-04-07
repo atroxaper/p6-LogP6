@@ -1,10 +1,11 @@
 use Test;
 
 use lib 'lib';
+use lib './t/resource/Helpers';
 use LogP6 :configure;
 use LogP6::WriterConf::Pattern;
 use LogP6::Context;
-use LogP6::Helpers::IOString;
+use IOString;
 
 plan 10;
 
@@ -27,7 +28,7 @@ $context.mdc-put('foo', 'mdc-value');
 
 sub parse-process($pattern) {
 	my @pieces := Grammar.parse($pattern, actions => Actions).made;
-	my LogP6::Helpers::IOString $io-str .= new;
+	my IOString $io-str .= new;
 	$io-str.print(|@pieces>>.show($context));
 	$io-str.Str;
 }

@@ -1,9 +1,10 @@
 use Test;
 
 use lib 'lib';
+use lib './t/resource/Helpers';
 use LogP6 :configure;
 use LogP6::Context;
-use LogP6::Helpers::IOString;
+use IOString;
 
 plan 5;
 
@@ -88,7 +89,7 @@ subtest {
 subtest {
 	plan 9;
 
-	my LogP6::Helpers::IOString $io-str .= new;
+	my IOString $io-str .= new;
 
 	ok get-writer('w-name').make-writer(:$default-pattern)
 			~~ LogP6::Writer::Std:D, 'make writer proper value';

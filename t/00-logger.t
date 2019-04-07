@@ -1,14 +1,15 @@
 use Test;
 
 use lib 'lib';
+use lib './t/resource/Helpers';
 use LogP6::Logger;
 use LogP6::LoggerPure;
-use LogP6::Helpers::IOString;
+use IOString;
 use LogP6 :configure;
 
 plan 6;
 
-my ($h1, $h2, $h3) = (LogP6::Helpers::IOString.new xx 3).list;
+my ($h1, $h2, $h3) = (IOString.new xx 3).list;
 sub clean-io() { $_.clean for ($h1, $h2, $h3) }
 writer(:name<w1>, :handle($h1));
 writer(:name<w2>, :handle($h2));

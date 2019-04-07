@@ -1,13 +1,14 @@
 use Test;
 
 use lib 'lib';
+use lib './t/resource/Helpers';
 use LogP6 :configure;
-use LogP6::Helpers::IOString;
 use LogP6::Wrapper::SyncTime;
+use IOString;
 
 plan 3;
 
-my LogP6::Helpers::IOString $h .= new;
+my IOString $h .= new;
 writer(:name<writer>, :handle($h), :pattern<%msg>);
 filter(:name<filter>, :level($info));
 

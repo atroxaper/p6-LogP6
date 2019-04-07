@@ -13,7 +13,6 @@
     "source-url": "TODO",
     "provides": {
         "LogP6::Wrapper::SyncAbstract": "lib/LogP6/Wrapper/SyncAbstract.pm6",
-        "LogP6::Helpers::IOString": "lib/LogP6/Helpers/IOString.pm6",
         "LogP6::WriterConf::Std": "lib/LogP6/WriterConf/Std.pm6",
         "LogP6::Logger": "lib/LogP6/Logger.pm6",
         "LogP6::Wrapper": "lib/LogP6/Wrapper.pm6",

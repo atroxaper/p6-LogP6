@@ -301,9 +301,10 @@ subtest {
 
 	plan 18;
 
+	use lib './t/resource/Helpers';
 	use LogP6::LoggerPure;
 	use LogP6::Wrapper::SyncTime;
-	use LogP6::Helpers::IOString;
+	use IOString;
 
 	filter(:name<filter>);
 	writer(:name<writer>);
@@ -341,8 +342,7 @@ subtest {
 		'time logger instanceof';
 
 	set-default-wrapper(LogP6::Wrapper);
-	my LogP6::Helpers::IOString ($h1, $h2, $h3) =
-		(LogP6::Helpers::IOString.new xx 3).list;
+	my IOString ($h1, $h2, $h3) = (IOString.new xx 3).list;
 	filter(:name<of>, :level($trace));
 	writer(:name<ow1>, :handle($h1), :pattern<%msg>);
 	writer(:name<ow2>, :handle($h2), :pattern<%msg>);

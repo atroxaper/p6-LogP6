@@ -3,12 +3,12 @@ unit module Custom;
 use LogP6::WriterConf::Std;
 use LogP6::FilterConf::Std;
 use LogP6::Wrapper::SyncTime;
-use LogP6::Helpers::IOString;
+use IOString;
 
 my %strings = %();
 
 sub io-string(:$name) is export {
-	%strings{$name} //= LogP6::Helpers::IOString.new;
+	%strings{$name} //= IOString.new;
 }
 
 sub handle1(:$file-name) is export {

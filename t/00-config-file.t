@@ -61,7 +61,8 @@ subtest {
 subtest {
 	plan 21;
 
-	use lib 't/resource/00-config-file';
+	use lib './t/resource/Helpers';
+	use lib './t/resource/00-config-file';
 	use Custom;
 
 	my ($f, $cn);
@@ -158,6 +159,7 @@ subtest {
 subtest {
 	plan 6;
 
+	use lib './t/resource/Helpers';
 	use lib './t/resource/00-config-file';
 	use Custom;
 	use LogP6::Wrapper::SyncEach;
