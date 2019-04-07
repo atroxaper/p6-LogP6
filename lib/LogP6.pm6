@@ -29,13 +29,13 @@ our $warn  is export(:configure) = Level::warn;
 our $error is export(:configure) = Level::error;
 
 my Lock $lock .= new;
-my Bool $initialized;
+my atomicint $initialized = 0;
 
 my @cliches;
 my $cliches-names;
 my %cliches-to-loggers;
-my %loggers-pure;
-my %loggers;
+my $loggers-pure;
+my $loggers;
 
 my Str $default-pattern;
 my Bool $default-auto-exceptions;
@@ -55,16 +55,18 @@ my role GroovesPartsManager[$lock, $part-name, ::Type, ::NilType] { ... }
 #| Have to call it from all (mostly) export methods.
 #| It will initialize loggers in user script context instead of on precomp
 sub try-initialize() {
+	my $already = ⚛$initialized;
+	return if $already > 0;
 	$lock.protect({
-		unless $initialized {
-			init-from-file(default-config-path());
-		}
+		$already = ⚛$initialized;
+		return if $already > 0;
+		init-from-file(default-config-path());
 	});
 }
 
 sub init-from-file($config-path) is export(:configure) {
 	$lock.protect({
-		$initialized = True;
+		$initialized ⚛= 1;
 
 		init-getter(
 			get-wrap => sub ($t) { get-logger($t) },
@@ -110,8 +112,8 @@ sub clean-all-settings() {
 	@cliches = [];
 	$cliches-names = SetHash.new;
 	%cliches-to-loggers = %();
-	%loggers-pure = %();
-	%loggers = %();
+	$loggers-pure = %();
+	$loggers = %();
 
 	$default-pattern = '[%date{$hh:$mm:$ss}][%level{length=5}] %msg';
 	die "wrong default lib pattern <$($default-pattern)>"
@@ -651,7 +653,7 @@ multi sub update-loggers(Positional:D $cliches) {
 }
 
 multi sub update-loggers() {
-	my @traits := %loggers.keys.List;
+	my @traits := atomic-fetch($loggers).keys.List;
 	for @traits -> $trait {
 		create-and-store-logger($trait);
 	}
@@ -708,18 +710,24 @@ sub find-cliche-for-trait($trait) {
 }
 
 sub get-logger(Str:D $trait --> Logger:D) is export(:MANDATORY) {
-	try-initialize();
+	my %logs = atomic-fetch($loggers);
+	return $_ with %logs{$trait};
+
 	$lock.protect({
-		return $_ with %loggers{$trait};
+		try-initialize();
+		return $_ with $loggers{$trait};
 		create-and-store-logger($trait);
-		%loggers{$trait}
+		$loggers{$trait}
 	});
 }
 
 sub get-logger-pure(Str:D $trait --> Logger:D) is export(:configure) {
-	try-initialize();
+	my %logs = atomic-fetch($loggers-pure);
+	return $_ with %logs{$trait};
+
 	$lock.protect({
-		return $_ with %loggers-pure{$trait};
+		try-initialize();
+		return $_ with atomic-fetch($loggers-pure){$trait};
 		create-and-store-logger($trait);
 	});
 }
@@ -727,8 +735,15 @@ sub get-logger-pure(Str:D $trait --> Logger:D) is export(:configure) {
 sub remove-logger(Str:D $trait --> Logger) is export(:configure) {
 	try-initialize();
 	$lock.protect({
-		my $old = %loggers{$trait}:delete;
-		%loggers-pure{$trait}:delete;
+		my %logs = atomic-fetch($loggers).clone;
+		my %logs-pure = atomic-fetch($loggers-pure).clone;
+
+		my $old = %logs{$trait}:delete;
+		%logs-pure{$trait}:delete;
+
+		atomic-assign($loggers, %logs);
+		atomic-assign($loggers-pure, %logs-pure);
+
 		return $old // Logger;
 	});
 }
@@ -737,9 +752,14 @@ sub create-and-store-logger($trait) {
 	my $cliche = find-cliche-for-trait($trait);
 	my $logger-pure = create-logger($trait, $cliche);
 
-	%loggers{$trait} = wrap-logger($logger-pure, $cliche);
-	%loggers-pure{$trait} = $logger-pure;
+	my %new-loggers = atomic-fetch($loggers).clone;
+	my %new-loggers-pure = atomic-fetch($loggers-pure).clone;
+	%new-loggers{$trait} = wrap-logger($logger-pure, $cliche);
+	%new-loggers-pure{$trait} = $logger-pure;
 	(%cliches-to-loggers{$cliche.name} //= SetHash.new){$trait} = True;
+
+	atomic-assign($loggers, %new-loggers);
+	atomic-assign($loggers-pure, %new-loggers-pure);
 
 	return $logger-pure;
 }

@@ -3,7 +3,7 @@
 High priority:
 
 1. ~~docs docs docs~~
-1. make logger and pure-logger maps be copy-and-write maps
+1. ~~make logger and pure-logger maps be copy-and-write maps~~
 1. ~~make each-time-synchronization wrapper~~
 1. ~~improve logic of SyncAbstract wrapper (update logger at the first time)~~
 
