@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/TODO)](https://travis-ci.org/TODO)
+[![Build Status](https://travis-ci.org/atroxaper/p6-LogP6)](https://travis-ci.org/atroxaper/p6-LogP6)
 
 # NAME
 
@@ -903,12 +903,12 @@ or after file size limit are reached;
 
 Mikhail Khorkov <atroxaper@cpan.org>
 
-Source can be located at: https://github.com/TODO . Comments and Pull Requests
+Source can be located at: https://github.com/atroxaper/p6-LogP6. Comments and Pull Requests
 are welcome.
 
 # COPYRIGHT AND LICENSE
 
-Copyright 2018 Mikhail Khorkov
+Copyright 2019 Mikhail Khorkov
 
 This library is free software; you can redistribute it and/or modify it under
 the Artistic License 2.0.
