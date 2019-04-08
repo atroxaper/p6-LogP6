@@ -34,8 +34,8 @@ my atomicint $initialized = 0;
 my @cliches;
 my $cliches-names;
 my %cliches-to-loggers;
-my $loggers-pure;
-my $loggers;
+my $loggers-pure = %();
+my $loggers = $();
 
 my Str $default-pattern;
 my Bool $default-auto-exceptions;
