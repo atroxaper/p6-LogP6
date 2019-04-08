@@ -18,6 +18,7 @@ has $!tname;
 has @!ndc = [];
 has %!mdc = %();
 has %!sync = %();
+has $!callframe;
 
 submethod BUILD() {
 	$!thread = $*THREAD;
@@ -176,9 +177,25 @@ method sync-put($trait, $obj) {
 	%!sync{$trait} = $obj;
 }
 
-#|[Cleans all data values specified by logger (like date, msg, level and
-#| exception). Normally the method is used by logger itself
+#| Gets callframe of log caller level.
+method callframe() {
+	return $_ with $!callframe;
+	# start with 3. it is much save and optimal
+	for 3..* -> $level {
+		with callframe($level) -> $frame {
+			next unless $frame.code.name
+					~~ any('trace', 'debug', 'info', 'warn', 'error');
+			# +1 to caller code and +1 to go from `with` block
+			$!callframe = callframe($level + 2);
+			last;
+		}
+	}
+	return $!callframe;
+}
+
+#|[Cleans all data values specified by logger (like date, msg, level,
+#| exception and callframe). Normally the method is used by logger itself
 #| after each logging.]
 method clean() {
-	$!date = $!msg = $!x = $!level = DateTime;
+	$!callframe = $!date = $!msg = $!x = $!level = DateTime;
 }

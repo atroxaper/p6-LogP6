@@ -7,7 +7,7 @@ use LogP6::LoggerPure;
 use IOString;
 use LogP6 :configure;
 
-plan 6;
+plan 7;
 
 my ($h1, $h2, $h3) = (IOString.new xx 3).list;
 sub clean-io() { $_.clean for ($h1, $h2, $h3) }
@@ -186,5 +186,21 @@ subtest {
 	my $mute = get-logger('do-not-log');
 	does-ok $mute, LogP6::LoggerMute, 'create mute logger';
 }, 'mute logger';
+
+subtest {
+	plan 1;
+
+	cliche(:name<frame>, :matcher<frame>, grooves => (
+		writer(:pattern('%msg %framename %framefile %frameline'), :handle($h1)),
+		level($info)
+	));
+	my $frame = get-logger('frame');
+
+	$frame.info('line 1');
+	my $l1 = $h1.clean;
+	$frame.info('line 2');
+	my $l2 = $h1.clean;
+	isnt $l1, $l2, 'frames are different';
+}, 'different frame';
 
 done-testing;

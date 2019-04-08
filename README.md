@@ -388,6 +388,16 @@ subpattern.
 	- `$dd` - day in 2 digits format;
 	- `$hh`, `$mm`, `$ss`, `$mss` - hours, minutes, seconds and milliseconds
 	- `$z` - timezone
+- `%framefile` - for log caller frame file name. The same as `callframe().file`
+in log call block;
+- `%frameline` - for log caller frame file line. The same as `callframe().line`
+at the same log call line;
+- `%framename` - for log caller frame code name. The same as
+`callframe().code.name` in log call block;
+
+Note that using `%framefile`, `%frameline` or `%framename` in the pattern will
+slow your program because it requires several `callframe` calls on each
+resultative log call;
 
 ### Writer factory subroutines
 

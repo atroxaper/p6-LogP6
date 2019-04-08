@@ -7,7 +7,7 @@ use LogP6::WriterConf::Pattern;
 use LogP6::Context;
 use IOString;
 
-plan 10;
+plan 11;
 
 my LogP6::Context $context .= new;
 $context.level-set($info);
@@ -61,5 +61,13 @@ $context.level-set($error);
 is parse-process($level-line ~ '1}'), 'E', 'default level length 1';
 is parse-process($level-line ~ '3}'), 'ERR', 'default level length 3';
 is parse-process('%level{ERROR=warn}'), 'warn ', 'default level length';
+
+# %frame*
+sub info($frame) {
+	is parse-process('%framename %framefile %frameline').trim,
+	$frame.code.name ~ ' ' ~ $frame.file ~ ' ' ~ $frame.line, 'frames';
+}
+sub foo() { info(callframe) }
+foo;
 
 done-testing;

@@ -112,6 +112,18 @@ class DateZone does PatternPart {
 	method show($d) { $d.timezone }
 }
 
+class FrameFile does PatternPart {
+	method show($context) { $context.callframe.file }
+}
+
+class FrameLine does PatternPart {
+	method show($context) { $context.callframe.line }
+}
+
+class FrameName does PatternPart {
+	method show($context) { $context.callframe.code.name }
+}
+
 my $lnames = [];
 $lnames[trace.Int] = 'TRACE';
 $lnames[debug.Int] = 'DEBUG';
@@ -189,6 +201,12 @@ grammar Grammar is export {
 	rule level-param:sym<warn> { 'WARN' '=' <word> }
 	rule level-param:sym<error> { 'ERROR' '=' <word> }
 	rule level-param:sym<length> { 'length' '=' <num> }
+	# %framefile - frame file path
+	token item:sym<framefile> { '%framefile' }
+	# %frameline - frame file line
+	token item:sym<frameline> { '%frameline' }
+	# %framename - frame code name
+	token item:sym<framename> { '%framename' }
 
 	token word { $<text>=<-[\s}]>+ }
 	token num { $<text>=\d+ }
@@ -254,4 +272,7 @@ class Actions is export {
 	method level-param:sym<warn>($/) { make warn.Int.Str => $<word>.Str }
 	method level-param:sym<error>($/) { make error.Int.Str => $<word>.Str }
 	method level-param:sym<length>($/) { make 'length' => $<num>.Str }
+	method item:sym<framefile>($/) { make FrameFile }
+	method item:sym<frameline>($/) { make FrameLine }
+	method item:sym<framename>($/) { make FrameName }
 }
