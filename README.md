@@ -377,9 +377,10 @@ name, `$trace` - optional exception stacktrace. For example,
 - `%level{WARN=W DEBUG=D ERROR=E TRACE=T INFO=I length=2}` - log importance
 level. By default logger will use level name in upper case but you can
 specify synonyms for all or part of them in curly brackets in format
-`<LEVEL_NAME>=<sysnonym>`. Also you can specify a length of log level name.
-Default length is 5. For example `'[%level{WARN=hmm ERROR=alarm length=5}]'` can
-be converted into `'[hmm  ]'`, `'[alarm]'`, `'[INFO ]'`, `'[DEBUG]'`;
+`<LEVEL_NAME>=<sysnonym>`. Also you can specify a fixed length of log level
+name. Default length is 0 - write level as is. For example
+`'[%level{WARN=hmm ERROR=alarm length=5}]'` can be converted into
+`'[hmm  ]'`, `'[alarm]'`, `'[INFO ]'`, `'[DEBUG]'`;
 - `%date{$yyyy-$yy-$MM-$MMM-$dd $hh:$mm:$ss:$mss $z}` - current date and time.
 String in curly brackets is used as
 subpattern.
@@ -535,7 +536,7 @@ configurations.
 There are the following factory subs for set defaults values:
 
 - `set-default-pattern(Str:D $pattern)` - set default pattern for standard
-`WriterConf`. Default value is `'[%date{$hh:$mm:$ss}][%level{length=5}] %msg'`;
+`WriterConf`. Default value is `'[%date{$hh:$mm:$ss}][%level] %msg'`;
 - `set-default-auto-exceptions(Bool:D $auto-exceptions)` - set default
 `auto-exceptions` property value for standard `WriterConf`. Default value is
 `True`;

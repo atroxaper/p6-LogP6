@@ -96,7 +96,7 @@ subtest {
 
 	is $h1.clean, "TRACE Ur error\nTRACE Ur warn\n",
 		'first filter is ok in reset log';
-	is $h2.clean, "ERROR r error test exception\nWARN  r warn\nINFO  r info\n",
+	is $h2.clean, "ERROR r error test exception\nWARN r warn\nINFO r info\n",
 		'first filter nok in reset log';
 }, 'reset context';
 
