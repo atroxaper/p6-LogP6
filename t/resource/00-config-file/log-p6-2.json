@@ -32,7 +32,21 @@
 		{
 			"name": "c1",
 			"matcher": "log",
-			"grooves": [ "w1", "f1" ]
+			"grooves": [ "w1", "f1" ],
+			"wrapper": {
+				"type": "custom",
+				"require": "Custom",
+				"fqn-method": "Custom::EXPORT::DEFAULT::&wrapper-args",
+				"args": {
+					"name": "args-name",
+					"arr": [
+						"arr-element",
+						{ "type": "custom", "require": "Custom", "fqn-method": "Custom::EXPORT::DEFAULT::&filter", "args": {"name": "arr-filter"} }
+					],
+					"custom": { "type": "custom", "require": "Custom", "fqn-method": "Custom::EXPORT::DEFAULT::&writer", "args": {"name": "args-writer"} },
+					"map": { "a": "b", "x": "y" }
+				}
+			}
 		},
 		{
 			"name": "c2",

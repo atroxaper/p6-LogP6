@@ -3,6 +3,7 @@ unit module Custom;
 use LogP6::WriterConf::Std;
 use LogP6::FilterConf::Std;
 use LogP6::Wrapper::SyncTime;
+use LogP6::Wrapper;
 use IOString;
 
 my %strings = %();
@@ -49,4 +50,19 @@ sub before2($context) {
 
 sub after($context) {
 	True;
+}
+
+class LogP6::Wrapper::Custom does LogP6::Wrapper {
+	has $.name;
+	has $.arr;
+	has $.custom;
+	has $.map;
+
+	method wrap(LogP6::Logger:D $logger --> LogP6::Logger:D) {
+		return $logger;
+	}
+}
+
+sub wrapper-args(:$name, :$arr, :$custom, :$map) is export {
+	return LogP6::Wrapper::Custom.new(:$name, :$arr, :$custom, :$map);
 }
