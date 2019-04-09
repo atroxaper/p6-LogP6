@@ -7,7 +7,7 @@ use LogP6::WriterConf::Pattern;
 use LogP6::Context;
 use IOString;
 
-plan 11;
+plan 14;
 
 my LogP6::Context $context .= new;
 $context.level-set($info);
@@ -35,7 +35,7 @@ sub parse-process($pattern) {
 
 # simple
 is parse-process('%trait %tid-%tname %ndc-%mdc{foo}:%msg:%level*%date*%x').trim,
-		"test trait $tid-$tname 12 34-mdc-value:test message:INFO *23:54:09:123*" ~
+		"test trait $tid-$tname 12 34-mdc-value:test message:INFO*23:54:09:123*" ~
 		"Exception X::AdHoc: test exception\n" ~ $backtrace,
 		'full pattern without preferences';
 
@@ -60,7 +60,14 @@ is parse-process($level-line ~ '1}'), 'i', 'level length 1';
 $context.level-set($error);
 is parse-process($level-line ~ '1}'), 'E', 'default level length 1';
 is parse-process($level-line ~ '3}'), 'ERR', 'default level length 3';
-is parse-process('%level{ERROR=warn}'), 'warn ', 'default level length';
+is parse-process('%level{ERROR=warn}'), 'warn', 'default level length';
+$level-line = '<%level{INFO=stay-for-a-wile-and-listen length=0}>';
+is parse-process($level-line), '<ERROR>', 'level length 0 trace';
+$context.level-set($warn);
+is parse-process($level-line), '<WARN>', 'level length 0 warn';
+$context.level-set($info);
+is parse-process($level-line), '<stay-for-a-wile-and-listen>',
+		'level length 0 info';
 
 # %frame*
 sub info($frame) {

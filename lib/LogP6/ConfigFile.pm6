@@ -165,16 +165,34 @@ sub handle(\json) {
 	}
 }
 
+sub any(\json) {
+	return list(json, &any) if json ~~ Positional;
+	if json ~~ Associative {
+		return custom(json) if json<type> ~~ 'custom';
+		return associative(json);
+	}
+	return json;
+}
+
+sub associative(\json) {
+	return %() without json;
+	return Any unless json ~~ Associative;
+	my %result = %();
+	return json.kv.map(-> $k, $v { $k => any($v) }).Hash;
+}
+
 sub custom(\json) {
 	my \my-require = json<require>;
+	die 'Missing \'require\' field in custom definition' without my-require;
+
 	my \fqn-method = json<fqn-method>;
 	my \fqn-class = json<fqn-class>;
-	my \args = json<args> // %();
-	die 'Missing \'require\' field in custom definition' without my-require;
 	die "Missing both 'fqn-method' and 'fqn-class' fields in custom definition"
 		if !fqn-method.defined && !fqn-class.defined;
 	die "Defined both 'fqn-method' and 'fqn-class' fields in custom definition"
 		if fqn-method.defined && fqn-class.defined;
+
+	my \args = associative(json<args>);
 	die "'args' field are not Associative in cusom definition"
 		unless args ~~ Associative;
 

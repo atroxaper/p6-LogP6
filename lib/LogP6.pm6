@@ -115,7 +115,7 @@ sub clean-all-settings() {
 	$loggers-pure = %();
 	$loggers = %();
 
-	$default-pattern = '[%date{$hh:$mm:$ss}][%level{length=5}] %msg';
+	$default-pattern = '[%date{$hh:$mm:$ss}][%level] %msg';
 	die "wrong default lib pattern <$($default-pattern)>"
 		unless Grammar.parse($default-pattern);
 	$default-auto-exceptions = True;

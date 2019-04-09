@@ -137,10 +137,11 @@ class LevelName does PatternPart {
 
 	method new($conf) {
 		my $levels = $lnames.clone.Array;
-		my $length = $conf<length> // 5;
+		my $length = $conf<length> // 0;
 		for 1..5 -> $i {
 			$levels[$i] = $conf{$i.Str} // $levels[$i];
-			$levels[$i] = sprintf('%-*.*s', $length, $length, $levels[$i]);
+			$levels[$i] = sprintf('%-*.*s', $length, $length, $levels[$i])
+					if $length > 0;
 		}
 
 		self.bless(levels => $levels.List);

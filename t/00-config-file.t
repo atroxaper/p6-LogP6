@@ -4,7 +4,7 @@ use lib 'lib';
 use LogP6 :configure;
 use LogP6::ConfigFile;
 
-plan 7;
+plan 8;
 
 subtest {
 	plan 1;
@@ -194,6 +194,36 @@ subtest {
 	is $wrapper.config-path, './t/resource/00-config-file/log-p6-2.json',
 			'each wpapper parced config-path';
 }, 'integration defaults';
+
+subtest {
+	plan 11;
+
+	use lib './t/resource/Helpers';
+	use lib './t/resource/00-config-file';
+	use LogP6::FilterConf::Std;
+	use LogP6::WriterConf::Std;
+	use Custom;
+
+	init-from-file('./t/resource/00-config-file/log-p6-2.json');
+
+	my $wrapper = get-cliche('c1').wrapper;
+
+	ok $wrapper, 'custom args wrapper ok';
+	does-ok $wrapper, LogP6::Wrapper::Custom, 'custom args does ok';
+	is $wrapper.name, 'args-name', 'custom args field';
+	does-ok $wrapper.arr, Positional, 'custom args arr positional';
+	is $wrapper.arr.elems, 2, 'custom args arr elems';
+	is $wrapper.arr[0], 'arr-element', 'custom args arr first field';
+	does-ok $wrapper.arr[1], LogP6::FilterConf::Std,
+			'custom args arr second custom does';
+	is $wrapper.arr[1].name, 'arr-filter',
+			'custom args arr second custom name';
+	does-ok $wrapper.custom, LogP6::WriterConf::Std,
+			'custom args custom does';
+	is $wrapper.custom.name, 'args-writer', 'custom args custom name';
+	is-deeply $wrapper.map, %(:a<b>, :x<y>), 'custom args map ok';
+
+}, 'agrs in custom';
 
 END {
 	for 't/resource/00-config-file'.IO.dir() -> $_ {
