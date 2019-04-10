@@ -881,6 +881,43 @@ The same configuration you can write in configuration file:
 }
 ```
 
+## Write logs in journald
+
+Lets imagine you want to store logs in journald service. You can use
+`LogP6::Writer::Journald` module for that. For more information please look at
+writer module README. Example of configuration:
+
+In `Perl 6`:
+
+```perl6
+use LogP6 :configure;
+
+writer(LogP6::WriterConf::Journald.new(
+  # name, pattern and auto-exceptions as in standard writer
+  :name<to-journald>, :pattern('%msg'), :auto-exeptions
+  # which additional information must be written
+  :use-priority, # write 'PRIORITY=' field to journald automatically
+  :use-mdc       # write all MDC contend as field to journald in 'key=value' format
+));
+```
+
+The same configuration you can write in configuration file:
+
+```json
+{"writers": [{
+  "type": "custom",
+  "require": "LogP6::WriterConf::Journald",
+  "fqn-class": "LogP6::WriterConf::Journald",
+  "args": {
+    "name": "to-journald",
+    "pattern": "%msg",
+    "auto-exceptions": true,
+    "use-priority": true,
+    "use-mdc": true
+  }
+}]}
+```
+
 # BEST PRACTICE
 
 Try to use good traits for your loggers. If you use loggers in your library then
