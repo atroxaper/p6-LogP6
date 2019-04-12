@@ -1,8 +1,11 @@
-language: perl6
+language:
+  - minimal
 
-perl6:
-  - latest
+services:
+  - docker
 
 install:
-  - rakudobrew build-zef
-  - zef --debug --depsonly install .
+  - docker pull jjmerelo/test-perl6
+  - docker images
+
+script: docker run -t -v  $TRAVIS_BUILD_DIR:/test jjmerelo/test-perl6
