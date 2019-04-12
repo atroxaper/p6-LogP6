@@ -6,14 +6,14 @@ High priority:
 1. ~~make logger and pure-logger maps be copy-and-write maps~~
 1. ~~make each-time-synchronization wrapper~~
 1. ~~improve logic of SyncAbstract wrapper (update logger at the first time)~~
-1. make `args` object in `custom` object in configuration file be `custom` too
+1. ~~make `args` object in `custom` object in configuration file be `custom` too~~
 1. ~~add `length=0` in `%level` for exact length. make it default~~
 
 Medium priority:
 1. use a better exceptions instead of 'die'
 1. add params for %trait in pattern (short, long variant)
 1. try make entities be really immutable (filters, writes, loggers)
-1. add database writer
+1. ~~add database writer~~
 
 Low priority:
 

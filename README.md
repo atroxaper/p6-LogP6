@@ -50,6 +50,7 @@ even in your own libraries.
 	- [Associate logs with concrete user](#associate-logs-with-concrete-user)
 	- [Filter log by its content](#filter-log-by-its-content)
 	- [Write one log in several outputs](#write-one-log-in-several-outputs)
+	- [Write custom writer handle for your need](#write-custom-writer-handle-for-your-need)
 - [BEST PRACTICE](#best-practice)
 - [ROADMAP](#roadmap)
 - [AUTHOR](#author)
@@ -916,6 +917,99 @@ The same configuration you can write in configuration file:
     "use-mdc": true
   }
 }]}
+```
+
+# Write custom writer handle for your need
+
+Some time you may need to write log to some exotic place. In such cases you will
+need to implement your own `Writer` and its `WriterConf`. In simple cases it
+would be enough to implement your own `IO::Handle` for standard writer. For
+example, there are no de-facto must-use library for working with databases yet.
+That is why there are no special writer for it in `LogP6`. But lets try to write
+it now:
+
+Imagine we decided to use `SQLite` database and `DB::SQLite` library. We can
+ask the standard writer to prepare sql insert expression for us. Therefore we
+can only write custom `IO::Handle`. Fortunately it is easy in `Perl 6.d`
+version:
+
+```perl6
+unit module MyDBHandle;
+use DB;
+use DB::SQLite;
+
+class DBHandle is IO::Handle {
+  has Str $.filename is required;
+  has DB $!db;
+
+  submethod TWEAK() {
+    self.encoding: 'utf8';
+    # open database file and create table for logging
+    $!db = DB::SQLite.new(:$!filename);
+    $!db.execute('create table if not exists logs (date text, level text, log text)');
+  }
+
+  method WRITE(IO::Handle:D: Blob:D \data --> Bool:D) {
+    # decode Blob data and execute. we expect the valid sql dml expression in data.
+    $!db.execute(data.decode());
+    True;
+  }
+
+  method close() { $!db.finish } # close database
+
+  method READ(|) { #`[do nothing] }
+
+  method EOF { #`[do nothing] }
+}
+```
+
+It is all we need. Now we can write `LogP6` configuration. In `Perl 6`:
+
+```perl6
+use MyDBModule;
+use LogP6 :configure;
+
+writer(
+  :name<db>,
+  # pattern provides us the valid sql dml expression
+  :pattern('insert into logs (date, level, log) values (\'%date\', \'%level\', \'%msg%x{ - $name $msg $trace}\')'),
+  # handle with corresponding database filename
+  handle => DatabaseHandle.new(:filename<database-log.sqlite>),
+  # turn off auto-exceptions because it will corrupt our sql dml expression
+  :!auto-exceptions
+);
+cliche(:name<db>, :matcher<db>, grooves => ('db', level($trace)));
+
+my $log-db = get-logger('db');
+
+$log-db.info('database logging works well');
+```
+
+The same configuration you can write in configuration file:
+
+```json
+{
+  "writers": [{
+    "type": "std",
+    "name": "db",
+    "pattern": "insert into logs (date, level, log) values ('%date', '%level', '%msg%x{ - $name $msg $trace}'",
+    "handle": {
+      "type": "custom",
+      "require": "MyDBModule",
+      "fqn-class": "MyDBModule::DBHandle",
+      "args": {
+        "filename": "database-log.sqlite"
+      }
+    },
+    "auto-exceptions": false
+  }],
+  "filters": [{ "name": "filter", "type": "std", "level": "trace" }],
+  "cliches": [{
+    "name": "db",
+    "matcher": "db",
+    "grooves": [ "db", "filter" ]
+  }]
+}
 ```
 
 # BEST PRACTICE
