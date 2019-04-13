@@ -125,12 +125,20 @@ class FrameName does PatternPart {
 }
 
 my $lnames = [];
-$lnames[trace.Int] = 'TRACE';
-$lnames[debug.Int] = 'DEBUG';
-$lnames[info.Int]  = 'INFO';
-$lnames[warn.Int]  = 'WARN';
-$lnames[error.Int] = 'ERROR';
+$lnames[LogP6::Level::trace.Int] = 'TRACE';
+$lnames[LogP6::Level::debug.Int] = 'DEBUG';
+$lnames[LogP6::Level::info.Int]  = 'INFO';
+$lnames[LogP6::Level::warn.Int]  = 'WARN';
+$lnames[LogP6::Level::error.Int] = 'ERROR';
 $lnames .= List;
+
+my $color = [];
+$color[LogP6::Level::trace.Int] = "\e[33m"; # yellow
+$color[LogP6::Level::debug.Int] = "\e[32m"; # green;
+$color[LogP6::Level::info.Int]  = "\e[34m"; # blue;
+$color[LogP6::Level::warn.Int]  = "\e[35m"; # magenta;
+$color[LogP6::Level::error.Int] = "\e[31m"; # red;
+$color .= List;
 
 class LevelName does PatternPart {
 	has $.levels;
@@ -138,10 +146,12 @@ class LevelName does PatternPart {
 	method new($conf) {
 		my $levels = $lnames.clone.Array;
 		my $length = $conf<length> // 0;
+		my $colored = $conf<color> // False;
 		for 1..5 -> $i {
 			$levels[$i] = $conf{$i.Str} // $levels[$i];
 			$levels[$i] = sprintf('%-*.*s', $length, $length, $levels[$i])
 					if $length > 0;
+			$levels[$i] = $color[$i] ~ $levels[$i] ~ "\e[0m" if $colored;
 		}
 
 		self.bless(levels => $levels.List);
@@ -202,6 +212,7 @@ grammar Grammar is export {
 	rule level-param:sym<warn> { 'WARN' '=' <word> }
 	rule level-param:sym<error> { 'ERROR' '=' <word> }
 	rule level-param:sym<length> { 'length' '=' <num> }
+	rule level-param:sym<color> { 'color' }
 	# %framefile - frame file path
 	token item:sym<framefile> { '%framefile' }
 	# %frameline - frame file line
@@ -267,12 +278,13 @@ class Actions is export {
 		}
 	}
 	method level-params($/) { make $<level-param>>>.made.hash }
-	method level-param:sym<trace>($/) { make trace.Int.Str => $<word>.Str }
-	method level-param:sym<debug>($/) { make debug.Int.Str => $<word>.Str }
-	method level-param:sym<info>($/) { make info.Int.Str => $<word>.Str }
-	method level-param:sym<warn>($/) { make warn.Int.Str => $<word>.Str }
-	method level-param:sym<error>($/) { make error.Int.Str => $<word>.Str }
+	method level-param:sym<trace>($/) { make Level::trace.Int.Str => $<word>.Str }
+	method level-param:sym<debug>($/) { make Level::debug.Int.Str => $<word>.Str }
+	method level-param:sym<info>($/) { make Level::info.Int.Str => $<word>.Str }
+	method level-param:sym<warn>($/) { make Level::warn.Int.Str => $<word>.Str }
+	method level-param:sym<error>($/) { make Level::error.Int.Str => $<word>.Str }
 	method level-param:sym<length>($/) { make 'length' => $<num>.Str }
+	method level-param:sym<color>($/) { make 'color' => True }
 	method item:sym<framefile>($/) { make FrameFile }
 	method item:sym<frameline>($/) { make FrameLine }
 	method item:sym<framename>($/) { make FrameName }

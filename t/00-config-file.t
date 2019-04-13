@@ -147,7 +147,7 @@ subtest {
 	is $cn.default-pattern, '%msg', 'default-pattern';
 	is $cn.default-auto-exceptions, False, 'default-auto-exceptions';
 	is $cn.default-handle, $*ERR, 'default-handle';
-	is $cn.default-x-pattern, '%x', 'default-x-pattern';
+	is $cn.default-x-pattern, "%x\n%x\a%x\e%x", 'default-x-pattern';
 	is $cn.default-level, $trace, 'default-level';
 	is $cn.default-first-level-check, True, 'default-first-level-check';
 	ok $cn.default-wrapper, 'default-wrapper ok';

@@ -48,10 +48,10 @@ sub parse-config(IO() $file-path) is export {
 			writers => list(conf<writers>, &writer),
 			filters => list(conf<filters>, &filter),
 			cliches => list(conf<cliches>, &cliche),
-			default-pattern => string(conf<default-pattern>),
+			default-pattern => string-e(conf<default-pattern>),
 			default-auto-exceptions => bool(conf<default-auto-exceptions>),
 			default-handle => handle(conf<default-handle>),
-			default-x-pattern => string(conf<default-x-pattern>),
+			default-x-pattern => string-e(conf<default-x-pattern>),
 			default-level => level(conf<default-level>),
 			default-first-level-check => bool(conf<default-first-level-check>),
 			default-wrapper => wrapper(conf<default-wrapper>)
@@ -68,7 +68,7 @@ sub writer(\json) {
 		when 'std' {
 			return LogP6::WriterConf::Std.new(
 				name => json<name> // Str,
-				pattern => json<pattern> // Str,
+				pattern => string-e(json<pattern>),
 				handle => handle(json<handle>),
 				auto-exceptions => bool(json<auto-exceptions>)
 			);
@@ -115,16 +115,21 @@ sub string(\json) {
 	return Str;
 }
 
+sub string-e(\json) {
+	return json.Str.trans(['\e', '\a', '\n'] => ["\e", "\a", "\n"]) with json;
+	return Str;
+}
+
 sub cliche(\json) {
 	my $name = json<name>;
 	die 'Missing cliche\'s name' without $name;
 	return LogP6::Cliche.new(
 		name => $name,
 		matcher => matcher(json<matcher>),
-		default-pattern => string(json<default-pattern>),
+		default-pattern => string-e(json<default-pattern>),
 		default-auto-exceptions => bool(json<default-auto-exceptions>),
 		default-handle => handle(json<default-handle>),
-		default-x-pattern => string(json<default-x-pattern>),
+		default-x-pattern => string-e(json<default-x-pattern>),
 		default-level => level(json<default-level>),
 		default-first-level-check => bool(json<default-first-level-check>),
 		grooves => list(json<grooves>, &string),
@@ -210,11 +215,11 @@ sub custom(\json) {
 sub level(\json) {
 	return LogP6::Level without json;
 	given json {
-		when 'trace' { return trace; }
-		when 'debug' { return debug; }
-		when 'info'  { return info;  }
-		when 'warn'  { return warn;  }
-		when 'error' { return error; }
+		when 'trace' { return LogP6::Level::trace; }
+		when 'debug' { return LogP6::Level::debug; }
+		when 'info'  { return LogP6::Level::info;  }
+		when 'warn'  { return LogP6::Level::warn;  }
+		when 'error' { return LogP6::Level::error; }
 		default { die 'wrong level value ' ~ json; }
 	}
 }

@@ -7,7 +7,7 @@ use LogP6::WriterConf::Pattern;
 use LogP6::Context;
 use IOString;
 
-plan 14;
+plan 15;
 
 my LogP6::Context $context .= new;
 $context.level-set($info);
@@ -68,6 +68,8 @@ is parse-process($level-line), '<WARN>', 'level length 0 warn';
 $context.level-set($info);
 is parse-process($level-line), '<stay-for-a-wile-and-listen>',
 		'level length 0 info';
+is parse-process('colored %level{color}'), "colored \e[34mINFO\e[0m",
+		'level color';
 
 # %frame*
 sub info($frame) {

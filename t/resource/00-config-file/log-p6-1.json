@@ -5,7 +5,7 @@
 		"type": "std",
 		"path": "err"
 	},
-	"default-x-pattern": "%x",
+	"default-x-pattern": "%x\\n%x\\a%x\\e%x",
 	"default-level":  "trace",
 	"default-first-level-check": true,
 	"default-wrapper": {
