@@ -26,7 +26,7 @@ class LogP6::FilterConf::Std does LogP6::FilterConf {
 		$before = $first-level-check
 				?? [&level-check].push(|$before)
 				!! $before.push(&level-check);
-		$before = $before.list;
+		$before = $before.List;
 
 		LogP6::Filter::Std.new(
 			:$reactive-level,

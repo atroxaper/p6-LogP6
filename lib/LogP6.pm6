@@ -22,6 +22,8 @@ use LogP6::ThreadLocal;
 use LogP6::ConfigFile;
 use LogP6::LogGetter;
 
+use LogP6::Exceptions;
+
 our $trace is export(:configure) = Level::trace;
 our $debug is export(:configure) = Level::debug;
 our $info  is export(:configure) = Level::info;
@@ -66,24 +68,39 @@ sub try-initialize() {
 
 sub init-from-file($config-path) is export(:configure) {
 	$lock.protect({
+		my $prev-initialized = ⚛$initialized;
 		$initialized ⚛= 1;
 
 		init-getter(
 			get-wrap => sub ($t) { get-logger($t) },
 			get-pure => sub ($t) { get-logger-pure($t) });
 
-		wipe-log-config();
-
-		return without $config-path;
+		without $config-path {
+			wipe-log-config();
+			return;
+		}
 
 		unless $config-path.trim.Bool {
-			die "log-p6 config-path is blank";
+			logp6-error('log-p6 config-path is blank');
+			wipe-log-config();
+			return;
 		}
 		if !$config-path.IO.e {
-			die "log-p6 config '$config-path' is not exist";
+			logp6-error("log-p6 config '$config-path' is not exist");
+			wipe-log-config();
+			return;
 		}
 
-		my $config = parse-config($config-path);
+		my $config;
+		try {
+			$config = parse-config($config-path);
+			CATCH { default {
+				logp6-error($_);
+				wipe-log-config() if $prev-initialized == 0;
+				return;
+			}}
+		}
+		wipe-log-config();
 		set-default-pattern($_) with $config.default-pattern;
 		set-default-auto-exceptions($_) with $config.default-auto-exceptions;
 		set-default-handle($_) with $config.default-handle;
@@ -94,6 +111,7 @@ sub init-from-file($config-path) is export(:configure) {
 		writer($_) for $config.writers;
 		filter($_) for $config.filters;
 		cliche($_) for $config.cliches;
+		CATCH { default { logp6-error($_); .resume } }
 	});
 }
 
@@ -116,7 +134,7 @@ sub clean-all-settings() {
 	$loggers = %();
 
 	$default-pattern = '[%date{$hh:$mm:$ss}][%level] %msg';
-	die "wrong default lib pattern <$($default-pattern)>"
+	die "wrong default pattern <$($default-pattern)>"
 		unless Grammar.parse($default-pattern);
 	$default-auto-exceptions = True;
 	$default-handle = $*OUT;
@@ -641,7 +659,7 @@ sub check-pattern(Str $pattern) {
 sub find-cliche-with(Str:D $name!,
 		Str:D $type where * ~~ any('writer', 'filter') --> List:D
 ) {
-	@cliches.grep(*.has($name, $type)).list;
+	@cliches.grep(*.has($name, $type)).List;
 }
 
 multi sub update-loggers(Positional:D $cliches) {
@@ -670,10 +688,10 @@ sub change-cliche($old-cliche, $new-cliche) {
 }
 
 sub create-logger($trait, $cliche) {
- 	my $grooves = (0...^$cliche.writers.elems).list.map(-> $i { (
+ 	my $grooves = (0...^$cliche.writers.elems).List.map(-> $i { (
 			get-writer($cliche.writers[$i]).make-writer(|writer-defaults($cliche)),
 			get-filter($cliche.filters[$i]).make-filter(|filter-defaults($cliche))
-	) }).list;
+	) }).List;
 	return $grooves.elems > 0
 		?? LogP6::LoggerPure.new(:$trait, :$grooves)
 		!! LogP6::LoggerMute.new(:$trait);
@@ -717,8 +735,9 @@ sub get-logger(Str:D $trait --> Logger:D) is export(:MANDATORY) {
 		try-initialize();
 		return $_ with $loggers{$trait};
 		create-and-store-logger($trait);
-		$loggers{$trait}
+		return $loggers{$trait}
 	});
+	CATCH { default { logp6-error($_); return LogP6::LoggerMute.new(:$trait) } }
 }
 
 sub get-logger-pure(Str:D $trait --> Logger:D) is export(:configure) {
@@ -730,6 +749,7 @@ sub get-logger-pure(Str:D $trait --> Logger:D) is export(:configure) {
 		return $_ with atomic-fetch($loggers-pure){$trait};
 		create-and-store-logger($trait);
 	});
+	CATCH { default { logp6-error($_); return LogP6::LoggerMute.new(:$trait) } }
 }
 
 sub remove-logger(Str:D $trait --> Logger) is export(:configure) {

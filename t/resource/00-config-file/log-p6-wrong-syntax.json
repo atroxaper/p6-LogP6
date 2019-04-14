@@ -1,0 +1,15 @@
+{
+	"writers": [
+		{
+			"type": "STD",
+			"name": "w1",
+			"pattern": "%msg",
+			"handle": {
+				"type": "file",
+				"path": "./t/resource/00-config-file/handle1.after",
+				"append": false
+			},
+			"auto-exceptions": true
+		}
+	]
+}

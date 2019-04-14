@@ -3,13 +3,17 @@ use Test;
 use lib 'lib';
 use LogP6 :configure;
 use LogP6::ConfigFile;
+use lib './t/resource/Helpers';
+use IOString;
 
 plan 8;
+
+$*ERR = IOString.new;
 
 subtest {
 	plan 1;
 
-	dies-ok { init-from-file('./t/resource/00-config-file/log-p6-empty.json') },
+	lives-ok { init-from-file('./t/resource/00-config-file/log-p6-empty.json') },
 		'cannot init from empty file';
 
 }, 'empty file';
@@ -17,7 +21,7 @@ subtest {
 subtest {
 	plan 2;
 
-	dies-ok { init-from-file('./t/resource/00-config-file/not-exist.json') },
+	lives-ok { init-from-file('./t/resource/00-config-file/not-exist.json') },
 		'cannot init from miss file';
 	lives-ok { init-from-file(Any) }, 'can init empty argument';
 

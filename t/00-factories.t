@@ -2,8 +2,12 @@ use Test;
 
 use lib 'lib';
 use LogP6 :configure;
+use lib './t/resource/Helpers';
+use IOString;
 
 plan 5;
+
+$*ERR = IOString.new;
 
 sub some-sub1($context) {
 	True;
@@ -303,6 +307,7 @@ subtest {
 
 	use lib './t/resource/Helpers';
 	use LogP6::LoggerPure;
+	use LogP6::LoggerPure;
 	use LogP6::Wrapper::SyncTime;
 	use IOString;
 
@@ -368,8 +373,7 @@ subtest {
 	remove-logger('not-log');
 	remove-logger('any');
 	remove-logger('any2');
-	cliche(:name(''), :matcher('hahaha'), grooves => ('', ''), :replace);
-	dies-ok { get-logger('not-log') }, 'default cliche is changed';
+	does-ok get-logger('not-log'), LogP6::LoggerMute, 'default cliche is changed';
 
 }, 'logger';
 

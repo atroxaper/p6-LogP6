@@ -1,6 +1,7 @@
 use LogP6::Level;
 use LogP6::Logger;
 use LogP6::FilterConf::Std;
+use LogP6::Exceptions;
 
 class LogP6::LoggerPure does LogP6::Logger {
 	has Str:D $.trait is required;
@@ -14,53 +15,68 @@ class LogP6::LoggerPure does LogP6::Logger {
 				@$!grooves.map(-> $g {$g[1].reactive-level // LogP6::Level::trace}).min;
 	}
 
+	method trait() {
+		$!trait;
+	}
+
 	method ndc-push($obj) {
 		get-context.ndc-push: $obj;
+		CATCH { default { logp6-error($_) } }
 	}
 
 	method ndc-pop() {
 		get-context.ndc-pop;
+		CATCH { default { logp6-error($_) } }
 	}
 
 	method ndc-clean() {
 		get-context.ndc-clean;
+		CATCH { default { logp6-error($_) } }
 	}
 
 	method mdc-put($key, $obj) {
 		get-context.mdc-put: $key, $obj;
+		CATCH { default { logp6-error($_) } }
 	}
 
 	method mdc-remove($key) {
 		get-context.mdc-remove: $key;
+		CATCH { default { logp6-error($_) } }
 	}
 
 	method mdc-clean() {
 		get-context.mdc-clean;
+		CATCH { default { logp6-error($_) } }
 	}
 
 	method trace(*@args, :$x) {
 		return if $!reactive-level > LogP6::Level::trace;
 		self!log(LogP6::Level::trace, @args, :$x);
+		CATCH { default { logp6-error($_) } }
 	}
 
 	method debug(*@args, :$x) {
 		return if $!reactive-level > LogP6::Level::debug;
 		self!log(LogP6::Level::debug, @args, :$x);
+		CATCH { default { logp6-error($_) } }
 	}
 
 	method info(*@args, :$x) {
 		return if $!reactive-level > LogP6::Level::info;
 		self!log(LogP6::Level::info, @args, :$x);
+		CATCH { default { logp6-error($_) } }
 	}
 
 	method warn(*@args, :$x) {
 		return if $!reactive-level > LogP6::Level::warn;
 		self!log(LogP6::Level::warn, @args, :$x);
+		CATCH { default { logp6-error($_) } }
 	}
 
 	method error(*@args, :$x) {
 		return if $!reactive-level > LogP6::Level::error;
 		self!log(LogP6::Level::error, @args, :$x);
+		CATCH { default { logp6-error($_) } }
 	}
 
 	submethod !log($level, @args, :$x) {
@@ -87,6 +103,7 @@ class LogP6::LoggerPure does LogP6::Logger {
 
 class LogP6::LoggerMute does LogP6::Logger {
 	has Str:D $.trait is required;
+	method trait() { $!trait }
 	method ndc-push($obj) {}
 	method ndc-pop() {}
 	method ndc-clean() {}

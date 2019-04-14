@@ -1,0 +1,12 @@
+{
+	"writers": [
+		{
+			"type": "std",
+			"name": "w1"
+		},
+		{
+			"type": "std",
+			"name": "w1"
+		}
+	]
+}

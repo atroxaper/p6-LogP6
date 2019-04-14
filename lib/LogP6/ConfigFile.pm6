@@ -60,7 +60,7 @@ sub parse-config(IO() $file-path) is export {
 
 sub list(\json, &each) {
 	return () without json;
-	return json.map({each($_)}).list;
+	return json.map({each($_)}).eager.List;
 }
 
 sub writer(\json) {
@@ -80,7 +80,6 @@ sub writer(\json) {
 			die "Wrong writer type $_";
 		}
 	}
-	json<args><name>.Str;
 }
 
 sub filter(\json) {
@@ -101,7 +100,6 @@ sub filter(\json) {
 			die "Wrong filter type $_";
 		}
 	}
-	json<args><name>.Str;
 }
 
 sub bool(\json) {
