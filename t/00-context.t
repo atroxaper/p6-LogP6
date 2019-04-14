@@ -4,7 +4,7 @@ use lib 'lib';
 use LogP6::Logger;
 use LogP6::Level;
 
-plan 44;
+plan 54;
 
 my LogP6::Context $context = get-context();
 
@@ -22,14 +22,14 @@ is $context.msg, 'setted', 'setted msg';
 nok $context.level.defined, 'default level';
 $context.level-set('boom');
 is $context.level, 'boom', 'can set any level';
-$context.level-set(info);
-is $context.level, info, 'set properly level';
+$context.level-set(LogP6::Level::info);
+is $context.level, LogP6::Level::info, 'set properly level';
 nok $context.x.defined, 'default x';
 $context.x-set(X::AdHoc.new);
 is $context.x, X::AdHoc.new, 'setted x';
-$context.reset('resetted', trace, X::AdHoc.new(:payload<p>));
+$context.reset('resetted', LogP6::Level::trace, X::AdHoc.new(:payload<p>));
 is $context.msg, 'resetted', 'resetted msg';
-is $context.level, trace, 'resetted level';
+is $context.level, LogP6::Level::trace, 'resetted level';
 is $context.x.payload, 'p', 'resetted x';
 
 # trait
@@ -96,5 +96,39 @@ isnt $context.date, $new-default, 'clean all with date not old';
 nok $context.msg, 'clean all with msg';
 nok $context.x, 'clean all with x';
 nok $context.level, 'clean all with level';
+
+# clone
+$context.msg-set('msg');
+my $date = $context.date();
+$context.level-set(LogP6::Level::info);
+$context.x-set(X::AdHoc.new);
+$context.trait-set('trait');
+$context.ndc-push('ndc');
+$context.mdc-put('key', 'value');
+sub sub-info() { $context.callframe }
+sub info() { sub-info }
+sub foo() { info() }
+foo();
+my $copy = $context.copy;
+$context.msg-set('gsm');
+is $copy.msg, 'msg', 'copy msg';
+$context.date-clean;
+is $copy.date, $date, 'copy date';
+$context.level-set(LogP6::Level::warn);
+is $copy.level, LogP6::Level::info, 'copy level';
+$context.x-set(Any);
+is $copy.x, X::AdHoc.new, 'copy x';
+$context.trait-set('tiart');
+is $copy.trait, 'trait', 'copy trait';
+is $copy.tid, $context.tid, 'copy tid';
+is $copy.tname, $context.tname, 'copy tname';
+$context.ndc-push('cdn');
+is-deeply $copy.ndc, ['ndc'], 'copy ndc';
+$context.mdc-put('value', 'key');
+is-deeply $copy.mdc, %(:key<value>), 'copy mdc';
+my $callframe = $context.callframe;
+$context.clean;
+is $copy.callframe, $callframe, 'copy callframe';
+
 
 done-testing;
