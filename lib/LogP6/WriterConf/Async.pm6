@@ -14,7 +14,7 @@ class LogP6::WriterConf::Async does LogP6::WriterConf {
 	}
 
 	method clone-with-name($name --> LogP6::WriterConf:D) {
-		return self.close: :$name;
+		return self.clone(:$name);
 	}
 
 	method make-writer(*%defaults --> LogP6::Writer:D) {

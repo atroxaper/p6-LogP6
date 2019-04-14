@@ -29,6 +29,7 @@ even in your own libraries.
 		- [WriterConf](#writerconf)
 		- [Standard WriterConf](#standard-writerconf)
 		- [Pattern](#pattern)
+		- [Async writing](#async-writing)
 		- [Writer factory subroutines](#writer-factory-subroutines)
 		- [Writer configuration file](#writer-configuration-file)
 	- [Filter configuration](#filter-configuration)
@@ -375,13 +376,16 @@ subpattern. `$msg` - optional exception message, `$name` - optional exception
 name, `$trace` - optional exception stacktrace. For example,
 `'%x{($name "$msg") Trace: $trace}'` can be converted into
 `'(X::AdHoc "test exception") Trace: ...'`;
-- `%level{WARN=W DEBUG=D ERROR=E TRACE=T INFO=I length=2}` - log importance
+- `%level{WARN=W DEBUG=D ERROR=E TRACE=T INFO=I length=2 color}` - log importance
 level. By default logger will use level name in upper case but you can
 specify synonyms for all or part of them in curly brackets in format
-`<LEVEL_NAME>=<sysnonym>`. Also you can specify a fixed length of log level
-name. Default length is 0 - write level as is. For example
+`<LEVEL_NAME>=<sysnonym>`. You can specify a fixed length of log level name.
+Default length is 0 - write level as is. For example
 `'[%level{WARN=hmm ERROR=alarm length=5}]'` can be converted into
-`'[hmm  ]'`, `'[alarm]'`, `'[INFO ]'`, `'[DEBUG]'`;
+`'[hmm  ]'`, `'[alarm]'`, `'[INFO ]'`, `'[DEBUG]'`. Also you can specify `color`
+argument - then level names will be colored in output. It is turned off as
+default. If you want to use color you prefer then you need to surround level
+names with `\e[<color-num>m` and `\e[0m`;
 - `%date{$yyyy-$yy-$MM-$MMM-$dd $hh:$mm:$ss:$mss $z}` - current date and time.
 String in curly brackets is used as
 subpattern.
@@ -398,8 +402,24 @@ at the same log call line;
 `callframe().code.name` in log call block;
 
 Note that using `%framefile`, `%frameline` or `%framename` in the pattern will
-slow your program because it requires several `callframe` calls on each
+slow your program because it requires several `callframe()` calls on each
 resultative log call;
+
+### Async writing
+
+`LogP6` provides writer and handle implementation for asynchronous writing.
+
+You can use `LogP6::Handle::Async.new(IO::Handle :$delegate!, Scheduler :$scheduler = $*SCHEDULER)`
+as handle which will schedule `WRITE` method call of `delegate` handle.
+
+If is it not enough to wrap a handle then you can wrap whole writer. Use
+`LogP6::WriterConf::Async.new(LogP6::WriterConf :$delegate!, Scheduler :$scheduler = $*SCHEDULER), :$name, Bool :$need-callframe)`
+as writer configuration of another configuration. Final writer will schedule 
+`write` method call of `delegate` created writer with copy of current
+`logger context`. If you miss a `:name` parameter then `delegate`'s name will
+be used. Pass boolean parameter `need-callframe` if you plan to use callframe
+information in wrapped writer. Note that using callframe will slow your program
+because it requires several `callframe()` calls on each resultative log call.
 
 ### Writer factory subroutines
 
@@ -1030,10 +1050,8 @@ subroutines logic then make a special sub for retrieve logger like
 
 # ROADMAP
 
-- Make IO::Handle for write log in databases;
 - Make IO::Handle rollover support - change log file after some period of time
 or after file size limit are reached;
-- Add Writer for asynchronous writing;
 - Add a `Cro::Transform` for using `LogP6` in `cro` applications.
 
 # AUTHOR
