@@ -10,8 +10,8 @@ High priority:
 1. ~~add `length=0` in `%level` for exact length. make it default~~
 
 Medium priority:
-1. use a better exceptions instead of 'die'
-1. add params for %trait in pattern (short, long variant)
+1. ~~use a better exceptions instead of 'die'~~
+1. ~~add params for %trait in pattern (short, long variant)~~
 1. try make entities be really immutable (filters, writes, loggers)
 1. ~~add database writer~~
 

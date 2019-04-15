@@ -10,6 +10,49 @@ class Trait does PatternPart {
 	method show($context) { $context.trait }
 }
 
+role TraitParam does PatternPart {
+	# not need eviction. if we use trait ones then we use it all program lifetime
+	has %!cache = %();
+
+	method calculate($trait) { ... }
+
+	method show($context) {
+		my $trait = $context.trait;
+		%!cache{$trait} //= self.calculate($trait);
+	}
+}
+
+class TraitShort does TraitParam {
+	has $.separator;
+	has $.minus;
+	has $.length;
+	has $.abreviature;
+
+	method calculate($trait) {
+		my $parts = $trait.split('::').List;
+		my $elems = $parts.elems;
+		if $!length >= $elems || $!length == 0 {
+			return $parts.join($!separator);
+		}
+		my $middle = $!minus ?? $!length !! $elems - $!length;
+		return $parts.kv.map(-> $i, $p {
+			if $i < $middle {
+				$!abreviature ?? substr($p, 0, $!abreviature) !! Any;
+			} else {
+				$p;
+			}
+		}).grep(*.defined).join($!separator);
+	}
+}
+
+class TraitSprintf does TraitParam {
+	has $.placeholder;
+
+	method calculate($trait) {
+		sprintf($!placeholder, $trait);
+	}
+}
+
 class Tid does PatternPart {
 	method show($context) { $context.tid }
 }
@@ -167,7 +210,12 @@ grammar Grammar is export {
 
 	proto token item { * }
 	# %trait - logger name (trait)
-	token item:sym<trait> { '%trait' }
+	token item:sym<trait> { '%trait'<trait-params>? }
+	token trait-params { \{ <trait-param> \} }
+	proto rule trait-param { * }
+	rule trait-param:sym<short>
+			{ <ws> 'short' '=' '[' $<word>=<-[\]]>+ ']' <real-num> }
+	rule trait-param:sym<printf> { <ws> 'sprintf' '=' <word> }
 	# %tid - thread id
 	token item:sym<tid> { '%tid' }
 	# %tname - thread name
@@ -221,12 +269,28 @@ grammar Grammar is export {
 	token item:sym<framename> { '%framename' }
 
 	token word { $<text>=<-[\s}]>+ }
+	token minus { '-' }
 	token num { $<text>=\d+ }
+	token fract { '.'<num> }
+	token real-num { <minus>?<num><fract>?}
 }
 
 class Actions is export {
 	method TOP($/) { make $<item>>>.made.List }
-	method item:sym<trait>($/) { make Trait }
+	method item:sym<trait>($/) {
+		with $<trait-params> {
+			make $<trait-params>.made
+		} else {
+			make Trait
+		}
+	}
+	method trait-params($/) { make $<trait-param>.made }
+	method trait-param:sym<short>($/) {
+		make TraitShort.new(:separator($<word>.Str), |$<real-num>.made);
+	}
+	method trait-param:sym<printf>($/) {
+		make TraitSprintf.new(:placeholder($<word>.Str))
+	}
 	method item:sym<tid>($/) { make Tid }
 	method item:sym<tname>($/) { make Tname }
 	method item:sym<msg>($/) { make Msg }
@@ -283,9 +347,19 @@ class Actions is export {
 	method level-param:sym<info>($/) { make Level::info.Int.Str => $<word>.Str }
 	method level-param:sym<warn>($/) { make Level::warn.Int.Str => $<word>.Str }
 	method level-param:sym<error>($/) { make Level::error.Int.Str => $<word>.Str }
-	method level-param:sym<length>($/) { make 'length' => $<num>.Str }
+	method level-param:sym<length>($/) { make 'length' => $<num>.made.Str }
 	method level-param:sym<color>($/) { make 'color' => True }
 	method item:sym<framefile>($/) { make FrameFile }
 	method item:sym<frameline>($/) { make FrameLine }
 	method item:sym<framename>($/) { make FrameName }
+	method minus($/) { make True }
+	method num($/) { make $<text>.Int }
+	method fract($/) { make $<num>.made }
+	method real-num($/) {
+		make %(
+			:length($<num>.made),
+			:abreviature($<fract>.made // 0),
+			:minus($<minus>.made // False)
+		);
+	}
 }
