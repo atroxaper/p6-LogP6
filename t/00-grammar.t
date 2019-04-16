@@ -110,4 +110,12 @@ is parse-process('%trait{sprintf=%.2s}'), 'Lo', '%.2s';
 is parse-process('%trait{sprintf=%21s}'), ' LogP6::Writer::Async', '%21s';
 is parse-process('%trait{sprintf=%-21s}'), 'LogP6::Writer::Async ', '%-21s';
 
+$context.level-set($warn);
+$context.msg-set('msg');
+is parse-process('%msg [%color%level%color{reset}]'), "msg [\e[35mWARN\e[0m]";
+is parse-process('%msg [%color{WARN=34}%level%color{reset}]'), "msg [\e[34mWARN\e[0m]";
+$context.level-set($error);
+is parse-process('%msg [%color{WARN=34}%level%color{reset}]'), "msg [\e[31mERROR\e[0m]";
+is parse-process('%msg [%color%level]'), "msg [\e[31mERROR]\e[0m";
+
 done-testing;

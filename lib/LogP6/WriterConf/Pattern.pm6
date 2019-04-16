@@ -176,12 +176,14 @@ $lnames[LogP6::Level::error.Int] = 'ERROR';
 $lnames .= List;
 
 my $color = [];
-$color[LogP6::Level::trace.Int] = "\e[33m"; # yellow
-$color[LogP6::Level::debug.Int] = "\e[32m"; # green;
-$color[LogP6::Level::info.Int]  = "\e[34m"; # blue;
-$color[LogP6::Level::warn.Int]  = "\e[35m"; # magenta;
-$color[LogP6::Level::error.Int] = "\e[31m"; # red;
+$color[LogP6::Level::trace.Int] = "33"; # yellow
+$color[LogP6::Level::debug.Int] = "32"; # green;
+$color[LogP6::Level::info.Int]  = "34"; # blue;
+$color[LogP6::Level::warn.Int]  = "35"; # magenta;
+$color[LogP6::Level::error.Int] = "31"; # red;
 $color .= List;
+
+my $code = %(:33yellow, :32green, :34blue, :35magenta, :31red);
 
 class LevelName does PatternPart {
 	has $.levels;
@@ -191,7 +193,7 @@ class LevelName does PatternPart {
 		my $length = $conf<length> // 0;
 		my $colored = $conf<color> // False;
 		for 1..5 -> $i {
-			$levels[$i] = $conf{$i.Str} // $levels[$i];
+			$levels[$i] = $conf{$i} // $levels[$i];
 			$levels[$i] = sprintf('%-*.*s', $length, $length, $levels[$i])
 					if $length > 0;
 			$levels[$i] = $color[$i] ~ $levels[$i] ~ "\e[0m" if $colored;
@@ -202,6 +204,33 @@ class LevelName does PatternPart {
 
 	method show($context) {
 		$!levels[$context.level];
+	}
+}
+
+class Color { ... }
+class ColorReset { ... }
+
+role ColorFactory {
+	method create($conf) {
+		return ColorReset if $conf{'reset'};
+		my $colors = $color.clone.Array;
+		for 1..5 -> $i {
+			$colors[$i] = $conf{$i} // $colors[$i];
+			$colors[$i] = "\e[" ~ $colors[$i] ~ 'm';
+		}
+		Color.new(colors => $colors.List);
+	}
+}
+
+class ColorReset does ColorFactory does PatternPart {
+	method show($context) { "\e[0m" }
+}
+
+class Color does ColorFactory does PatternPart {
+	has $.colors;
+
+	method show($context) {
+		$!colors[$context.level];
 	}
 }
 
@@ -267,6 +296,23 @@ grammar Grammar is export {
 	token item:sym<frameline> { '%frameline' }
 	# %framename - frame code name
 	token item:sym<framename> { '%framename' }
+	# %color{TRACE=yellow DEBUG=green INFO=blue WARN=magenta ERROR=red}
+	# $color{reset}
+	token item:sym<color> { '%color'<color-params>? }
+	token color-params { \{ <color-param> \} }
+	proto token color-param { * }
+	token color-param:sym<color-level-params> { <color-level-param>+ }
+	token color-param:sym<reset> { 'reset' }
+	proto rule color-level-param { * }
+	rule color-level-param:sym<trace> { 'TRACE' '=' <color> }
+	rule color-level-param:sym<debug> { 'DEBUG' '=' <color> }
+	rule color-level-param:sym<info> { 'INFO' '=' <color> }
+	rule color-level-param:sym<warn> { 'WARN' '=' <color> }
+	rule color-level-param:sym<error> { 'ERROR' '=' <color> }
+	proto token color { * }
+	token color:sym<name>
+			{ $<name>=('black' | 'white' | 'yellow' | 'green' | 'blue' | 'magenta' | 'red') }
+	token color:sym<code> { <num> (';'<num>)* }
 
 	token word { $<text>=<-[\s}]>+ }
 	token minus { '-' }
@@ -276,7 +322,19 @@ grammar Grammar is export {
 }
 
 class Actions is export {
-	method TOP($/) { make $<item>>>.made.List }
+	method TOP($/) {
+		my $items = $<item>>>.made.List;
+		my $first = $items.reverse.first(* ~~ ColorFactory);
+		with $first {
+			if $first ~~ ColorReset {
+				make $items;
+			} else {
+				make (|$items, ColorReset).List;
+			}
+		} else {
+			make $items;
+		}
+	}
 	method item:sym<trait>($/) {
 		with $<trait-params> {
 			make $<trait-params>.made
@@ -342,16 +400,38 @@ class Actions is export {
 		}
 	}
 	method level-params($/) { make $<level-param>>>.made.hash }
-	method level-param:sym<trace>($/) { make Level::trace.Int.Str => $<word>.Str }
-	method level-param:sym<debug>($/) { make Level::debug.Int.Str => $<word>.Str }
-	method level-param:sym<info>($/) { make Level::info.Int.Str => $<word>.Str }
-	method level-param:sym<warn>($/) { make Level::warn.Int.Str => $<word>.Str }
-	method level-param:sym<error>($/) { make Level::error.Int.Str => $<word>.Str }
+	method level-param:sym<trace>($/) { make Level::trace.Int => $<word>.Str }
+	method level-param:sym<debug>($/) { make Level::debug.Int => $<word>.Str }
+	method level-param:sym<info>($/) { make Level::info.Int => $<word>.Str }
+	method level-param:sym<warn>($/) { make Level::warn.Int => $<word>.Str }
+	method level-param:sym<error>($/) { make Level::error.Int => $<word>.Str }
 	method level-param:sym<length>($/) { make 'length' => $<num>.made.Str }
 	method level-param:sym<color>($/) { make 'color' => True }
 	method item:sym<framefile>($/) { make FrameFile }
 	method item:sym<frameline>($/) { make FrameLine }
 	method item:sym<framename>($/) { make FrameName }
+	method item:sym<color>($/) {
+		with $<color-params> {
+			make ColorFactory.create($<color-params>.made);
+		} else {
+			make ColorFactory.create(%());
+		}
+	}
+	method color-params($/) { make $<color-param>.made }
+	method color-param:sym<color-level-params>($/) { make $<color-level-param>>>.made.hash }
+	method color-param:sym<reset>($/) { make 'reset' => True }
+	method color-level-param:sym<trace>($/)
+			{ make Level::trace.Int => $<color>.made }
+	method color-level-param:sym<debug>($/)
+			{ make Level::debug.Int => $<color>.made }
+	method color-level-param:sym<info>($/)
+			{ make Level::info.Int => $<color>.made }
+	method color-level-param:sym<warn>($/)
+			{ make Level::warn.Int => $<color>.made }
+	method color-level-param:sym<error>($/)
+			{ make Level::error.Int => $<color>.made }
+	method color:sym<name>($/) { make $code{$<name>.Str} }
+	method color:sym<code>($/) { make $/.Str }
 	method minus($/) { make True }
 	method num($/) { make $<text>.Int }
 	method fract($/) { make $<num>.made }
