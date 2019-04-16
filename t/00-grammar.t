@@ -7,7 +7,7 @@ use LogP6::WriterConf::Pattern;
 use LogP6::Context;
 use IOString;
 
-plan 42;
+plan 45;
 
 my LogP6::Context $context .= new;
 $context.level-set($info);
@@ -68,8 +68,6 @@ is parse-process($level-line), '<WARN>', 'level length 0 warn';
 $context.level-set($info);
 is parse-process($level-line), '<stay-for-a-wile-and-listen>',
 		'level length 0 info';
-is parse-process('colored %level{color}'), "colored \e[34mINFO\e[0m",
-		'level color';
 
 # %frame*
 sub info($frame) {
@@ -79,6 +77,7 @@ sub info($frame) {
 sub foo() { info(callframe) }
 foo;
 
+# %trait
 $context.trait-set('LogP6::Writer::Async::Std');
 is parse-process('%trait{short=[.]5.4}'), 'LogP6.Writer.Async.Std', '[.]5.4';
 is parse-process('%trait{short=[.]5}' ),  'LogP6.Writer.Async.Std', '[.]5';
@@ -104,18 +103,22 @@ is parse-process('%trait{short=[.]-4.0}'),'LogP6.Writer.Async.Std', '[.]-4.0';
 is parse-process('%trait{short=[.]-4}' ), 'LogP6.Writer.Async.Std', '[.]-4';
 is parse-process('%trait{short=[.]-5.2}'), 'LogP6.Writer.Async.Std', '[.]-5.2';
 is parse-process('%trait{short=[.]-5}' ), 'LogP6.Writer.Async.Std', '[.]-5';
-
 $context.trait-set('LogP6::Writer::Async');
 is parse-process('%trait{sprintf=%.2s}'), 'Lo', '%.2s';
 is parse-process('%trait{sprintf=%21s}'), ' LogP6::Writer::Async', '%21s';
 is parse-process('%trait{sprintf=%-21s}'), 'LogP6::Writer::Async ', '%-21s';
 
+# %color
 $context.level-set($warn);
 $context.msg-set('msg');
-is parse-process('%msg [%color%level%color{reset}]'), "msg [\e[35mWARN\e[0m]";
-is parse-process('%msg [%color{WARN=34}%level%color{reset}]'), "msg [\e[34mWARN\e[0m]";
+is parse-process('%msg [%color%level%color{reset}]'),
+		"msg [\e[35mWARN\e[0m]", 'color empty with reset';
+is parse-process('%msg [%color{WARN=34}%level%color{reset}]'),
+		"msg [\e[34mWARN\e[0m]", 'color WARN with reset';
 $context.level-set($error);
-is parse-process('%msg [%color{WARN=34}%level%color{reset}]'), "msg [\e[31mERROR\e[0m]";
-is parse-process('%msg [%color%level]'), "msg [\e[31mERROR]\e[0m";
+is parse-process('%msg [%color{WARN=34}%level%color{reset}]'),
+		"msg [\e[31mERROR\e[0m]", 'color WARN error with reset';
+is parse-process('%msg [%color%level]'),
+		"msg [\e[31mERROR]\e[0m", 'color empty without reset';
 
 done-testing;

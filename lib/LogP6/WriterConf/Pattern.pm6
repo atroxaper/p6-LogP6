@@ -191,12 +191,10 @@ class LevelName does PatternPart {
 	method new($conf) {
 		my $levels = $lnames.clone.Array;
 		my $length = $conf<length> // 0;
-		my $colored = $conf<color> // False;
 		for 1..5 -> $i {
 			$levels[$i] = $conf{$i} // $levels[$i];
 			$levels[$i] = sprintf('%-*.*s', $length, $length, $levels[$i])
 					if $length > 0;
-			$levels[$i] = $color[$i] ~ $levels[$i] ~ "\e[0m" if $colored;
 		}
 
 		self.bless(levels => $levels.List);
@@ -289,7 +287,6 @@ grammar Grammar is export {
 	rule level-param:sym<warn> { 'WARN' '=' <word> }
 	rule level-param:sym<error> { 'ERROR' '=' <word> }
 	rule level-param:sym<length> { 'length' '=' <num> }
-	rule level-param:sym<color> { 'color' }
 	# %framefile - frame file path
 	token item:sym<framefile> { '%framefile' }
 	# %frameline - frame file line
@@ -406,7 +403,6 @@ class Actions is export {
 	method level-param:sym<warn>($/) { make Level::warn.Int => $<word>.Str }
 	method level-param:sym<error>($/) { make Level::error.Int => $<word>.Str }
 	method level-param:sym<length>($/) { make 'length' => $<num>.made.Str }
-	method level-param:sym<color>($/) { make 'color' => True }
 	method item:sym<framefile>($/) { make FrameFile }
 	method item:sym<frameline>($/) { make FrameLine }
 	method item:sym<framename>($/) { make FrameName }
