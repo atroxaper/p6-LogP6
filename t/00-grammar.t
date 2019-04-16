@@ -7,7 +7,7 @@ use LogP6::WriterConf::Pattern;
 use LogP6::Context;
 use IOString;
 
-plan 45;
+plan 46;
 
 my LogP6::Context $context .= new;
 $context.level-set($info);
@@ -120,5 +120,7 @@ is parse-process('%msg [%color{WARN=34}%level%color{reset}]'),
 		"msg [\e[31mERROR\e[0m]", 'color WARN error with reset';
 is parse-process('%msg [%color%level]'),
 		"msg [\e[31mERROR]\e[0m", 'color empty without reset';
+is parse-process('%msg [%color%level%creset]'),
+		"msg [\e[31mERROR\e[0m]", 'color empty with creset';
 
 done-testing;

@@ -294,8 +294,9 @@ grammar Grammar is export {
 	# %framename - frame code name
 	token item:sym<framename> { '%framename' }
 	# %color{TRACE=yellow DEBUG=green INFO=blue WARN=magenta ERROR=red}
-	# $color{reset}
+	# %color{reset} %creset
 	token item:sym<color> { '%color'<color-params>? }
+	token item:sym<creset> { '%creset' }
 	token color-params { \{ <color-param> \} }
 	proto token color-param { * }
 	token color-param:sym<color-level-params> { <color-level-param>+ }
@@ -413,6 +414,7 @@ class Actions is export {
 			make ColorFactory.create(%());
 		}
 	}
+	method item:sym<creset>($/) { make ColorReset }
 	method color-params($/) { make $<color-param>.made }
 	method color-param:sym<color-level-params>($/) { make $<color-level-param>>>.made.hash }
 	method color-param:sym<reset>($/) { make 'reset' => True }
