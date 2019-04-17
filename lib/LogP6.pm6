@@ -35,7 +35,9 @@ my atomicint $initialized = 0;
 
 my @cliches;
 my $cliches-names;
+my %cliches-to-traits;
 my %cliches-to-loggers;
+my %cliches-to-loggers-pure;
 my $loggers-pure = %();
 my $loggers = $();
 
@@ -129,7 +131,9 @@ sub create-default-cliche() {
 sub clean-all-settings() {
 	@cliches = [];
 	$cliches-names = SetHash.new;
+	%cliches-to-traits = %();
 	%cliches-to-loggers = %();
+	%cliches-to-loggers-pure = %();
 	$loggers-pure = %();
 	$loggers = %();
 
@@ -593,7 +597,6 @@ multi sub cliche(Str:D :$name!, :$remove! where *.so --> LogP6::Cliche) {
 		my $old = @cliches.grep(*.name eq $name).first // LogP6::Cliche;
 		@cliches = @cliches.grep(*.name ne $name).Array;
 		$cliches-names{$name} = False;
-		%cliches-to-loggers = %();
 		update-loggers;
 		$old;
 	});
@@ -662,21 +665,6 @@ sub find-cliche-with(Str:D $name!,
 	@cliches.grep(*.has($name, $type)).List;
 }
 
-multi sub update-loggers(Positional:D $cliches) {
-	for |$cliches -> $cliche {
-		for (%cliches-to-loggers{$cliche.name} // SetHash.new).keys -> $trait {
-			create-and-store-logger($trait);
-		}
-	}
-}
-
-multi sub update-loggers() {
-	my @traits := atomic-fetch($loggers).keys.List;
-	for @traits -> $trait {
-		create-and-store-logger($trait);
-	}
-}
-
 sub change-cliche($old-cliche, $new-cliche) {
 	for @cliches.kv -> $i, $cliche {
 		if $cliche.name eq $old-cliche.name {
@@ -728,26 +716,21 @@ sub find-cliche-for-trait($trait) {
 }
 
 sub get-logger(Str:D $trait --> Logger:D) is export(:MANDATORY) {
-	my %logs = atomic-fetch($loggers);
-	return $_ with %logs{$trait};
+	return $_ with atomic-fetch($loggers){$trait};
 
 	$lock.protect({
 		try-initialize();
-		return $_ with $loggers{$trait};
-		create-and-store-logger($trait);
-		return $loggers{$trait}
+		return find-or-create-and-store-logger($trait);
 	});
 	CATCH { default { logp6-error($_); return LogP6::LoggerMute.new(:$trait) } }
 }
 
 sub get-logger-pure(Str:D $trait --> Logger:D) is export(:configure) {
-	my %logs = atomic-fetch($loggers-pure);
-	return $_ with %logs{$trait};
+	return $_ with atomic-fetch($loggers-pure){$trait};
 
 	$lock.protect({
 		try-initialize();
-		return $_ with atomic-fetch($loggers-pure){$trait};
-		create-and-store-logger($trait);
+		return find-or-create-and-store-logger-pure($trait);
 	});
 	CATCH { default { logp6-error($_); return LogP6::LoggerMute.new(:$trait) } }
 }
@@ -768,20 +751,99 @@ sub remove-logger(Str:D $trait --> Logger) is export(:configure) {
 	});
 }
 
-sub create-and-store-logger($trait) {
+multi sub update-loggers(Positional:D $cliches) {
+	for |$cliches -> $cliche {
+		%cliches-to-loggers{$cliche.name}:delete;
+		%cliches-to-loggers-pure{$cliche.name}:delete;
+	}
+	for |$cliches -> $cliche {
+		my %copy = %cliches-to-traits{$cliche.name} // SetHash.new;
+		%cliches-to-traits{$cliche.name} = SetHash.new;
+		for %copy.keys -> $trait {
+			logger-map-del($trait);
+			logger-pure-map-del($trait);
+			find-or-create-and-store-logger($trait);
+		}
+	}
+}
+
+multi sub update-loggers() {
+	%cliches-to-traits = %();
+	%cliches-to-loggers = %();
+	%cliches-to-loggers-pure = %();
+	logger-map-clean();
+	my @traits := logger-pure-map-clean();
+	for @traits -> $trait {
+		find-or-create-and-store-logger($trait);
+	}
+}
+
+sub find-or-create-and-store-logger-pure($trait) {
+	return $_ with atomic-fetch($loggers-pure){$trait};
 	my $cliche = find-cliche-for-trait($trait);
+	with %cliches-to-loggers-pure{$cliche.name} {
+		logger-pure-map-put($trait, $_);
+		return $_;
+	}
+	create-and-store-loggers($trait, $cliche, :pure);
+}
+
+sub find-or-create-and-store-logger($trait) {
+	return $_ with atomic-fetch($loggers){$trait};
+	my $cliche = find-cliche-for-trait($trait);
+	with %cliches-to-loggers{$cliche.name} {
+		logger-map-put($trait, $_);
+		return $_;
+	}
+	create-and-store-loggers($trait, $cliche, :!pure);
+}
+
+sub create-and-store-loggers($trait, $cliche, :$pure) {
 	my $logger-pure = create-logger($trait, $cliche);
+	my $logger = wrap-logger($logger-pure, $cliche);
+	logger-map-put($trait, $logger);
+	logger-pure-map-put($trait, $logger-pure);
+	(%cliches-to-traits{$cliche.name} //= SetHash.new){$trait} = True;
+	%cliches-to-loggers{$cliche.name} = $logger;
+	%cliches-to-loggers-pure{$cliche.name} = $logger-pure;
 
-	my %new-loggers = atomic-fetch($loggers).clone;
+	return $pure ?? $logger-pure !! $logger;
+}
+
+sub logger-pure-map-put($trait, $logger-pure) {
 	my %new-loggers-pure = atomic-fetch($loggers-pure).clone;
-	%new-loggers{$trait} = wrap-logger($logger-pure, $cliche);
 	%new-loggers-pure{$trait} = $logger-pure;
-	(%cliches-to-loggers{$cliche.name} //= SetHash.new){$trait} = True;
-
-	atomic-assign($loggers, %new-loggers);
 	atomic-assign($loggers-pure, %new-loggers-pure);
+}
 
-	return $logger-pure;
+sub logger-map-put($trait, $logger) {
+	my %new-loggers = atomic-fetch($loggers).clone;
+	%new-loggers{$trait} = $logger;
+	atomic-assign($loggers, %new-loggers);
+}
+
+sub logger-pure-map-del($trait) {
+	my %new-loggers-pure = atomic-fetch($loggers-pure).clone;
+	%new-loggers-pure{$trait}:delete;
+	atomic-assign($loggers-pure, %new-loggers-pure);
+}
+
+sub logger-map-del($trait) {
+	my %new-loggers = atomic-fetch($loggers).clone;
+	%new-loggers{$trait}:delete;
+	atomic-assign($loggers, %new-loggers);
+}
+
+sub logger-pure-map-clean() {
+	my $keys = atomic-fetch($loggers-pure).keys.List;
+	atomic-assign($loggers-pure, %());
+	return $keys;
+}
+
+sub logger-map-clean() {
+	my $keys = atomic-fetch($loggers).keys.List;
+	atomic-assign($loggers, %());
+	return $keys;
 }
 
 END {
