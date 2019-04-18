@@ -9,6 +9,7 @@ use IOString;
 plan 8;
 
 $*ERR = IOString.new;
+my LogP6::ConfigFile $config .= new;
 
 subtest {
 	plan 1;
@@ -28,10 +29,10 @@ subtest {
 }, 'miss file';
 
 subtest {
-	plan 18;
+	plan 20;
 
 	my ($w, $cn);
-	$cn = parse-config('./t/resource/00-config-file/log-p6-1.json');
+	$cn = $config.parse-config('./t/resource/00-config-file/log-p6-1.json');
 
 	is $cn.writers.elems, 5, 'parsed 5 writers';
 
@@ -60,6 +61,12 @@ subtest {
 	nok $w.handle, 'w5 handle';
 	nok $w.auto-exceptions, 'w5 auto-exceptions';
 
+	my $w0h = $cn.writers[0].handle.WHICH;
+	my $w3h = $cn.writers[3].handle.WHICH;
+	$cn = $config.parse-config('./t/resource/00-config-file/log-p6-1.json');
+	is $w0h, $cn.writers[0].handle.WHICH, 'get file handle from cache';
+	is $w3h, $cn.writers[3].handle.WHICH, 'get custom handle from cache';
+
 }, 'writers';
 
 subtest {
@@ -70,7 +77,7 @@ subtest {
 	use Custom;
 
 	my ($f, $cn);
-	$cn = parse-config('./t/resource/00-config-file/log-p6-1.json');
+	$cn = $config.parse-config('./t/resource/00-config-file/log-p6-1.json');
 
 	is $cn.filters.elems, 4, 'parsed 4 writers';
 
@@ -110,7 +117,7 @@ subtest {
 	use LogP6::Wrapper::Transparent;
 
 	my ($c, $cn);
-	$cn = parse-config('./t/resource/00-config-file/log-p6-1.json');
+	$cn = $config.parse-config('./t/resource/00-config-file/log-p6-1.json');
 
 	is $cn.cliches.elems, 2, 'parsed 2 cliches';
 
@@ -147,7 +154,7 @@ subtest {
 
 	use LogP6::Wrapper::SyncTime;
 
-	my $cn = parse-config('./t/resource/00-config-file/log-p6-1.json');
+	my $cn = $config.parse-config('./t/resource/00-config-file/log-p6-1.json');
 	is $cn.default-pattern, '%msg', 'default-pattern';
 	is $cn.default-auto-exceptions, False, 'default-auto-exceptions';
 	is $cn.default-handle, $*ERR, 'default-handle';

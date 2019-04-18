@@ -33,6 +33,8 @@ our $error is export(:configure) = Level::error;
 my Lock $lock .= new;
 my atomicint $initialized = 0;
 
+my LogP6::ConfigFile $config-file;
+
 my @cliches;
 my $cliches-names;
 my %cliches-to-traits;
@@ -95,7 +97,8 @@ sub init-from-file($config-path) is export(:configure) {
 
 		my $config;
 		try {
-			$config = parse-config($config-path);
+			$config-file //= LogP6::ConfigFile.new;
+			$config = $config-file.parse-config($config-path);
 			CATCH { default {
 				logp6-error($_);
 				wipe-log-config() if $prev-initialized == 0;
