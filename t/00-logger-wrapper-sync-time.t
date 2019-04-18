@@ -13,7 +13,7 @@ writer(:name<writer>, :handle($h), :pattern<%msg>);
 filter(:name<filter>, :level($info));
 
 set-default-wrapper(
-	LogP6::Wrapper::SyncTime::Wrapper.new(:2seconds));
+	LogP6::Wrapper::SyncTime::Wrapper.new(:1seconds));
 
 subtest {
 	plan 3;
@@ -27,13 +27,13 @@ subtest {
 
 	$cliche = cliche(:name($cliche.name), :matcher($cliche.matcher), :replace);
 	$logger.info('log this yet');
-	sleep(3);
+	sleep(1.2);
 	$logger.info('ignore this');
 	is $h.clean, "log this yet\n", 'mute logger is turned off';
 
 	cliche(:name($cliche.name), :matcher($cliche.matcher),
 					grooves => <writer filter>, :replace);
-	sleep(3);
+	sleep(1.2);
 	$logger.info('log this');
 	is $h.clean.trim, 'log this', 'mute logger worked again';
 }, 'mute sync';
@@ -50,12 +50,12 @@ subtest {
 
 	filter(:name<filter>, :level($error), :replace);
 	$logger.info('log this yet');
-	sleep(3);
+	sleep(1);
 	$logger.info('ignore this');
 	is $h.clean, "log this yet\n", 'general logger is changed level';
 
 	filter(:name<filter>, :level($info), :replace);
-	sleep(3);
+	sleep(1);
 	$logger.info('log this');
 	is $h.clean.trim, 'log this', 'general logger worked again';
 }, 'general sync';

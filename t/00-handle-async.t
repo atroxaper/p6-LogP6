@@ -12,7 +12,7 @@ my LogP6::Handle::Async $async .= new: :$delegate;
 
 $async.say('boom');
 $async.say('moob');
-sleep 2;
+sleep(1);
 
 is $delegate.clean, "boom\nmoob\n", 'delegate writes';
 
