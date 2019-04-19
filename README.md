@@ -211,8 +211,11 @@ current date-time and so from the context.
 Logger has the following methods:
 
 - `trait()` - returns logger trait;
-- `ndc-push($obj)`, `ndc-pop()`, `ndc-clean()` - work with NDC;
-- `mdc-put($key, $obj)`, `mdc-remove($key)`, `mdc-clean()` -  work with MDC;
+- `ndc-push($obj)`, `ndc-pop()`, `ndc-clean()` - work with `NDC`;
+- `mdc-put($key, $obj)`, `mdc-remove($key)`, `mdc-clean()` -  work with `MDC`;
+- `dc-copy()`, `dc-restore($dc-copy)` - make copy of `NDC` and `MDC` and restore
+them from copy. The methods are useful when you want to share NDC and MDC values
+across multiple threads.
 - `trace(*@args, :$x)`, `debug(*@args, :$x)`, `info(*@args, :$x)`,
 `warn(*@args, :$x)`, `error(*@args, :$x)` - logging the arguments with specified
 importance log level. `:$x` is an optional exception argument. `@args` - data
