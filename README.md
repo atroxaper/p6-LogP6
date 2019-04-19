@@ -365,7 +365,17 @@ placeholder name.
  
 Pattern can has the following placeholders:
 
-- `%trait` - for name of logger trait;
+- `%trait`, `%trait{short=[package-delimeter]number}`, `%trait{sprintf=pattern}` -
+for name of logger trait. Additionally you can specify one of two options of
+trait representation. `sprintf` option is useful for traits like `database`,
+`audit` or so, when you want to represent all traits with the same length. For
+example, `[%trait{sprintf=%s7}]` can be converted into `[  audit]`. `short`
+option is useful for traits like `Module::Packge1::Package2::Class`. You can
+specify package delimiter (instead of `::`) and how many packages will be
+displayed. For example, `%trait{short=[.]2` can be converted into
+`Package2.Class`, and `%trait{short=[.]2.4` - into `Modu.Pack.Package2.Class`.
+If `number` is integer then only `number` right elements will be displayed. If
+`number` is real then left elements will be cut to fractional symbols;
 - `%tid` - for current `Thread` id;
 - `%tname` - for current `Thread` name;
 - `%msg` - for log message;
@@ -410,7 +420,7 @@ at the same log call line;
 `callframe().code.name` in log call block;
 
 Note that using `%framefile`, `%frameline` or `%framename` in the pattern will
-slow your program because it requires several `callframe()` calls on each
+slow your logging because it requires several `callframe()` calls on each
 resultative log call;
 
 ### Async writing
@@ -426,7 +436,7 @@ as writer configuration of another configuration. Final writer will schedule
 `write` method call of `delegate` created writer with copy of current
 `logger context`. If you miss a `:name` parameter then `delegate`'s name will
 be used. Pass boolean parameter `need-callframe` if you plan to use callframe
-information in wrapped writer. Note that using callframe will slow your program
+information in wrapped writer. Note that using callframe will slow your logging
 because it requires several `callframe()` calls on each resultative log call.
 
 ### Writer factory subroutines

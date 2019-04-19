@@ -234,7 +234,7 @@ grammar Grammar is export {
 	token TOP { <item>* }
 
 	proto token item { * }
-	# %trait - logger name (trait)
+	# %trait{short=[delimiter]number printf=%6s} - logger name (trait)
 	token item:sym<trait> { '%trait'<trait-params>? }
 	token trait-params { \{ <trait-param> \} }
 	proto rule trait-param { * }
