@@ -376,16 +376,24 @@ subpattern. `$msg` - optional exception message, `$name` - optional exception
 name, `$trace` - optional exception stacktrace. For example,
 `'%x{($name "$msg") Trace: $trace}'` can be converted into
 `'(X::AdHoc "test exception") Trace: ...'`;
-- `%level{WARN=W DEBUG=D ERROR=E TRACE=T INFO=I length=2 color}` - log importance
+- `%level{WARN=W DEBUG=D ERROR=E TRACE=T INFO=I length=2}` - log importance
 level. By default logger will use level name in upper case but you can
 specify synonyms for all or part of them in curly brackets in format
 `<LEVEL_NAME>=<sysnonym>`. You can specify a fixed length of log level name.
 Default length is 0 - write level as is. For example
 `'[%level{WARN=hmm ERROR=alarm length=5}]'` can be converted into
-`'[hmm  ]'`, `'[alarm]'`, `'[INFO ]'`, `'[DEBUG]'`. Also you can specify `color`
-argument - then level names will be colored in output. It is turned off as
-default. If you want to use color you prefer then you need to surround level
-names with `\e[<color-num>m` and `\e[0m`;
+`'[hmm  ]'`, `'[alarm]'`, `'[INFO ]'`, `'[DEBUG]'`;
+- `%color{TRACE=yellow DEBUG=green INFO=blue WARN=magenta ERROR=red}` - colorize
+log string after that placeholder. You can specify color for any log level.
+Level you not specified color will be use its default color (as in example
+above). For example, `%color{ERROR=green}` means
+`%color{TRACE=yellow DEBUG=green INFO=blue WARN=magenta ERROR=green}`. You can
+use `yellow`, `green`, `blue`, `magenta`, `green` color names or color code
+(more [information](https://misc.flogisoft.com/bash/tip_colors_and_formatting).
+For example `%color{TRACE=35 DEBUG=30;48;5;82 INFO=green}`. You can use `%color`
+placeholder several times;
+- `%color{reset}` or `%creset` - reset log string colorizing after that
+placeholder;
 - `%date{$yyyy-$yy-$MM-$MMM-$dd $hh:$mm:$ss:$mss $z}` - current date and time.
 String in curly brackets is used as
 subpattern.
