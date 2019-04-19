@@ -27,7 +27,7 @@ submethod BUILD() {
 }
 
 submethod TWEAK(
-		:$msg, :$date, :$level, :$x, :$trait, :@ndc, :%mdc, :$callframe
+	:$msg, :$date, :$level, :$x, :$trait, :@ndc, :%mdc, :$callframe
 ) {
 	$!msg = $msg;
 	$!date = $date;
@@ -145,6 +145,17 @@ method mdc-remove($key) {
 #| Cleans Mapped Diagnostic Context map.
 method mdc-clean() {
 	%!mdc = %();
+}
+
+#| Get copy of NDC and MDC
+method dc-get() {
+	%('ndc' => @!ndc.clone, 'mdc' => %!mdc.clone);
+}
+
+#| Restore values of NDC and MDC from its copy
+method dc-restore($dc) {
+	@!ndc := $dc<ndc> // [];
+	%!mdc = $dc<mdc> // %();
 }
 
 #|[Gets current DataTime.now value. The value will be cache until the date will

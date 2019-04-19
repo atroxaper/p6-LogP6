@@ -40,11 +40,13 @@ class LogP6::Wrapper::SyncAbstract does LogP6::Logger {
 	method mdc-put($key, $obj) { $!aggr.mdc-put($key, $obj) }
 	method mdc-remove($key)    { $!aggr.mdc-remove($key) }
 	method mdc-clean()         { $!aggr.mdc-clean() }
-	method trace(*@args, :$x) { self.sync(get-context); $!aggr.trace(|@args, :$x)}
-	method debug(*@args, :$x) { self.sync(get-context); $!aggr.debug(|@args, :$x)}
-	method info(*@args, :$x)  { self.sync(get-context);  $!aggr.info(|@args, :$x)}
-	method warn(*@args, :$x)  { self.sync(get-context);  $!aggr.warn(|@args, :$x)}
-	method error(*@args, :$x) { self.sync(get-context); $!aggr.error(|@args, :$x)}
+	method dc-copy()           { $!aggr.dc-copy }
+	method dc-restore($dc)     { $!aggr.dc-restore($dc) }
+	method trace(*@args, :$x)  { self.sync(get-context); $!aggr.trace(|@args, :$x)}
+	method debug(*@args, :$x)  { self.sync(get-context); $!aggr.debug(|@args, :$x)}
+	method info(*@args, :$x)   { self.sync(get-context);  $!aggr.info(|@args, :$x)}
+	method warn(*@args, :$x)   { self.sync(get-context);  $!aggr.warn(|@args, :$x)}
+	method error(*@args, :$x)  { self.sync(get-context); $!aggr.error(|@args, :$x)}
 }
 
 #|[Wrapper logic for synchronize a configuration and a logger.

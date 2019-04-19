@@ -12,14 +12,14 @@ High priority:
 Medium priority:
 1. ~~use a better exceptions instead of 'die'~~
 1. ~~add params for %trait in pattern (short, long variant)~~
-1. try make entities be really immutable (filters, writes, loggers)
 1. ~~add database writer~~
 
 Low priority:
 
 1. add 'turn off/on cliche' factory method
 1. add trace-some methods in logger (like 'returns value', 'enter method with')
-1. add backup/restore ndc and mdc
+1. try make entities be really immutable (filters, writes, loggers)
+1. ~~add backup/restore ndc and mdc~~
 
 Archive:
 

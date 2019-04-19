@@ -20,63 +20,75 @@ class LogP6::LoggerPure does LogP6::Logger {
 	}
 
 	method ndc-push($obj) {
-		get-context.ndc-push: $obj;
 		CATCH { default { logp6-error($_) } }
+		get-context.ndc-push: $obj;
 	}
 
 	method ndc-pop() {
-		get-context.ndc-pop;
-		CATCH { default { logp6-error($_) } }
+		try {
+			CATCH { default { logp6-error($_) } }
+			return get-context.ndc-pop;
+		}
 	}
 
 	method ndc-clean() {
-		get-context.ndc-clean;
 		CATCH { default { logp6-error($_) } }
+		get-context.ndc-clean;
 	}
 
 	method mdc-put($key, $obj) {
-		get-context.mdc-put: $key, $obj;
 		CATCH { default { logp6-error($_) } }
+		get-context.mdc-put: $key, $obj;
 	}
 
 	method mdc-remove($key) {
-		get-context.mdc-remove: $key;
 		CATCH { default { logp6-error($_) } }
+		get-context.mdc-remove: $key;
 	}
 
 	method mdc-clean() {
-		get-context.mdc-clean;
 		CATCH { default { logp6-error($_) } }
+		get-context.mdc-clean;
+	}
+
+	method dc-copy() {
+		CATCH { default { logp6-error($_) } }
+		get-context.dc-get;
+	}
+
+	method dc-restore($dc) {
+		CATCH { default { logp6-error($_) } }
+		get-context.dc-restore($dc);
 	}
 
 	method trace(*@args, :$x) {
+		CATCH { default { logp6-error($_) } }
 		return if $!reactive-level > LogP6::Level::trace;
 		self!log(LogP6::Level::trace, @args, :$x);
-		CATCH { default { logp6-error($_) } }
 	}
 
 	method debug(*@args, :$x) {
+		CATCH { default { logp6-error($_) } }
 		return if $!reactive-level > LogP6::Level::debug;
 		self!log(LogP6::Level::debug, @args, :$x);
-		CATCH { default { logp6-error($_) } }
 	}
 
 	method info(*@args, :$x) {
+		CATCH { default { logp6-error($_) } }
 		return if $!reactive-level > LogP6::Level::info;
 		self!log(LogP6::Level::info, @args, :$x);
-		CATCH { default { logp6-error($_) } }
 	}
 
 	method warn(*@args, :$x) {
+		CATCH { default { logp6-error($_) } }
 		return if $!reactive-level > LogP6::Level::warn;
 		self!log(LogP6::Level::warn, @args, :$x);
-		CATCH { default { logp6-error($_) } }
 	}
 
 	method error(*@args, :$x) {
+		CATCH { default { logp6-error($_) } }
 		return if $!reactive-level > LogP6::Level::error;
 		self!log(LogP6::Level::error, @args, :$x);
-		CATCH { default { logp6-error($_) } }
 	}
 
 	submethod !log($level, @args, :$x) {
@@ -110,6 +122,8 @@ class LogP6::LoggerMute does LogP6::Logger {
 	method mdc-put($key, $obj) {}
 	method mdc-remove($key) {}
 	method mdc-clean() {}
+	method dc-copy() { Nil }
+	method dc-restore($dc) {}
 	method trace(*@args, :$x) { get-context().clean }
 	method debug(*@args, :$x) { get-context().clean }
 	method info(*@args, :$x) { get-context().clean }

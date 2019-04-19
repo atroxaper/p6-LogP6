@@ -18,6 +18,10 @@ role LogP6::Logger {
 	method mdc-remove($key) { ... }
 	#| Cleans MDC
 	method mdc-clean() { ... }
+	#| Get copy of NDC and MDC
+	method dc-copy() { ... }
+	#| Restore values of NDC and MDC from its copy
+	method dc-restore($dc) { ... }
 	#|[Writes log with trace importance level.
 	#| @args - data for logging. If the array has more then one element then the
 	#| 		first element is used as format for sprintf sub and the rest element as

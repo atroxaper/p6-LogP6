@@ -7,7 +7,7 @@ use LogP6::LoggerPure;
 use IOString;
 use LogP6 :configure;
 
-plan 7;
+plan 8;
 
 my ($h1, $h2, $h3) = (IOString.new xx 3).list;
 sub clean-io() { $_.clean for ($h1, $h2, $h3) }
@@ -202,5 +202,32 @@ subtest {
 	my $l2 = $h1.clean;
 	isnt $l1, $l2, 'frames are different';
 }, 'different frame';
+
+subtest {
+	plan 5;
+
+	my LogP6::Logger $log = get-logger('');
+
+	$log.ndc-clean;
+	$log.mdc-clean;
+	$log.mdc-put('k', 'v');
+	$log.mdc-put('v', 'k');
+	my $dc = $log.dc-copy;
+	$log.mdc-clean;
+	nok $log.mdc-remove('k'), 'mdc is empty';
+	$log.dc-restore($dc);
+	is $log.mdc-remove('k'), 'v', 'mdc restore k';
+	is $log.mdc-remove('v'), 'k', 'mdc restore v';
+
+	$log.mdc-clean;
+	$log.ndc-push: 'k';
+	$log.ndc-push: 'v';
+	$dc = $log.dc-copy;
+	$log.ndc-clean;
+	$log.dc-restore($dc);
+	is $log.ndc-pop, 'v', 'ndc restore v';
+	is $log.ndc-pop, 'k', 'ndc restore k';
+
+}, 'dc-copy';
 
 done-testing;
