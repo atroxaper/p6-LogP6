@@ -165,8 +165,7 @@ class LogP6::ConfigFile {
 				die 'Missing file handle path' without $path;
 				return self!produce(:use-cache, json, sub {
 					my $mode = (json<append> // True) ?? :a !! :w;
-					my $handle = $path.IO.open(|$mode);
-					$handle.out-buffer = $out-buffer with $out-buffer;
+					my $handle = $path.IO.open(|$mode, :out-buffer($out-buffer // Nil));
 					return $handle;
 				});
 			}
