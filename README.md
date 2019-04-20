@@ -473,8 +473,8 @@ array. Only `std` (for standard configuration) and `custom` types are supported.
 In case of standard configuration all field are optional excepts `name`. Handle
 can be:
 
-- `file` type for output into file. You can specify `path` and `append` (`True`
-by default) arguments;
+- `file` type for output into file. You can specify `path`,`append` (`True`
+by default) and `out-buffer` arguments;
 - `std` type for output into `$*OUT` or `$*ERR`. You can specify `path` as `out`
 or `err`.
 - `custom` type.

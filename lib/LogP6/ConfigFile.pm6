@@ -161,10 +161,13 @@ class LogP6::ConfigFile {
 			}
 			when 'file' {
 				my $path = json<path>;
+				my $out-buffer = json<out-buffer>;
 				die 'Missing file handle path' without $path;
 				return self!produce(:use-cache, json, sub {
 					my $mode = (json<append> // True) ?? :a !! :w;
-					return $path.IO.open(|$mode);
+					my $handle = $path.IO.open(|$mode);
+					$handle.out-buffer = $out-buffer with $out-buffer;
+					return $handle;
 				});
 			}
 			when 'custom' {

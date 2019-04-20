@@ -21,6 +21,7 @@
 			"handle": {
 				"type": "file",
 				"path": "./t/resource/00-config-file/handle1.after",
+				"out-buffer": false,
 				"append": false
 			},
 			"auto-exceptions": true
@@ -62,6 +63,16 @@
 			"args": {
 				"name": "w5"
 			}
+		},
+		{
+			"type": "std",
+			"name": "w6",
+			"handle": {
+				"type": "file",
+				"path": "./t/resource/00-config-file/handle1.after",
+				"out-buffer": 1000
+			},
+			"auto-exceptions": true
 		}
 	],
 	"filters": [
