@@ -38,8 +38,6 @@ my LogP6::ConfigFile $config-file;
 my @cliches;
 my $cliches-names;
 my %cliches-to-traits;
-my %cliches-to-loggers;
-my %cliches-to-loggers-pure;
 my $loggers-pure = %();
 my $loggers = $();
 
@@ -135,8 +133,6 @@ sub clean-all-settings() {
 	@cliches = [];
 	$cliches-names = SetHash.new;
 	%cliches-to-traits = %();
-	%cliches-to-loggers = %();
-	%cliches-to-loggers-pure = %();
 	$loggers-pure = %();
 	$loggers = %();
 
@@ -756,10 +752,6 @@ sub remove-logger(Str:D $trait --> Logger) is export(:configure) {
 
 multi sub update-loggers(Positional:D $cliches) {
 	for |$cliches -> $cliche {
-		%cliches-to-loggers{$cliche.name}:delete;
-		%cliches-to-loggers-pure{$cliche.name}:delete;
-	}
-	for |$cliches -> $cliche {
 		my %copy = %cliches-to-traits{$cliche.name} // SetHash.new;
 		%cliches-to-traits{$cliche.name} = SetHash.new;
 		for %copy.keys -> $trait {
@@ -772,8 +764,6 @@ multi sub update-loggers(Positional:D $cliches) {
 
 multi sub update-loggers() {
 	%cliches-to-traits = %();
-	%cliches-to-loggers = %();
-	%cliches-to-loggers-pure = %();
 	logger-map-clean();
 	my @traits := logger-pure-map-clean();
 	for @traits -> $trait {
@@ -784,20 +774,12 @@ multi sub update-loggers() {
 sub find-or-create-and-store-logger-pure($trait) {
 	return $_ with atomic-fetch($loggers-pure){$trait};
 	my $cliche = find-cliche-for-trait($trait);
-	with %cliches-to-loggers-pure{$cliche.name} {
-		logger-pure-map-put($trait, $_);
-		return $_;
-	}
 	create-and-store-loggers($trait, $cliche, :pure);
 }
 
 sub find-or-create-and-store-logger($trait) {
 	return $_ with atomic-fetch($loggers){$trait};
 	my $cliche = find-cliche-for-trait($trait);
-	with %cliches-to-loggers{$cliche.name} {
-		logger-map-put($trait, $_);
-		return $_;
-	}
 	create-and-store-loggers($trait, $cliche, :!pure);
 }
 
@@ -807,8 +789,6 @@ sub create-and-store-loggers($trait, $cliche, :$pure) {
 	logger-map-put($trait, $logger);
 	logger-pure-map-put($trait, $logger-pure);
 	(%cliches-to-traits{$cliche.name} //= SetHash.new){$trait} = True;
-	%cliches-to-loggers{$cliche.name} = $logger;
-	%cliches-to-loggers-pure{$cliche.name} = $logger-pure;
 
 	return $pure ?? $logger-pure !! $logger;
 }

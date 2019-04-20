@@ -5,7 +5,7 @@ use LogP6 :configure;
 use lib './t/resource/Helpers';
 use IOString;
 
-plan 6;
+plan 5;
 
 $*ERR = IOString.new;
 
@@ -320,7 +320,7 @@ subtest {
 	my $log = get-logger('log');
 	ok $log, 'log cliche';
 	isnt $log, $any-log, 'default and log are not the same logs';
-	is get-logger('any2'), $any-log, 'same cliche - same logger';
+	isnt get-logger('any2'), $any-log, 'different trait - same logger';
 	is get-logger('any'), $any-log, 'same trait - same logger';
 	is get-logger('log'), $log, 'same trait - same logger again';
 
@@ -373,34 +373,5 @@ subtest {
 	does-ok get-logger('not-log'), LogP6::LoggerMute, 'default cliche is changed';
 
 }, 'logger';
-
-subtest {
-	plan 7;
-
-	cliche(:name<cliche1>, :matcher<cliche1>, grooves =>
-			(writer(:name<writer1>), filter(:name<filter1>)));
-	cliche(:name<cliche2>, :matcher(/cliche2/), grooves =>
-			(writer(:name<writer2>), filter(:name<filter2>)));
-
-	my $first-log1 = get-logger('cliche1');
-	my $first-log2 = get-logger('cliche2');
-	isnt $first-log1, $first-log2, 'loggers are different for different cliches';
-
-	filter(:name<filter1>, :update);
-	my $second-log1 = get-logger('cliche1');
-	my $second-log2 = get-logger('cliche2');
-	isnt $second-log1, $first-log1, 'new logger after update cliche\'s filter';
-	is $second-log2, $first-log2, 'same logger after update another cliche';
-	isnt $second-log1, $second-log2, 'different logger after update filter';
-
-	cliche(:name<cliche2>, :matcher(/cliche/),
-			grooves => ('writer2', 'filter2'), :replace);
-	my $third-log1 = get-logger('cliche1');
-	my $third-log2 = get-logger('cliche2');
-	isnt $third-log1, $second-log1, 'new logger after update another cliche';
-	isnt $third-log2, $second-log2, 'new logger after update cliche';
-	is $third-log1, $third-log2, 'same loggers for updated cliche';
-
-}, 'create same logger';
 
 done-testing;
