@@ -375,9 +375,11 @@ trait representation. `sprintf` option is useful for traits like `database`,
 example, `[%trait{sprintf=%s7}]` can be converted into `[  audit]`. `short`
 option is useful for traits like `Module::Packge1::Package2::Class`. You can
 specify package delimiter (instead of `::`) and how many packages will be
-displayed. For example, `%trait{short=[.]2` can be converted into
-`Package2.Class`, and `%trait{short=[.]2.4` - into `Modu.Pack.Package2.Class`.
-If `number` is integer then only `number` right elements will be displayed. If
+displayed. For example, `%trait{short=[.]1` can be converted into
+`Class`, `%trait{short=[.]-1` - into `Packge1.Package2.Class` and
+`%trait{short=[.]2.4` - into `Modu.Pack.Package2.Class`. If `number` is a
+positive integer then only `number` right elements will be displayed. If
+`number` is a negative integer then `|number|` left elements will be deleted. If
 `number` is real then left elements will be cut to fractional symbols;
 - `%tid` - for current `Thread` id;
 - `%tname` - for current `Thread` name;
