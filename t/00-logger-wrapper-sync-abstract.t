@@ -41,6 +41,14 @@ class MockLogger does LogP6::Logger {
 		@!calls.push('mdc-clean');
 	}
 
+	method dc-copy() {
+		@!calls.push('dc-copy');
+	}
+
+	method dc-restore($dc) {
+		@!calls.push('dc-restore' ~ $dc);
+	}
+
 	method trace(*@args, :$x) {
 		@!calls.push('trace' ~ @args.join('') ~ ((defined $x) ?? $x.message !! ''));
 	}

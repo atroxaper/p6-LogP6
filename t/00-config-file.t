@@ -3,13 +3,18 @@ use Test;
 use lib 'lib';
 use LogP6 :configure;
 use LogP6::ConfigFile;
+use lib './t/resource/Helpers';
+use IOString;
 
 plan 8;
+
+$*ERR = IOString.new;
+my LogP6::ConfigFile $config .= new;
 
 subtest {
 	plan 1;
 
-	dies-ok { init-from-file('./t/resource/00-config-file/log-p6-empty.json') },
+	lives-ok { init-from-file('./t/resource/00-config-file/log-p6-empty.json') },
 		'cannot init from empty file';
 
 }, 'empty file';
@@ -17,30 +22,34 @@ subtest {
 subtest {
 	plan 2;
 
-	dies-ok { init-from-file('./t/resource/00-config-file/not-exist.json') },
+	lives-ok { init-from-file('./t/resource/00-config-file/not-exist.json') },
 		'cannot init from miss file';
 	lives-ok { init-from-file(Any) }, 'can init empty argument';
 
 }, 'miss file';
 
 subtest {
-	plan 18;
+	plan 23;
+
+	CATCH { default {say .gist }}
 
 	my ($w, $cn);
-	$cn = parse-config('./t/resource/00-config-file/log-p6-1.json');
+	$cn = $config.parse-config('./t/resource/00-config-file/log-p6-1.json');
 
-	is $cn.writers.elems, 5, 'parsed 5 writers';
+	is $cn.writers.elems, 6, 'parsed 5 writers';
 
 	$w = $cn.writers[0];
 	is $w.name, 'w1', 'w1 name';
 	is $w.pattern, '%msg', 'w1 pattern';
 	is $w.handle.Str, './t/resource/00-config-file/handle1.after', 'w1 handle';
+	is $w.handle.out-buffer, 0, 'w1 out-buffer false(0)';
 	ok $w.auto-exceptions, 'w1 auto-exceptions';
 
 	$w = $cn.writers[1];
 	is $w.name, 'w2', 'w2 name';
 	is $w.pattern, '%level | %msg', 'w2 pattern';
 	is $w.handle, $*OUT, 'w2 handle';
+	is $w.handle.out-buffer, 100, 'w2 out-buffer false(0)';
 	is $cn.writers[2].handle, $*ERR, 'w3 handle';
 	nok $w.auto-exceptions, 'w2 auto-exceptions';
 
@@ -51,10 +60,19 @@ subtest {
 	nok $w.auto-exceptions, 'w4 auto-exceptions';
 
 	$w = $cn.writers[4];
-	is $w.name, 'w5', 'w4 name';
+	is $w.name, 'w5', 'w5 name';
 	nok $w.pattern, 'w5 pattern';
 	nok $w.handle, 'w5 handle';
 	nok $w.auto-exceptions, 'w5 auto-exceptions';
+
+	$w = $cn.writers[5];
+	is $w.handle.out-buffer, 1000, 'w6 handle out-buffer 1000';
+
+	my $w0h = $cn.writers[0].handle.WHICH;
+	my $w3h = $cn.writers[3].handle.WHICH;
+	$cn = $config.parse-config('./t/resource/00-config-file/log-p6-1.json');
+	is $w0h, $cn.writers[0].handle.WHICH, 'get file handle from cache';
+	is $w3h, $cn.writers[3].handle.WHICH, 'get custom handle from cache';
 
 }, 'writers';
 
@@ -66,7 +84,7 @@ subtest {
 	use Custom;
 
 	my ($f, $cn);
-	$cn = parse-config('./t/resource/00-config-file/log-p6-1.json');
+	$cn = $config.parse-config('./t/resource/00-config-file/log-p6-1.json');
 
 	is $cn.filters.elems, 4, 'parsed 4 writers';
 
@@ -106,7 +124,7 @@ subtest {
 	use LogP6::Wrapper::Transparent;
 
 	my ($c, $cn);
-	$cn = parse-config('./t/resource/00-config-file/log-p6-1.json');
+	$cn = $config.parse-config('./t/resource/00-config-file/log-p6-1.json');
 
 	is $cn.cliches.elems, 2, 'parsed 2 cliches';
 
@@ -143,11 +161,11 @@ subtest {
 
 	use LogP6::Wrapper::SyncTime;
 
-	my $cn = parse-config('./t/resource/00-config-file/log-p6-1.json');
+	my $cn = $config.parse-config('./t/resource/00-config-file/log-p6-1.json');
 	is $cn.default-pattern, '%msg', 'default-pattern';
 	is $cn.default-auto-exceptions, False, 'default-auto-exceptions';
 	is $cn.default-handle, $*ERR, 'default-handle';
-	is $cn.default-x-pattern, '%x', 'default-x-pattern';
+	is $cn.default-x-pattern, "%x\n%x\a%x\e%x", 'default-x-pattern';
 	is $cn.default-level, $trace, 'default-level';
 	is $cn.default-first-level-check, True, 'default-first-level-check';
 	ok $cn.default-wrapper, 'default-wrapper ok';

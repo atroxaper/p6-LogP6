@@ -2,8 +2,12 @@ use Test;
 
 use lib 'lib';
 use LogP6 :configure;
+use lib './t/resource/Helpers';
+use IOString;
 
 plan 5;
+
+$*ERR = IOString.new;
 
 sub some-sub1($context) {
 	True;
@@ -122,7 +126,6 @@ my $pattern1 = '[%date{$hh:$mm:$ss}][%level{length=5}] %msg';
 my $pattern2 = '%level| %msg';
 
 subtest {
-
 	plan 45;
 
 	my $w-wo-name = writer(:pattern($pattern1), :auto-exceptions,
@@ -201,7 +204,6 @@ subtest {
 }, 'writer';
 
 subtest {
-
 	plan 54;
 
 	use LogP6::Wrapper::Transparent;
@@ -298,10 +300,10 @@ subtest {
 }, 'cliche';
 
 subtest {
-
 	plan 18;
 
 	use lib './t/resource/Helpers';
+	use LogP6::LoggerPure;
 	use LogP6::LoggerPure;
 	use LogP6::Wrapper::SyncTime;
 	use IOString;
@@ -318,7 +320,7 @@ subtest {
 	my $log = get-logger('log');
 	ok $log, 'log cliche';
 	isnt $log, $any-log, 'default and log are not the same logs';
-	isnt get-logger('any2'), $any-log, 'default and another are not the same';
+	isnt get-logger('any2'), $any-log, 'different trait - same logger';
 	is get-logger('any'), $any-log, 'same trait - same logger';
 	is get-logger('log'), $log, 'same trait - same logger again';
 
@@ -368,8 +370,7 @@ subtest {
 	remove-logger('not-log');
 	remove-logger('any');
 	remove-logger('any2');
-	cliche(:name(''), :matcher('hahaha'), grooves => ('', ''), :replace);
-	dies-ok { get-logger('not-log') }, 'default cliche is changed';
+	does-ok get-logger('not-log'), LogP6::LoggerMute, 'default cliche is changed';
 
 }, 'logger';
 

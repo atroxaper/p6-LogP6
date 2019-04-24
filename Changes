@@ -1,0 +1,20 @@
+Version history:
+
+1.5.1   2019-04-24  'the new small features'
+	- add asynchronous implementation of handle and writer
+	- add parameters for %trait placeholder
+	- add %color placeholder
+	- add reusing handles from previous config file read
+	- add possibility to backup and restore NDC and MDC values
+	- add out-buffer parameter to std and file handle in configuration file
+	- improve internal exceptions behaviour
+
+1.4.2   2019-04-10  'better config file and zero length'
+	- add length=0 support in %level placeholder
+	- add support of using 'custom' arguments in custom's args in configuration file
+
+1.4.1   2019-04-08  'callframe in writer pattern'
+	- add callframe support in writer pattern
+
+1.3.1   2019-04-07  'The first public release'
+	- Production ready log library

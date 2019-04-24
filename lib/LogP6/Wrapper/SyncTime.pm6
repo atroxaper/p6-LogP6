@@ -1,6 +1,7 @@
 use LogP6::Wrapper;
 use LogP6::Wrapper::SyncAbstract;
 use LogP6::LogGetter;
+use LogP6::Exceptions;
 
 #| Wrapper for synchronize a logger each X seconds itself.
 class LogP6::Wrapper::SyncTime is LogP6::Wrapper::SyncAbstract {
@@ -20,6 +21,7 @@ class LogP6::Wrapper::SyncTime is LogP6::Wrapper::SyncAbstract {
 			self.update-aggr;
 			self.put-sync-obj($now);
 		}
+		CATCH { default { logp6-error($_) } }
 	}
 }
 

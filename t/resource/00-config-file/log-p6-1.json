@@ -5,7 +5,7 @@
 		"type": "std",
 		"path": "err"
 	},
-	"default-x-pattern": "%x",
+	"default-x-pattern": "%x\\n%x\\a%x\\e%x",
 	"default-level":  "trace",
 	"default-first-level-check": true,
 	"default-wrapper": {
@@ -21,6 +21,7 @@
 			"handle": {
 				"type": "file",
 				"path": "./t/resource/00-config-file/handle1.after",
+				"out-buffer": false,
 				"append": false
 			},
 			"auto-exceptions": true
@@ -31,7 +32,8 @@
 			"pattern": "%level | %msg",
 			"handle": {
 				"type": "std",
-				"path": "out"
+				"path": "out",
+				"out-buffer": 100
 			},
 			"auto-exceptions": false
 		},
@@ -62,6 +64,16 @@
 			"args": {
 				"name": "w5"
 			}
+		},
+		{
+			"type": "std",
+			"name": "w6",
+			"handle": {
+				"type": "file",
+				"path": "./t/resource/00-config-file/handle1.after",
+				"out-buffer": 1000
+			},
+			"auto-exceptions": true
 		}
 	],
 	"filters": [

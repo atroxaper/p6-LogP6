@@ -7,7 +7,7 @@ use LogP6::WriterConf::Pattern;
 use LogP6::Context;
 use IOString;
 
-plan 14;
+plan 46;
 
 my LogP6::Context $context .= new;
 $context.level-set($info);
@@ -76,5 +76,51 @@ sub info($frame) {
 }
 sub foo() { info(callframe) }
 foo;
+
+# %trait
+$context.trait-set('LogP6::Writer::Async::Std');
+is parse-process('%trait{short=[.]5.4}'), 'LogP6.Writer.Async.Std', '[.]5.4';
+is parse-process('%trait{short=[.]5}' ),  'LogP6.Writer.Async.Std', '[.]5';
+is parse-process('%trait{short=[.]4.2}'), 'LogP6.Writer.Async.Std', '[.]4.4';
+is parse-process('%trait{short=[.]4}' ),  'LogP6.Writer.Async.Std', '[.]4';
+is parse-process('%trait{short=[.]3.2}'), 'Lo.Writer.Async.Std', '[.]3.2';
+is parse-process('%trait{short=[.]3}' ),  'Writer.Async.Std', '[.]3';
+is parse-process('%trait{short=[.]2.3}'), 'Log.Wri.Async.Std', '[.]2.3';
+is parse-process('%trait{short=[.]2}' ),  'Async.Std', '[.]2';
+is parse-process('%trait{short=[.]1.1}'), 'L.W.A.Std', '[.]1.1';
+is parse-process('%trait{short=[.]1}' ),  'Std', '[.]1';
+is parse-process('%trait{short=[.]0.4}'), 'LogP6.Writer.Async.Std', '[.]0.4';
+is parse-process('%trait{short=[.]0}' ),  'LogP6.Writer.Async.Std', '[.]0';
+is parse-process('%trait{short=[.]-0.2}'),'LogP6.Writer.Async.Std', '[.]-0.2';
+is parse-process('%trait{short=[.]-0}' ), 'LogP6.Writer.Async.Std', '[.]-0';
+is parse-process('%trait{short=[.]-1.4}'),'LogP.Writer.Async.Std', '[.]-1.4';
+is parse-process('%trait{short=[.]-1}' ), 'Writer.Async.Std', '[.]-1';
+is parse-process('%trait{short=[.]-2.0}'),'Async.Std', '[.]-2.0';
+is parse-process('%trait{short=[.]-2}' ), 'Async.Std', '[.]-2';
+is parse-process('%trait{short=[.]-3.1}'),'L.W.A.Std', '[.]-3.1';
+is parse-process('%trait{short=[.]-3}' ), 'Std', '[.]-3';
+is parse-process('%trait{short=[.]-4.0}'),'LogP6.Writer.Async.Std', '[.]-4.0';
+is parse-process('%trait{short=[.]-4}' ), 'LogP6.Writer.Async.Std', '[.]-4';
+is parse-process('%trait{short=[.]-5.2}'), 'LogP6.Writer.Async.Std', '[.]-5.2';
+is parse-process('%trait{short=[.]-5}' ), 'LogP6.Writer.Async.Std', '[.]-5';
+$context.trait-set('LogP6::Writer::Async');
+is parse-process('%trait{sprintf=%.2s}'), 'Lo', '%.2s';
+is parse-process('%trait{sprintf=%21s}'), ' LogP6::Writer::Async', '%21s';
+is parse-process('%trait{sprintf=%-21s}'), 'LogP6::Writer::Async ', '%-21s';
+
+# %color
+$context.level-set($warn);
+$context.msg-set('msg');
+is parse-process('%msg [%color%level%color{reset}]'),
+		"msg [\e[35mWARN\e[0m]", 'color empty with reset';
+is parse-process('%msg [%color{WARN=34}%level%color{reset}]'),
+		"msg [\e[34mWARN\e[0m]", 'color WARN with reset';
+$context.level-set($error);
+is parse-process('%msg [%color{WARN=34}%level%color{reset}]'),
+		"msg [\e[31mERROR\e[0m]", 'color WARN error with reset';
+is parse-process('%msg [%color%level]'),
+		"msg [\e[31mERROR]\e[0m", 'color empty without reset';
+is parse-process('%msg [%color%level%creset]'),
+		"msg [\e[31mERROR\e[0m]", 'color empty with creset';
 
 done-testing;

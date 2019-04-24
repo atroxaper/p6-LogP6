@@ -1,8 +1,6 @@
-#|[Module with subs for getting wrapped and pure logger.
-#| The modules are created for avoid circular dependencies
+#|[Subs for getting wrapped and pure logger.
+#| The subs are created for avoid circular dependencies
 #| (many modules depends on LogP6 module).]
-unit module LogP6::LogGetter;
-
 my &my-get-wrap;
 my &my-get-pure;
 

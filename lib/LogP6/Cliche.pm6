@@ -30,9 +30,9 @@ class LogP6::Cliche {
 	) {
 		my $new-writers = $!writers;
 		my $new-filters = $!filters;
-		$new-writers = $new-writers.map(-> $w { $w eq $old ?? $new !! $w }).list
+		$new-writers = $new-writers.map(-> $w { $w eq $old ?? $new !! $w }).List
 				if $type eq 'writer';
-		$new-filters = $new-filters.map(-> $f { $f eq $old ?? $new !! $f }).list
+		$new-filters = $new-filters.map(-> $f { $f eq $old ?? $new !! $f }).List
 				if $type eq 'filter';
 		self.clone(writers => $new-writers, filters => $new-filters);
 	}

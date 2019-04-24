@@ -29,6 +29,7 @@ even in your own libraries.
 		- [WriterConf](#writerconf)
 		- [Standard WriterConf](#standard-writerconf)
 		- [Pattern](#pattern)
+		- [Async writing](#async-writing)
 		- [Writer factory subroutines](#writer-factory-subroutines)
 		- [Writer configuration file](#writer-configuration-file)
 	- [Filter configuration](#filter-configuration)
@@ -210,8 +211,11 @@ current date-time and so from the context.
 Logger has the following methods:
 
 - `trait()` - returns logger trait;
-- `ndc-push($obj)`, `ndc-pop()`, `ndc-clean()` - work with NDC;
-- `mdc-put($key, $obj)`, `mdc-remove($key)`, `mdc-clean()` -  work with MDC;
+- `ndc-push($obj)`, `ndc-pop()`, `ndc-clean()` - work with `NDC`;
+- `mdc-put($key, $obj)`, `mdc-remove($key)`, `mdc-clean()` -  work with `MDC`;
+- `dc-copy()`, `dc-restore($dc-copy)` - make copy of `NDC` and `MDC` and restore
+them from copy. The methods are useful when you want to share NDC and MDC values
+across multiple threads.
 - `trace(*@args, :$x)`, `debug(*@args, :$x)`, `info(*@args, :$x)`,
 `warn(*@args, :$x)`, `error(*@args, :$x)` - logging the arguments with specified
 importance log level. `:$x` is an optional exception argument. `@args` - data
@@ -364,7 +368,19 @@ placeholder name.
  
 Pattern can has the following placeholders:
 
-- `%trait` - for name of logger trait;
+- `%trait`, `%trait{short=[package-delimeter]number}`, `%trait{sprintf=pattern}` -
+for name of logger trait. Additionally you can specify one of two options of
+trait representation. `sprintf` option is useful for traits like `database`,
+`audit` or so, when you want to represent all traits with the same length. For
+example, `[%trait{sprintf=%s7}]` can be converted into `[  audit]`. `short`
+option is useful for traits like `Module::Packge1::Package2::Class`. You can
+specify package delimiter (instead of `::`) and how many packages will be
+displayed. For example, `%trait{short=[.]1` can be converted into
+`Class`, `%trait{short=[.]-1` - into `Packge1.Package2.Class` and
+`%trait{short=[.]2.4` - into `Modu.Pack.Package2.Class`. If `number` is a
+positive integer then only `number` right elements will be displayed. If
+`number` is a negative integer then `|number|` left elements will be deleted. If
+`number` is real then left elements will be cut to fractional symbols;
 - `%tid` - for current `Thread` id;
 - `%tname` - for current `Thread` name;
 - `%msg` - for log message;
@@ -378,10 +394,21 @@ name, `$trace` - optional exception stacktrace. For example,
 - `%level{WARN=W DEBUG=D ERROR=E TRACE=T INFO=I length=2}` - log importance
 level. By default logger will use level name in upper case but you can
 specify synonyms for all or part of them in curly brackets in format
-`<LEVEL_NAME>=<sysnonym>`. Also you can specify a fixed length of log level
-name. Default length is 0 - write level as is. For example
+`<LEVEL_NAME>=<sysnonym>`. You can specify a fixed length of log level name.
+Default length is 0 - write level as is. For example
 `'[%level{WARN=hmm ERROR=alarm length=5}]'` can be converted into
 `'[hmm  ]'`, `'[alarm]'`, `'[INFO ]'`, `'[DEBUG]'`;
+- `%color{TRACE=yellow DEBUG=green INFO=blue WARN=magenta ERROR=red}` - colorize
+log string after that placeholder. You can specify color for any log level.
+Level you not specified color will be use its default color (as in example
+above). For example, `%color{ERROR=green}` means
+`%color{TRACE=yellow DEBUG=green INFO=blue WARN=magenta ERROR=green}`. You can
+use `yellow`, `green`, `blue`, `magenta`, `green` color names or color code
+(more [information](https://misc.flogisoft.com/bash/tip_colors_and_formatting).
+For example `%color{TRACE=35 DEBUG=30;48;5;82 INFO=green}`. You can use `%color`
+placeholder several times;
+- `%color{reset}` or `%creset` - reset log string colorizing after that
+placeholder;
 - `%date{$yyyy-$yy-$MM-$MMM-$dd $hh:$mm:$ss:$mss $z}` - current date and time.
 String in curly brackets is used as
 subpattern.
@@ -398,8 +425,24 @@ at the same log call line;
 `callframe().code.name` in log call block;
 
 Note that using `%framefile`, `%frameline` or `%framename` in the pattern will
-slow your program because it requires several `callframe` calls on each
+slow your logging because it requires several `callframe()` calls on each
 resultative log call;
+
+### Async writing
+
+`LogP6` provides writer and handle implementation for asynchronous writing.
+
+You can use `LogP6::Handle::Async.new(IO::Handle :$delegate!, Scheduler :$scheduler = $*SCHEDULER)`
+as handle which will schedule `WRITE` method call of `delegate` handle.
+
+If is it not enough to wrap a handle then you can wrap whole writer. Use
+`LogP6::WriterConf::Async.new(LogP6::WriterConf :$delegate!, Scheduler :$scheduler = $*SCHEDULER), :$name, Bool :$need-callframe)`
+as writer configuration of another configuration. Final writer will schedule 
+`write` method call of `delegate` created writer with copy of current
+`logger context`. If you miss a `:name` parameter then `delegate`'s name will
+be used. Pass boolean parameter `need-callframe` if you plan to use callframe
+information in wrapped writer. Note that using callframe will slow your logging
+because it requires several `callframe()` calls on each resultative log call.
 
 ### Writer factory subroutines
 
@@ -430,8 +473,8 @@ array. Only `std` (for standard configuration) and `custom` types are supported.
 In case of standard configuration all field are optional excepts `name`. Handle
 can be:
 
-- `file` type for output into file. You can specify `path` and `append`
-arguments;
+- `file` type for output into file. You can specify `path`,`append` (`True`
+by default) and `out-buffer` arguments;
 - `std` type for output into `$*OUT` or `$*ERR`. You can specify `path` as `out`
 or `err`.
 - `custom` type.
@@ -1030,17 +1073,15 @@ subroutines logic then make a special sub for retrieve logger like
 
 # ROADMAP
 
-- Make IO::Handle for write log in databases;
 - Make IO::Handle rollover support - change log file after some period of time
 or after file size limit are reached;
-- Add Writer for asynchronous writing;
 - Add a `Cro::Transform` for using `LogP6` in `cro` applications.
 
 # AUTHOR
 
 Mikhail Khorkov <atroxaper@cpan.org>
 
-Source can be located at: https://github.com/atroxaper/p6-LogP6. Comments and Pull Requests
+Source can be located at: [github](https://github.com/atroxaper/p6-LogP6). Comments and Pull Requests
 are welcome.
 
 # COPYRIGHT AND LICENSE

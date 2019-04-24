@@ -26,6 +26,26 @@ submethod BUILD() {
 	$!tname = $!thread.name;
 }
 
+submethod TWEAK(
+	:$msg, :$date, :$level, :$x, :$trait, :@ndc, :%mdc, :$callframe
+) {
+	$!msg = $msg;
+	$!date = $date;
+	$!level = $level;
+	$!x = $x;
+	$!trait = $trait;
+	@!ndc := @ndc;
+	%!mdc = %mdc;
+	$!callframe = $callframe;
+}
+
+method copy() {
+	return LogP6::Context.new(
+		:$!msg, :$!date, :$!level, :$!x, :$!trait,
+		:ndc(@!ndc.clone), :mdc(%!mdc.clone), :$!callframe
+	);
+}
+
 #|[Gets Context object for current Thread.
 # Throw exception in case Thread does not have a Context for now.
 # It is not recommend to use the method as part of LogP6 API.
@@ -125,6 +145,17 @@ method mdc-remove($key) {
 #| Cleans Mapped Diagnostic Context map.
 method mdc-clean() {
 	%!mdc = %();
+}
+
+#| Get copy of NDC and MDC
+method dc-get() {
+	%('ndc' => @!ndc.clone, 'mdc' => %!mdc.clone);
+}
+
+#| Restore values of NDC and MDC from its copy
+method dc-restore($dc) {
+	@!ndc := $dc<ndc> // [];
+	%!mdc = $dc<mdc> // %();
 }
 
 #|[Gets current DataTime.now value. The value will be cache until the date will

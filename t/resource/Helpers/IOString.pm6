@@ -2,6 +2,7 @@
 unit class IOString is IO::Handle;
 
 has Str $!writed;
+has Bool $!closed;
 
 submethod TWEAK {
 	self.encoding: 'utf8';
@@ -37,4 +38,12 @@ multi method Str(IOString:D:) {
 
 multi method gist(IOString:D:) {
 	$!writed;
+}
+
+method close() {
+	$!closed = True;
+}
+
+method closed() {
+	$!closed;
 }

@@ -24,7 +24,12 @@ class LogP6::WriterConf::Std does LogP6::WriterConf {
 	}
 
 	method make-writer(*%defaults --> LogP6::Writer:D) {
-		LogP6::Writer::Std.new(self, |%defaults);
+		my $auto-ex = $!auto-exceptions // %defaults<default-auto-exceptions>;
+		my $pattern = $!pattern // %defaults<default-pattern>;
+		$pattern ~= %defaults<default-x-pattern> if $auto-ex;
+		my $handle = $!handle // %defaults<default-handle>;
+
+		LogP6::Writer::Std.new(:$pattern, :$handle);
 	}
 
 	method close(--> Nil) {
