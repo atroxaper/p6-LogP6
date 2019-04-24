@@ -147,17 +147,20 @@ class LogP6::ConfigFile {
 		given json<type> {
 			when 'std' {
 				my $path = json<path>;
+				my $result;
 				given $path {
 					when 'out' {
-						return $*OUT;
+						$result = $*OUT;
 					}
 					when 'err' {
-						return $*ERR;
+						$result = $*ERR;
 					}
 					default {
 						die "Wrong std handle path $path";
 					}
 				}
+				$result.out-buffer = $_ with json<out-buffer>;
+				return $result;
 			}
 			when 'file' {
 				my $path = json<path>;

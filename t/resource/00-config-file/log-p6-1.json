@@ -32,7 +32,8 @@
 			"pattern": "%level | %msg",
 			"handle": {
 				"type": "std",
-				"path": "out"
+				"path": "out",
+				"out-buffer": 100
 			},
 			"auto-exceptions": false
 		},

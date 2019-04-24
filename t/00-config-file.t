@@ -29,7 +29,7 @@ subtest {
 }, 'miss file';
 
 subtest {
-	plan 22;
+	plan 23;
 
 	CATCH { default {say .gist }}
 
@@ -49,6 +49,7 @@ subtest {
 	is $w.name, 'w2', 'w2 name';
 	is $w.pattern, '%level | %msg', 'w2 pattern';
 	is $w.handle, $*OUT, 'w2 handle';
+	is $w.handle.out-buffer, 100, 'w2 out-buffer false(0)';
 	is $cn.writers[2].handle, $*ERR, 'w3 handle';
 	nok $w.auto-exceptions, 'w2 auto-exceptions';
 
