@@ -1081,7 +1081,7 @@ or after file size limit are reached;
 
 Mikhail Khorkov <atroxaper@cpan.org>
 
-Source can be located at: https://github.com/atroxaper/p6-LogP6. Comments and Pull Requests
+Source can be located at: [github](https://github.com/atroxaper/p6-LogP6). Comments and Pull Requests
 are welcome.
 
 # COPYRIGHT AND LICENSE

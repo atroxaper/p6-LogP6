@@ -13,7 +13,7 @@
         "LOGGER"
     ],
     "license": "Artistic-2.0",
-    "source-url": "https://github.com/atroxaper/p6-LogP6",
+    "source-url": "git://github.com/atroxaper/p6-LogP6.git",
     "provides": {
         "LogP6::Wrapper::SyncAbstract": "lib/LogP6/Wrapper/SyncAbstract.pm6",
         "LogP6::LoggerPure": "lib/LogP6/LoggerPure.pm6",
