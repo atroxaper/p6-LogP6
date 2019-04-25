@@ -1,5 +1,8 @@
 Version history:
 
+1.5.2   2019-04-25  'fix broken compatibility'
+	- LogP6::Writer::Journald module is broken by previous release. Fix it.
+
 1.5.1   2019-04-24  'the new small features'
 	- add asynchronous implementation of handle and writer
 	- add parameters for %trait placeholder
