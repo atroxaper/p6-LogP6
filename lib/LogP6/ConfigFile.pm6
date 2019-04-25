@@ -1,3 +1,5 @@
+unit module LogP6::ConfigFile;
+
 use JSON::Fast;
 
 use LogP6::WriterConf::Std;

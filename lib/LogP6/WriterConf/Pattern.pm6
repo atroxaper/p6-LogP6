@@ -1,3 +1,5 @@
+unit module LogP6::WriterConf::Pattern;
+
 use LogP6::Level;
 
 role PatternPart {
