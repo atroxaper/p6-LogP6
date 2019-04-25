@@ -6,7 +6,7 @@
     ],
     "description": "Full customisable logging library inspired by idea of separate logging and its configuration.",
     "resources": [],
-    "version": "1.5.1",
+    "version": "1.5.2",
     "tags": [
         "LOG",
         "LOGGING",
