@@ -37,16 +37,21 @@ class LogP6::Wrapper::SyncAbstract does LogP6::Logger {
 	method ndc-push($obj) { $!aggr.ndc-push($obj) }
 	method ndc-pop()      { $!aggr.ndc-pop() }
 	method ndc-clean()    { $!aggr.ndc-clean() }
-	method mdc-put($key, $obj) { $!aggr.mdc-put($key, $obj) }
-	method mdc-remove($key)    { $!aggr.mdc-remove($key) }
-	method mdc-clean()         { $!aggr.mdc-clean() }
-	method dc-copy()           { $!aggr.dc-copy }
-	method dc-restore($dc)     { $!aggr.dc-restore($dc) }
-	method trace(*@args, :$x)  { self.sync(get-context); $!aggr.trace(|@args, :$x)}
-	method debug(*@args, :$x)  { self.sync(get-context); $!aggr.debug(|@args, :$x)}
-	method info(*@args, :$x)   { self.sync(get-context);  $!aggr.info(|@args, :$x)}
-	method warn(*@args, :$x)   { self.sync(get-context);  $!aggr.warn(|@args, :$x)}
-	method error(*@args, :$x)  { self.sync(get-context); $!aggr.error(|@args, :$x)}
+	method mdc-put($key, $obj){ $!aggr.mdc-put($key, $obj) }
+	method mdc-remove($key)   { $!aggr.mdc-remove($key) }
+	method mdc-clean()        { $!aggr.mdc-clean() }
+	method dc-copy()          { $!aggr.dc-copy }
+	method dc-restore($dc)    { $!aggr.dc-restore($dc) }
+	method trace(*@args, :$x) { self.sync(get-context); $!aggr.trace(|@args, :$x)}
+	method tracef(*@args, :$x){ self.sync(get-context);$!aggr.tracef(|@args, :$x)}
+	method debug(*@args, :$x) { self.sync(get-context); $!aggr.debug(|@args, :$x)}
+	method debugf(*@args, :$x){ self.sync(get-context);$!aggr.debugf(|@args, :$x)}
+	method info(*@args, :$x)  { self.sync(get-context);  $!aggr.info(|@args, :$x)}
+	method infof(*@args, :$x) { self.sync(get-context); $!aggr.infof(|@args, :$x)}
+	method warn(*@args, :$x)  { self.sync(get-context);  $!aggr.warn(|@args, :$x)}
+	method warnf(*@args, :$x) { self.sync(get-context); $!aggr.warnf(|@args, :$x)}
+	method error(*@args, :$x) { self.sync(get-context); $!aggr.error(|@args, :$x)}
+	method errorf(*@args, :$x){ self.sync(get-context);$!aggr.errorf(|@args, :$x)}
 }
 
 #|[Wrapper logic for synchronize a configuration and a logger.

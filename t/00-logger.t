@@ -101,7 +101,7 @@ subtest {
 }, 'reset context';
 
 subtest {
-	plan 4;
+	plan 6;
 
 	cliche(
 		:name<sprintf>, :matcher<sprintf>,
@@ -113,18 +113,24 @@ subtest {
 
 	my $sprintf = get-logger('sprintf');
 
+	$sprintf.info();
+	is $h1.clean.trim, '', 'zero args info';
+
 	$sprintf.info('simple log ' ~ 'boom');
-	is $h1.clean.trim, 'simple log boom', 'one arg';
+	is $h1.clean.trim, 'simple log boom', 'one arg info';
 
-	$sprintf.info('simple log with x', :$x);
-	is $h1.clean.trim, 'simple log with x test exception', 'one arg with x';
+	$sprintf.info('simple log with', ' x', :$x);
+	is $h1.clean.trim, 'simple log with x test exception', 'two args with x info';
 
-	$sprintf.info('hard log %s', 'boom');
-	is $h1.clean.trim, 'hard log boom', 'two args';
+	$sprintf.infof();
+	is $h1.clean.trim, '', 'zero args infof';
 
-	$sprintf.info('hard log %s with x', $x.message, :$x);
+	$sprintf.infof('hard log %s', 'boom');
+	is $h1.clean.trim, 'hard log boom', 'two args infof';
+
+	$sprintf.infof('hard log %s with x', $x.message, :$x);
 	is $h1.clean.trim, 'hard log test exception with x test exception',
-		'two args with x';
+		'two args with x infof';
 }, 'sprintf';
 
 subtest {
