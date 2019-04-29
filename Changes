@@ -1,5 +1,9 @@
 Version history:
 
+1.6.1   2019-04-29  'conditional log calls'
+	- add methods info-on, error-on or so to check will a log will be written
+	- separate sprintf-slyte and contatenation-slyte logs into separate methods
+
 1.5.2   2019-04-25  'fix broken compatibility'
 	- LogP6::Writer::Journald module is broken by previous release. Fix it.
 
