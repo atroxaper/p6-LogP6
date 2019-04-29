@@ -7,7 +7,7 @@ use LogP6::LoggerPure;
 use IOString;
 use LogP6 :configure;
 
-plan 8;
+plan 9;
 
 my ($h1, $h2, $h3) = (IOString.new xx 3).list;
 sub clean-io() { $_.clean for ($h1, $h2, $h3) }
@@ -101,7 +101,7 @@ subtest {
 }, 'reset context';
 
 subtest {
-	plan 4;
+	plan 6;
 
 	cliche(
 		:name<sprintf>, :matcher<sprintf>,
@@ -113,18 +113,24 @@ subtest {
 
 	my $sprintf = get-logger('sprintf');
 
+	$sprintf.info();
+	is $h1.clean.trim, '', 'zero args info';
+
 	$sprintf.info('simple log ' ~ 'boom');
-	is $h1.clean.trim, 'simple log boom', 'one arg';
+	is $h1.clean.trim, 'simple log boom', 'one arg info';
 
-	$sprintf.info('simple log with x', :$x);
-	is $h1.clean.trim, 'simple log with x test exception', 'one arg with x';
+	$sprintf.info('simple log with', ' x', :$x);
+	is $h1.clean.trim, 'simple log with x test exception', 'two args with x info';
 
-	$sprintf.info('hard log %s', 'boom');
-	is $h1.clean.trim, 'hard log boom', 'two args';
+	$sprintf.infof();
+	is $h1.clean.trim, '', 'zero args infof';
 
-	$sprintf.info('hard log %s with x', $x.message, :$x);
+	$sprintf.infof('hard log %s', 'boom');
+	is $h1.clean.trim, 'hard log boom', 'two args infof';
+
+	$sprintf.infof('hard log %s with x', $x.message, :$x);
 	is $h1.clean.trim, 'hard log test exception with x test exception',
-		'two args with x';
+		'two args with x infof';
 }, 'sprintf';
 
 subtest {
@@ -188,19 +194,27 @@ subtest {
 }, 'mute logger';
 
 subtest {
-	plan 1;
+	plan 2;
+	use LogP6::Wrapper::SyncEach;
 
-	cliche(:name<frame>, :matcher<frame>, grooves => (
+	cliche(:name<frame1>, :matcher<frame1>, grooves => (
 		writer(:pattern('%msg %framename %framefile %frameline'), :handle($h1)),
 		level($info)
 	));
-	my $frame = get-logger('frame');
+	cliche(:name<frame2>, :matcher<frame2>, grooves => (
+		writer(:pattern('%msg %framename %framefile %frameline'), :handle($h1)),
+		level($info)
+	), :wrapper(LogP6::Wrapper::SyncEach::Wrapper.new));
+	my $frame1 = get-logger('frame1');
+	my $frame2 = get-logger('frame2');
 
-	$frame.info('line 1');
+	$frame1.info('line 1');
 	my $l1 = $h1.clean;
-	$frame.info('line 2');
-	my $l2 = $h1.clean;
-	isnt $l1, $l2, 'frames are different';
+	$frame1.infof('line 2');
+	$frame2.infof('line 2');
+	my @l2 = $h1.clean.trim.split("\n");
+	isnt $l1, @l2[0], 'frames are different';
+	is @l2[1].substr(0, *-1), @l2[0].substr(0, *-1), 'frames are the same';
 }, 'different frame';
 
 subtest {
@@ -227,7 +241,51 @@ subtest {
 	$log.dc-restore($dc);
 	is $log.ndc-pop, 'v', 'ndc restore v';
 	is $log.ndc-pop, 'k', 'ndc restore k';
-
 }, 'dc-copy';
+
+subtest {
+	plan 13;
+
+	my $h = IOString.new;
+	cliche(:name<on>, :matcher<on>, grooves => (
+		writer(:name<on>, :handle($h), :pattern<%msg>),
+		level($info)
+	));
+
+	my $log = get-logger('on');
+
+	$log.info('boom');
+	is $h.clean.trim, 'boom', 'on w/o';
+
+	ok $log.info-on, 'on info defined';
+	nok $log.debug-on, 'on debug not defined';
+	.log('magic') with $log.info-on;
+	is $h.clean.trim, 'magic', 'on info with';
+	.log('magic') with $log.debug-on;
+	nok $h.clean, 'on debug with';
+	$log.info-on.?log('magic again');
+	is $h.clean.trim, 'magic again', 'on info .?';
+	$log.debug-on.?log('magic again');
+	nok $h.clean, 'on debug .?';
+
+	.log('level') with $log.level-on($info);
+	is $h.clean.trim, 'level', 'on level info with';
+	.log('level') with $log.level-on($debug);
+	nok $h.clean, 'on level debug with';
+
+	my $i = 0;
+	.log(++$i) with $log.debug-on;
+	is $i, 0, 'do not calculate log with';
+	$log.debug-on.?log(++$i);
+	is $i, 1, 'unfortunatly do calculate log .?';
+	nok $h.clean, 'nothing after not calculation';
+
+	writer(:name<on>, :pattern('%framefile %frameline %msg'), :update);
+	$log = get-logger('on');
+
+	my $frame;
+	.log('magic') with $log.info-on; $frame = callframe;
+	is $h.clean.trim, $frame.file ~ ' ' ~ $frame.line ~ ' magic', 'on callframe';
+}, 'on';
 
 done-testing;

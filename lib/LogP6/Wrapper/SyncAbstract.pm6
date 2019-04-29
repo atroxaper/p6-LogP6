@@ -33,6 +33,10 @@ class LogP6::Wrapper::SyncAbstract does LogP6::Logger {
 		$!aggr = &!get-fresh-logger($!aggr.trait);
 	}
 
+	method !let-sync() {
+		self.sync(get-context);
+	}
+
 	method trait() { $!aggr.trait }
 	method ndc-push($obj) { $!aggr.ndc-push($obj) }
 	method ndc-pop()      { $!aggr.ndc-pop() }
@@ -42,11 +46,26 @@ class LogP6::Wrapper::SyncAbstract does LogP6::Logger {
 	method mdc-clean()         { $!aggr.mdc-clean() }
 	method dc-copy()           { $!aggr.dc-copy }
 	method dc-restore($dc)     { $!aggr.dc-restore($dc) }
-	method trace(*@args, :$x)  { self.sync(get-context); $!aggr.trace(|@args, :$x)}
-	method debug(*@args, :$x)  { self.sync(get-context); $!aggr.debug(|@args, :$x)}
-	method info(*@args, :$x)   { self.sync(get-context);  $!aggr.info(|@args, :$x)}
-	method warn(*@args, :$x)   { self.sync(get-context);  $!aggr.warn(|@args, :$x)}
-	method error(*@args, :$x)  { self.sync(get-context); $!aggr.error(|@args, :$x)}
+	method trace(*@args, :$x)  { self!let-sync; $!aggr.trace(|@args, :$x)}
+	method tracef(*@args, :$x) { self!let-sync; $!aggr.tracef(|@args, :$x)}
+	method debug(*@args, :$x)  { self!let-sync; $!aggr.debug(|@args, :$x)}
+	method debugf(*@args, :$x) { self!let-sync; $!aggr.debugf(|@args, :$x)}
+	method info(*@args, :$x)   { self!let-sync; $!aggr.info(|@args, :$x)}
+	method infof(*@args, :$x)  { self!let-sync; $!aggr.infof(|@args, :$x)}
+	method warn(*@args, :$x)   { self!let-sync;  $!aggr.warn(|@args, :$x)}
+	method warnf(*@args, :$x)  { self!let-sync; $!aggr.warnf(|@args, :$x)}
+	method error(*@args, :$x)  { self!let-sync; $!aggr.error(|@args, :$x)}
+	method errorf(*@args, :$x) { self!let-sync; $!aggr.errorf(|@args, :$x)}
+	method level($level, *@args, :$x)
+		{ self!let-sync; $!aggr.level($level, |@args, :$x) }
+	method levelf($level, *@args, :$x)
+		{ self!let-sync; $!aggr.levelf($level, |@args, :$x) }
+	method trace-on() { self!let-sync; $!aggr.trace-on() }
+	method debug-on() { self!let-sync; $!aggr.debug-on() }
+	method info-on()  { self!let-sync; $!aggr.info-on() }
+	method warn-on()  { self!let-sync; $!aggr.warn-on() }
+	method error-on() { self!let-sync; $!aggr.error-on() }
+	method level-on($level) { self!let-sync; $!aggr.level-on($level) }
 }
 
 #|[Wrapper logic for synchronize a configuration and a logger.

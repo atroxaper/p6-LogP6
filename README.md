@@ -48,6 +48,7 @@ even in your own libraries.
 - [EXAMPLES](#examples)
 	- [Use external library witch uses LogP6](#use-external-library-witch-uses-logp6)
 	- [Change console application verbosity level](#change-console-application-verbosity-level)
+	- [Conditional log calls](#conditional-log-calls)
 	- [Associate logs with concrete user](#associate-logs-with-concrete-user)
 	- [Filter log by its content](#filter-log-by-its-content)
 	- [Write one log in several outputs](#write-one-log-in-several-outputs)
@@ -113,8 +114,8 @@ Using logger:
 use LogP6;                     				# use library in general mode
 
 my \log = get-logger('audit'); 				# create or get logger with 'audit' trait
-log.info('property ' ~ 'foo' ~ ' setted as ' ~ 5); 	# log string with concatenation
-log.info('property %s setted as %d', 'foo', 5);    	# log sprintf like style
+log.info('property ', 'foo', ' setted as ', 5);   # log string with concatenation
+log.infof('property %s setted as %d', 'foo', 5);  # log sprintf like style
 ```
 
 Configure the logger in code:
@@ -217,10 +218,20 @@ Logger has the following methods:
 them from copy. The methods are useful when you want to share NDC and MDC values
 across multiple threads.
 - `trace(*@args, :$x)`, `debug(*@args, :$x)`, `info(*@args, :$x)`,
-`warn(*@args, :$x)`, `error(*@args, :$x)` - logging the arguments with specified
-importance log level. `:$x` is an optional exception argument. `@args` - data
-for logging. If the array has more then one element then the first element is
-used as format for `sprintf` sub and the rest elements as `sprintf` args;
+`warn(*@args, :$x)`, `error(*@args, :$x)`, `level($level, *@args, :$x)` -
+logging the arguments with specified importance log level. `:$x` is an optional
+exception argument. `@args` - data for logging. Elements of the array will be
+concatenated with empty string;
+- `tracef(*@args, :$x)`, `debugf(*@args, :$x)`, `infof(*@args, :$x)`,
+`warnf(*@args, :$x)`, `errorf(*@args, :$x)`, `levelf($level, *@args, :$x)` -
+logging the arguments with specified importance log level. `:$x` is an optional
+exception argument. `@args` - data for logging. The first element is used as
+`sprintf` format and the rest element as `sprintf` args;
+- `trace-on()`, `debug-on()`, `info-on()`, `warn-on()`, `error-on()`,
+`level-on($level)` - help methods to use as condition. The method will return
+`Any` in case the specified log level if forbidden now and will return special
+object with `log(*@args, :$x)` and `logf(*@args, :$x)` methods which can be used
+for log with asked log level (see [example](#conditional-log-calls)).
 
 ## Logger Wrapper
 
@@ -762,7 +773,7 @@ sub MAIN(Bool :$verbose) {
   filter(:name<verbosity>, :level($debug), :update) if $verbose;
   my $say = get-logger('say');
   $say.info('Greetings');
-  $say.debug('You set verbose flag to %s value', $verbose);
+  $say.debugf('You set verbose flag to %s value', $verbose);
 }
 ```
 
@@ -775,6 +786,43 @@ can remove line with `cliche` creation and add the following configuration file:
   "filters": [{ "type": "std", "name": "verbosity", "level": "info"}],
   "cliches": [{ "name": "output", "matcher": "say", "grooves": [ "say", "verbosity" ]}]
 }
+```
+
+## Conditional log calls
+
+Sometimes you may need to log an information required additional calculation.
+In such cases it is useful to know will the log be written or not before
+the calculation. Logger `-on` methods created specially for that. It will return
+special object (or Any) with `log` and `logf` methods you can use to log with
+corresponding log level. Please look at the example below:
+
+```perl6
+use LogP6 :configure;
+
+# set logger allowed level as INFO
+filter(:name(''), :level($info), :update);
+my $log = get-logger('condition');
+my %map;
+my $str;
+# ...
+
+# to-json will not be called here, because .debug-on returned Any for now
+.log(to-json(%map, :pretty, :sorted-keys)) with $log.debug-on;
+
+# from-json will be called here, because .warn-on returned a 'little logger'
+# log will be with WARN level
+.log(from-json($str)<key>) with $log.warn-on;
+
+with $log.trace-on {
+  # this block will bot be executed for now
+  my $user-id = retrive-the-first-user-id-from-db();
+  # use logf method to use sprintf-style logs
+  .logf('the first user id in the database is %d', $user-id);
+}
+
+# Be careful with '.?' operator. Sins it is not an operator but syntax-sugar
+# to-json will be called in any case, but log will not be written for now.
+$log.debug-on.?log(to-json(%map, :pretty, :sorted-keys));
 ```
 
 ## Associate logs with concrete user
@@ -860,7 +908,7 @@ sub drop-passwords($context) {
 }
 
 sub connect(User $user) {
-  get-logger('log').info('user with name %s and password %s connected', $user.id, $user.passwd);
+  get-logger('log').infof('user with name %s and password %s connected', $user.id, $user.passwd);
 }
 ```
 

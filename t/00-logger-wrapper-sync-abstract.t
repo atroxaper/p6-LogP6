@@ -21,49 +21,56 @@ class MockLogger does LogP6::Logger {
 		return $!trait;
 	}
 
-	method ndc-push($obj) {
-		@!calls.push('ndc-push' ~ $obj);
+	method ndc-push($obj) { @!calls.push('ndc-push' ~ $obj) }
+	method ndc-pop() { @!calls.push('ndc-pop') }
+	method ndc-clean() { @!calls.push('ndc-clean') }
+	method mdc-put($key, $obj) { @!calls.push('mdc-put' ~ $key ~ $obj) }
+	method mdc-remove($key) { @!calls.push('mdc-remove' ~ $key) }
+	method mdc-clean() { @!calls.push('mdc-clean') }
+	method dc-copy() { @!calls.push('dc-copy') }
+	method dc-restore($dc) { @!calls.push('dc-restore' ~ $dc) }
+	method level($level, *@args, :$x) {
+		@!calls.push('level' ~ @args.join('') ~ ((defined $x) ?? $x.message !! ''));
 	}
-	method ndc-pop() {
-		@!calls.push('ndc-pop');
+	method levelf($level, *@args, :$x) {
+		@!calls.push('levelf' ~ @args.join('') ~ ((defined $x) ?? $x.message !! ''));
 	}
-	method ndc-clean() {
-		@!calls.push('ndc-clean');
-	}
-
-	method mdc-put($key, $obj) {
-		@!calls.push('mdc-put' ~ $key ~ $obj);
-	}
-	method mdc-remove($key) {
-		@!calls.push('mdc-remove' ~ $key);
-	}
-	method mdc-clean() {
-		@!calls.push('mdc-clean');
-	}
-
-	method dc-copy() {
-		@!calls.push('dc-copy');
-	}
-
-	method dc-restore($dc) {
-		@!calls.push('dc-restore' ~ $dc);
-	}
-
 	method trace(*@args, :$x) {
 		@!calls.push('trace' ~ @args.join('') ~ ((defined $x) ?? $x.message !! ''));
+	}
+	method tracef(*@args, :$x) {
+		@!calls.push('tracef' ~ @args.join('') ~ ((defined $x) ?? $x.message !! ''));
 	}
 	method debug(*@args, :$x) {
 		@!calls.push('debug' ~ @args.join('') ~ ((defined $x) ?? $x.message !! ''));
 	}
+	method debugf(*@args, :$x) {
+		@!calls.push('debugf' ~ @args.join('') ~ ((defined $x) ?? $x.message !! ''));
+	}
 	method info(*@args, :$x) {
 		@!calls.push('info' ~ @args.join('') ~ ((defined $x) ?? $x.message !! ''));
+	}
+	method infof(*@args, :$x) {
+		@!calls.push('infof' ~ @args.join('') ~ ((defined $x) ?? $x.message !! ''));
 	}
 	method warn(*@args, :$x) {
 		@!calls.push('warn' ~ @args.join('') ~ ((defined $x) ?? $x.message !! ''));
 	}
+	method warnf(*@args, :$x) {
+		@!calls.push('warnf' ~ @args.join('') ~ ((defined $x) ?? $x.message !! ''));
+	}
 	method error(*@args, :$x) {
 		@!calls.push('error' ~ @args.join('') ~ ((defined $x) ?? $x.message !! ''));
 	}
+	method errorf(*@args, :$x) {
+		@!calls.push('errorf' ~ @args.join('') ~ ((defined $x) ?? $x.message !! ''));
+	}
+	method trace-on() { @!calls.push('trace-on') }
+	method debug-on() { @!calls.push('debug-on') }
+	method info-on()  { @!calls.push('info-on') }
+	method warn-on()  { @!calls.push('warn-on') }
+	method error-on() { @!calls.push('error-on') }
+	method level-on($level) { @!calls.push('level-on ' ~ $level) }
 }
 
 class SyncLogger is LogP6::Wrapper::SyncAbstract {
