@@ -211,14 +211,22 @@ method sync-put($trait, $obj) {
 #| Gets callframe of log caller level.
 method callframe() {
 	return $_ with $!callframe;
-	# start with 3. it is much save and optimal
-	for 3..* -> $level {
+
+	my $first-non-logp6;
+	my $in-logp6 = True;
+	my $inverts = 0;
+
+	for 0..* -> $level {
 		with callframe($level) -> $frame {
-			next unless $frame.code.name
-					~~ any('trace', 'debug', 'info', 'warn', 'error');
-			# +1 to caller code and +1 to go from `with` block
-			$!callframe = callframe($level + 2);
-			last;
+			if $in-logp6 ne (so $frame.file ~~ / '(LogP6' /) {
+				$in-logp6 = !$in-logp6;
+				given ++$inverts {
+					when 1 { $first-non-logp6 = $frame }
+					when 3 { $!callframe = $frame; last }
+				}
+			}
+		} else {
+			$!callframe = $first-non-logp6; last
 		}
 	}
 	return $!callframe;

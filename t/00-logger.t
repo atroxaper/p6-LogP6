@@ -194,19 +194,27 @@ subtest {
 }, 'mute logger';
 
 subtest {
-	plan 1;
+	plan 2;
+	use LogP6::Wrapper::SyncEach;
 
-	cliche(:name<frame>, :matcher<frame>, grooves => (
+	cliche(:name<frame1>, :matcher<frame1>, grooves => (
 		writer(:pattern('%msg %framename %framefile %frameline'), :handle($h1)),
 		level($info)
 	));
-	my $frame = get-logger('frame');
+	cliche(:name<frame2>, :matcher<frame2>, grooves => (
+		writer(:pattern('%msg %framename %framefile %frameline'), :handle($h1)),
+		level($info)
+	), :wrapper(LogP6::Wrapper::SyncEach::Wrapper.new));
+	my $frame1 = get-logger('frame1');
+	my $frame2 = get-logger('frame2');
 
-	$frame.info('line 1');
+	$frame1.info('line 1');
 	my $l1 = $h1.clean;
-	$frame.info('line 2');
-	my $l2 = $h1.clean;
-	isnt $l1, $l2, 'frames are different';
+	$frame1.infof('line 2');
+	$frame2.infof('line 2');
+	my @l2 = $h1.clean.trim.split("\n");
+	isnt $l1, @l2[0], 'frames are different';
+	is @l2[1].substr(0, *-1), @l2[0].substr(0, *-1), 'frames are the same';
 }, 'different frame';
 
 subtest {

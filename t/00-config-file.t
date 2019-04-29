@@ -210,7 +210,7 @@ subtest {
 	my $wrapper = get-cliche('c2').wrapper;
 	does-ok $wrapper, LogP6::Wrapper::SyncEach::Wrapper, 'each wrapper parced';
 	is $wrapper.config-path, './t/resource/00-config-file/log-p6-2.json',
-			'each wpapper parced config-path';
+			'each wrapper parced config-path';
 }, 'integration defaults';
 
 subtest {
