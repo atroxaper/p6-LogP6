@@ -22,6 +22,18 @@ role LogP6::Logger {
 	method dc-copy() { ... }
 	#| Restore values of NDC and MDC from its copy
 	method dc-restore($dc) { ... }
+	#|[Writes log with specified importance level.
+	#| $level - importance level of log
+	#| @args - data for logging. Elements of the array will be concatenated with
+	#|    empty string;
+	#| :$x - optional exception argument.]
+	method level($level, *@args, :$x) { ... }
+	#|[Writes log with specified importance level.
+	#| $level - importance level of log
+	#| @args - data for logging. The first element is used as sprintf format
+	#|    and the rest element as sprintf args;
+	#| :$x - optional exception argument.]
+	method levelf($level, *@args, :$x) { ... }
 	#|[Writes log with trace importance level.
 	#| @args - data for logging. Elements of the array will be concatenated with
 	#|    empty string;
@@ -72,6 +84,21 @@ role LogP6::Logger {
 	#|    and the rest element as sprintf args;
 	#| :$x - optional exception argument.]
 	method errorf(*@args, :$x) { ... }
+
+	method trace-on() { ... }
+	method debug-on() { ... }
+	method info-on() { ... }
+	method warn-on() { ... }
+	method error-on() { ... }
+	method level-on($level) { ... }
+}
+
+class LogP6::IfLogger {
+	has $.log;
+	has $.level;
+
+	method log(*@args, :$x) { $!log.level($!level, |@args, :$x) }
+	method logf(*@args, :$x) { $!log.levelf($!level, |@args, :$x) }
 }
 
 sub get-context() is export {

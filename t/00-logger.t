@@ -7,7 +7,7 @@ use LogP6::LoggerPure;
 use IOString;
 use LogP6 :configure;
 
-plan 8;
+plan 9;
 
 my ($h1, $h2, $h3) = (IOString.new xx 3).list;
 sub clean-io() { $_.clean for ($h1, $h2, $h3) }
@@ -241,7 +241,52 @@ subtest {
 	$log.dc-restore($dc);
 	is $log.ndc-pop, 'v', 'ndc restore v';
 	is $log.ndc-pop, 'k', 'ndc restore k';
-
 }, 'dc-copy';
+
+subtest {
+	plan 13;
+
+	my $h = IOString.new;
+	cliche(:name<on>, :matcher<on>, grooves => (
+		writer(:name<on>, :handle($h), :pattern<%msg>),
+		level($info)
+	));
+
+	my $log = get-logger('on');
+
+	$log.info('boom');
+	is $h.clean.trim, 'boom', 'on w/o';
+
+	ok $log.info-on, 'on info defined';
+	nok $log.debug-on, 'on debug not defined';
+	.log('magic') with $log.info-on;
+	is $h.clean.trim, 'magic', 'on info with';
+	.log('magic') with $log.debug-on;
+	nok $h.clean, 'on debug with';
+	$log.info-on.?log('magic again');
+	is $h.clean.trim, 'magic again', 'on info .?';
+	$log.debug-on.?log('magic again');
+	nok $h.clean, 'on debug .?';
+
+	.log('level') with $log.level-on($info);
+	is $h.clean.trim, 'level', 'on level info with';
+	.log('level') with $log.level-on($debug);
+	nok $h.clean, 'on level debug with';
+
+
+	my $i = 0;
+	.log(++$i) with $log.debug-on;
+	is $i, 0, 'do not calculate log with';
+	$log.debug-on.?log(++$i);
+	is $i, 1, 'unfortunatly do calculate log .?';
+	nok $h.clean, 'nothing after not calculation';
+
+	writer(:name<on>, :pattern('%framefile %frameline %msg'), :update);
+	$log = get-logger('on');
+
+	my $frame;
+	.log('magic') with $log.info-on; $frame = callframe;
+	is $h.clean.trim, $frame.file ~ ' ' ~ $frame.line ~ ' magic', 'on callframe';
+}, 'on';
 
 done-testing;

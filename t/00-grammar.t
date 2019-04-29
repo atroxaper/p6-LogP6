@@ -70,7 +70,10 @@ is parse-process($level-line), '<stay-for-a-wile-and-listen>',
 		'level length 0 info';
 
 # %frame*
-ok parse-process('%framename %framefile %frameline').trim.chars > 4, 'frames';
+my $frame;
+$context.callframe; $frame = callframe;
+is parse-process('%framefile %frameline').trim, "{$frame.file} {$frame.line}",
+	'frames';
 
 # %trait
 $context.trait-set('LogP6::Writer::Async::Std');

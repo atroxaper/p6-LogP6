@@ -7,12 +7,20 @@ class LogP6::LoggerPure does LogP6::Logger {
 	has Str:D $.trait is required;
 	has List:D $.grooves is required;
 	has LogP6::Level $!reactive-level;
+	has $!if-logger;
 
 	submethod TWEAK() {
 		die 'pure logger with empty grooves: ' ~ $!trait if $!grooves.elems < 1;
 		# use minimum level of all grooves filters reactive-level
 		$!reactive-level =
 				@$!grooves.map(-> $g {$g[1].reactive-level // LogP6::Level::trace}).min;
+		$!if-logger = LogP6::Level.enums
+			.sort(*.value)
+			.map(-> $level {
+				$level.value >= $!reactive-level
+					?? LogP6::IfLogger.new(:level($level.value), :log(self))
+					!! Any
+			}).List;
 	}
 
 	method trait() {
@@ -59,6 +67,18 @@ class LogP6::LoggerPure does LogP6::Logger {
 	method dc-restore($dc) {
 		CATCH { default { logp6-error($_) } }
 		get-context.dc-restore($dc);
+	}
+
+	method level($level, *@args, :$x) {
+		CATCH { default { logp6-error($_) } }
+		return if $!reactive-level > $level;
+		self!log($level, msg(@args), $x);
+	}
+
+	method levelf($level, *@args, :$x) {
+		CATCH { default { logp6-error($_) } }
+		return if $!reactive-level > $level;
+		self!log($level, msgf(@args), $x);
 	}
 
 	method trace(*@args, :$x) {
@@ -152,6 +172,13 @@ class LogP6::LoggerPure does LogP6::Logger {
 				?? @args.join('')
 				!! '';
 	}
+
+	method trace-on() { $!if-logger[LogP6::Level::trace-1] }
+	method debug-on() { $!if-logger[LogP6::Level::debug-1] }
+	method info-on()  { $!if-logger[LogP6::Level::info -1] }
+	method warn-on()  { $!if-logger[LogP6::Level::warn -1] }
+	method error-on() { $!if-logger[LogP6::Level::error-1] }
+	method level-on($level) { $!if-logger[$level-1] }
 }
 
 class LogP6::LoggerMute does LogP6::Logger {
@@ -165,6 +192,8 @@ class LogP6::LoggerMute does LogP6::Logger {
 	method mdc-clean() {}
 	method dc-copy() { Nil }
 	method dc-restore($dc) {}
+	method level($level, *@args, :$x) { get-context().clean }
+	method levelf($level, *@args, :$x) { get-context().clean }
 	method trace(*@args, :$x) { get-context().clean }
 	method tracef(*@args, :$x) { get-context().clean }
 	method debug(*@args, :$x) { get-context().clean }
@@ -175,4 +204,10 @@ class LogP6::LoggerMute does LogP6::Logger {
 	method errorf(*@args, :$x) { get-context().clean }
 	method warn(*@args, :$x) { get-context().clean }
 	method warnf(*@args, :$x) { get-context().clean }
+	method trace-on() { get-context().clean; Any }
+	method debug-on() { get-context().clean; Any }
+	method info-on()  { get-context().clean; Any }
+	method warn-on()  { get-context().clean; Any }
+	method error-on() { get-context().clean; Any }
+	method level-on($level) { get-context().clean; Any }
 }
