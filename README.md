@@ -113,8 +113,8 @@ Using logger:
 use LogP6;                     				# use library in general mode
 
 my \log = get-logger('audit'); 				# create or get logger with 'audit' trait
-log.info('property ' ~ 'foo' ~ ' setted as ' ~ 5); 	# log string with concatenation
-log.info('property %s setted as %d', 'foo', 5);    	# log sprintf like style
+log.info('property ', 'foo', ' setted as ', 5);   # log string with concatenation
+log.infof('property %s setted as %d', 'foo', 5);  # log sprintf like style
 ```
 
 Configure the logger in code:
@@ -219,8 +219,12 @@ across multiple threads.
 - `trace(*@args, :$x)`, `debug(*@args, :$x)`, `info(*@args, :$x)`,
 `warn(*@args, :$x)`, `error(*@args, :$x)` - logging the arguments with specified
 importance log level. `:$x` is an optional exception argument. `@args` - data
-for logging. If the array has more then one element then the first element is
-used as format for `sprintf` sub and the rest elements as `sprintf` args;
+for logging. Elements of the array will be concatenated with empty string;
+- `tracef(*@args, :$x)`, `debugf(*@args, :$x)`, `infof(*@args, :$x)`,
+`warnf(*@args, :$x)`, `errorf(*@args, :$x)` - logging the arguments with
+specified importance log level. `:$x` is an optional exception argument.
+`@args` - data for logging. The first element is used as `sprintf` format and
+the rest element as `sprintf` args.
 
 ## Logger Wrapper
 
@@ -762,7 +766,7 @@ sub MAIN(Bool :$verbose) {
   filter(:name<verbosity>, :level($debug), :update) if $verbose;
   my $say = get-logger('say');
   $say.info('Greetings');
-  $say.debug('You set verbose flag to %s value', $verbose);
+  $say.debugf('You set verbose flag to %s value', $verbose);
 }
 ```
 
@@ -860,7 +864,7 @@ sub drop-passwords($context) {
 }
 
 sub connect(User $user) {
-  get-logger('log').info('user with name %s and password %s connected', $user.id, $user.passwd);
+  get-logger('log').infof('user with name %s and password %s connected', $user.id, $user.passwd);
 }
 ```
 
