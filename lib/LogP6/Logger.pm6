@@ -84,12 +84,29 @@ role LogP6::Logger {
 	#|    and the rest element as sprintf args;
 	#| :$x - optional exception argument.]
 	method errorf(*@args, :$x) { ... }
-
+	#|[Check if a log will be written with trace importance level.
+	#| Returns Any if not, or `little logger` with `log` and `logf` methods
+	#| to write a log message with trace level.]
 	method trace-on() { ... }
+	#|[Check if a log will be written with debug importance level.
+	#| Returns Any if not, or `little logger` with `log` and `logf` methods
+	#| to write a log message with debug level.]
 	method debug-on() { ... }
+	#|[Check if a log will be written with info importance level.
+	#| Returns Any if not, or `little logger` with `log` and `logf` methods
+	#| to write a log message with info level.]
 	method info-on() { ... }
+	#|[Check if a log will be written with warn importance level.
+	#| Returns Any if not, or `little logger` with `log` and `logf` methods
+	#| to write a log message with warn level.]
 	method warn-on() { ... }
+	#|[Check if a log will be written with error importance level.
+	#| Returns Any if not, or `little logger` with `log` and `logf` methods
+	#| to write a log message with error level.]
 	method error-on() { ... }
+	#|[Check if a log will be written with specified importance level.
+	#| Returns Any if not, or `little logger` with `log` and `logf` methods
+	#| to write a log message with specified level.]
 	method level-on($level) { ... }
 }
 

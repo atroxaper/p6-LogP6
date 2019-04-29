@@ -273,7 +273,6 @@ subtest {
 	.log('level') with $log.level-on($debug);
 	nok $h.clean, 'on level debug with';
 
-
 	my $i = 0;
 	.log(++$i) with $log.debug-on;
 	is $i, 0, 'do not calculate log with';
