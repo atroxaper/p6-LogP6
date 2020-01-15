@@ -46,7 +46,7 @@ even in your own libraries.
 	- [Default logger](#default-logger)
 	- [Change configuration](#change-configuration)
 - [EXAMPLES](#examples)
-	- [Use external library witch uses LogP6](#use-external-library-witch-uses-logp6)
+	- [Use external library which uses LogP6](#use-external-library-which-uses-logp6)
 	- [Change console application verbosity level](#change-console-application-verbosity-level)
 	- [Conditional log calls](#conditional-log-calls)
 	- [Associate logs with concrete user](#associate-logs-with-concrete-user)
@@ -730,7 +730,7 @@ created the new from the file.
 
 Lets explore a few general use cases:
 
-## Use external library witch uses LogP6
+## Use external library which uses LogP6
 
 `LogP6` can be used during library development and a user of the library wants
 fully turn off any logs from the library. Lets imagine that all libraries
