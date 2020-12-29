@@ -29,14 +29,14 @@ subtest {
 }, 'miss file';
 
 subtest {
-	plan 23;
+	plan 25;
 
 	CATCH { default {say .gist }}
 
 	my ($w, $cn);
 	$cn = $config.parse-config('./t/resource/00-config-file/log-p6-1.json');
 
-	is $cn.writers.elems, 6, 'parsed 5 writers';
+	is $cn.writers.elems, 7, 'parsed 7 writers';
 
 	$w = $cn.writers[0];
 	is $w.name, 'w1', 'w1 name';
@@ -67,6 +67,10 @@ subtest {
 
 	$w = $cn.writers[5];
 	is $w.handle.out-buffer, 1000, 'w6 handle out-buffer 1000';
+
+	$w = $cn.writers[6];
+	is $w.name, 'w7', 'w7 name';
+	is $w.handle.Str, './t/resource/00-config-file/handle3.after', 'w7 handle';
 
 	my $w0h = $cn.writers[0].handle.WHICH;
 	my $w3h = $cn.writers[3].handle.WHICH;

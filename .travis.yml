@@ -5,7 +5,7 @@ services:
   - docker
 
 install:
-  - docker pull jjmerelo/test-perl6
+  - docker pull jjmerelo/test-raku
   - docker images
 
-script: docker run -t -v  $TRAVIS_BUILD_DIR:/test jjmerelo/test-perl6
+script: docker run -t -v  $TRAVIS_BUILD_DIR:/test jjmerelo/test-raku
