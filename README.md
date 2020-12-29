@@ -2,9 +2,8 @@
 
 # NAME
 
-LogP6 - full customisable and fast logging library inspired by idea of separate
-a logging and its configuration. You can use it not only in apps but
-even in your own libraries.
+`LogP6` is a fully customizable and fast logging library inspired by the idea of separating
+logging and its configuration. You can use it not only in apps but even in your libraries.
 
 # TABLE OF CONTENTS
 
@@ -46,7 +45,7 @@ even in your own libraries.
 	- [Default logger](#default-logger)
 	- [Change configuration](#change-configuration)
 - [EXAMPLES](#examples)
-	- [Use external library which uses LogP6](#use-external-library-which-uses-logp6)
+	- [Use an external library that uses LogP6](#use-an-external-library-that-uses-logp6)
 	- [Change console application verbosity level](#change-console-application-verbosity-level)
 	- [Conditional log calls](#conditional-log-calls)
 	- [Associate logs with concrete user](#associate-logs-with-concrete-user)
@@ -54,62 +53,61 @@ even in your own libraries.
 	- [Write one log in several outputs](#write-one-log-in-several-outputs)
 	- [Write custom writer handle for your need](#write-custom-writer-handle-for-your-need)
 - [BEST PRACTICE](#best-practice)
+- [SEE OLSO](#seeolso)
 - [ROADMAP](#roadmap)
 - [AUTHOR](#author)
 - [COPYRIGHT AND LICENSE](#copyright-and-license)
 
 # SYNOPSIS
 
-Logger system have to be as much transparent as possible. At the same time it
-have to be fully customisable. It have to provide possibility to change logging
-logic without changing any line of code. It is amazing if you can use logger
-system during developing a library and its user do not feel discomfort of it.
-`LogP6` logger library is all about that.
+A logger system has to be as transparent as possible. At the same time, it has to be fully
+customizable. It has to provide a possibility to change logging logic without changing any
+line of code. It is amazing if you can use logger system during developing a library and its
+user do not feel discomfort of it. `LogP6` logger library is all about that.
 
 # DESCRIPTION
 
 ## Features
 
-1. Possibility to change logger configuration and its behaviour without touching
-the code;
+1. Possibility to change logger configuration and its behavior without touching the code;
 2. Configuring from the code and/or configuration files;
-3. Possibility to use any kind of IO::Handler, even for async or database work;
+3. Possibility to use any IO::Handler, even for async or database work;
 4. Possibility to use multiple loggers in one app;
 5. Possibility to use multiply IO::Handler's in one logger;
 6. Flexible filter system;
-7. Stack and Map entities associated with each thread and possibility to use
-values from it in the logger;
-8. Pretty fast work. Using pre-calculation as much as it can be done - parse
-logger layout pattern only once, reuse current DateTime objects and so on; 
-9. Possibility to use logger while development (dynamically change logger
-settings in runtime), and while production work (maximum fast, without any lock
-excepts possible IO::Handle implementation's).
+7. Stack and Map entities associated with each thread and possibility to use values from
+it in the logger;
+8. Pretty fast work. Using pre-calculation as much as possible -
+logger layout pattern is parsed only once, reuse current DateTime objects and so on; 
+9. Possibility to use logger while development (dynamically change logger settings in runtime),
+and during production work (maximum fast, without any lock, excepts possible IO::Handle
+implementation's).
 
 ## Concepts
 
-- `writer` - an object which know how and where logs must be written. In
-simple case - which file and string format pattern will be used;
-- `filter` - an object which know which logs must be written. In simple case -
-logs with which levels are allowed to pass to the `writer`;
-- `cliche` - template for creating `Logger`. Contains writers, filters and other
-configurations for future Loggers;
-- `logger` - instance created using configuration from the `cliche`. Just logger
-with standard functionality like `info()` method;
-- `logger trait` - string value describes semantic purpose of concrete Logger.
-For example, the name of class where the logger is used or the type of logged
-information (for example, 'internal-audit-subsystem'). `LogP6` uses `trait` for
-create the new or get already created logger;
-- `cliche's matcher` - special field of the cliche. The field may be a literal
-string or regex. If the logger `trait` satisfies the `matcher` then the cliche
-will be used for creating the logger with the trait;
-- `context` - associated with each Thread object which contains information
-for logging like your final log message, exception you specified, log level,
-current date, thread name and so on. Context can be used for storing some
-specific information you and `LogP6` library need while logging.
+- `writer` - an object which knows how and where logs must be written. In a simple case -
+which file and string format pattern will be used;
+- `filter` - an object which knows which logs must be written. In simple case - logs with
+which levels are allowed to pass to the `writer`;
+- `cliche` - template for creating `Logger`. Contains writers, filters, and other configurations
+for future Loggers;
+- `logger` - instance created using configuration from the `cliche`. Just Logger with standard
+functionality like `info()` method;
+- `logger trait` - string value describes the semantic purpose of concrete Logger. For example,
+the name of the class where the logger is used or the type of logged information (for example,
+'internal-audit-subsystem'). `LogP6` uses `trait` to create the new or get already created logger;
+- `cliche's matcher` - unique field of the cliche. The field may be a literal string or regex.
+If the logger `trait` satisfies the `matcher` then the cliche will be used for creating the
+logger with the trait;
+- `context` - associated with each Thread object, which contains information for logging like
+your final log message, the exception you specified, log level, current date, thread name, and
+so on. Context can be used for storing some specific information you and `LogP6` library need
+while logging.
 
 ## Example
 
 Using logger:
+
 ```perl6
 use LogP6;                     				# use library in general mode
 
@@ -119,6 +117,7 @@ log.infof('property %s setted as %d', 'foo', 5);  # log sprintf like style
 ```
 
 Configure the logger in code:
+
 ```perl6
 use LogP6 :configure;   # use library in configure mode
 cliche(                 # create a cliche
@@ -130,6 +129,7 @@ cliche(                 # create a cliche
 ```
 
 Configure in the configuration file style (same as above):
+
 ```json
 {
   "writers": [{
@@ -153,61 +153,56 @@ Configure in the configuration file style (same as above):
 
 ## Context
 
-LogP6 library adds an object associated with each Thread - `Logger Context` or
-just `context`. You can work with the context directly in `filter` subsystem
-or in custom `writer` implementations. Also `logger` has special methods
-for working with `NDC` and `MDC` (see below in [Logger](#logger)). For more
-information please look at methods' declarators in `LogP6::Context`.
+LogP6 library adds an object associated with each Thread - `Logger Context` or just `context`.
+You can work with the context directly in the `filter` subsystem or in custom `writer`
+implementations. Also, `logger` has methods for working with `NDC` and `MDC` (see below in
+[Logger](#logger)). For more information, please look at the methods' declarators in
+`LogP6::Context`.
 
 ## Writer
 
-`Writer` is responsible to write all corresponding data to corresponding output
-in some format. It has only one method: 
+`Writer` is responsible for writing all corresponding data to corresponding output in some format.
+It has only one method: 
 
-- `write($context){...}` - this method have to take all necessary data from the
-specified `context` and use it for writing. Note: the specified context will
-change its data after method call. Do not cache the context itself (for example
-for asynchronous writing) but only its data.
+- `write($context){...}` - this method has to take all necessary data from the specified `context`
+and use it for writing. Note: the specified context will change its data after the method call.
+Do not cache the context itself (for example, for asynchronous writing) but only its data.
 
 ## Filter
 
-`Filter` is responsible to decide allow the corresponding `writer` to write log
-or not. It has three methods:
+`Filter` is responsible for deciding to allow the corresponding `writer` to write a log or not.
+It has three methods:
 
-- `do-before($context){...}` - some code which decides allow log to be pass to
-the writer or not. If it returns True then the log will be pass to the writer.
-Otherwise the log will be discarded.
-- `reactive-level(){}` - in most cases filtering can be done only by log level.
-This method returns a log level which allows logger to call `do-before` method.
-If filtering log's level importance is less then returned reactive level then
-the log will be discarded without calling `do-before` method.
-- `do-after($context){}` - any code which have to be executed after the writer
-work in case when `do-before` method returns True.
+- `do-before($context){...}` - some code which decides allow the log to be pass to the writer
+or not. If it returns True then the log will be pass to the writer. Otherwise, the log will be
+discarded.
+- `reactive-level(){}` - in most cases filtering can be done only by log level. This method
+returns a log level, which allows logger to call `do-before` method. If the filtering log's level
+importance is less then returned reactive level, then the log will be discarded without calling
+`do-before` method.
+- `do-after($context){}` - any code which has to be executed after the writer work in case when
+`do-before` method returns True.
 
 ## Nested Diagnostic Context (NDC) and Mapped Diagnostic Context (MDC)
 
-There are cases when we want to trace some information through group of log
-messages, but not only in one message. For example, user id, http session
-number or so. In such cases we have to store the information somewhere, pass
-it through logic subs and methods and pass to log methods over and over again.
-Since log system have to be separated from the main program logic then we need a
-special place to store the information. That place is a
-`Nested Diagnostic Context` (`NDC`) - a stack structure and a
-`Mapped Diagnostic Context` (`MDC`) - a map structure. You can push/pop values
-in `NDC` and put/remove values in `MDC`. Standard writer has special
-placeholders for message pattern (see below in [Pattern](#pattern)) for put all
-values from `NDC` or some kay associated value from `MDC` to final log message
-string.
+There are cases when we want to trace some information through a group of log messages, but not
+only in one message, for example, user id, http session number, or so. In such cases, we have to
+store the information somewhere, pass it through logic subs and methods, and pass to log methods
+over and over again. Since the log system has to be separated from the main program logic, then we
+need a special place to store the information. That place is a `Nested Diagnostic Context`
+(`NDC`) - a stack structure and a `Mapped Diagnostic Context` (`MDC`) - a map structure. You can
+push/pop values in `NDC` and put/remove values in `MDC`. The standard writer has special
+placeholders for message pattern (see below in [Pattern](#pattern)) for put all values from `NDC`
+or some kay associated value from `MDC` to the final log message string.
 
 ## Logger
 
-The logger is an immutable object that contains from zero to several pairs of 
-`writer` and `filter` (`grooves`). For each time the you want to log some
-message (with or without arguments) the logger compiles message+arguments in
-one message string, updates the `context` and goes through `grooves` - call
-filter's methods and if it pass then ask a writer to write message. The writer
-takes all necessary information such as message, log level, NDC/MDC values,
-current date-time and so from the context.
+A logger is an immutable object containing zero to several pairs of  `writer` and `filter`
+(`grooves`). For each time you want to log some message (with or without arguments), the logger
+compiles message+arguments in one message string, updates the `context`, and goes through
+`grooves` - call filter's methods and, if it passes, then ask a writer to write the message. The
+writer takes all necessary information such as message, log level, NDC/MDC values, current
+date-time, and so from the context.
 
 Logger has the following methods:
 
@@ -235,42 +230,39 @@ for log with asked log level (see [example](#conditional-log-calls)).
 
 ## Logger Wrapper
 
-System to wrap (or decorate) logger object into another and add additional
-logic. You can describe `logger wrapper factory` which will wrap any created
-`logger`.
+It is a system to wrap (or decorate) logger object into another and add additional logic.
+You can describe `logger wrapper factory`, which will wrap any created `logger`.
 
 ### Synchronisation of configuration and Logger instance
 
-An example of logger wrapper usage is synchronisation a logger configuration
-and logger instance. It may be useful in case of development or debug session
-to change logger configuration dynamically.
+An example of logger wrapper usage is synchronization a logger configuration and logger instance.
+It may be useful in the case of development or debug session to change logger configuration
+dynamically.
 
-Since a logger object are immutable and cannot know about changes in
-configuration it produced, we need a logic which checks if user updated
-corresponding configuration and updates the logger instance.
+Since a logger object is immutable and cannot know about configuration changes it produced,
+we need a logic that checks if the user updated the corresponding configuration and updates
+the logger instance.
 
-You can specify any kind of wrapper for logger synchronization. There are
-helper class `LogP6::Wrapper::SyncAbstract` to create your own synchronization
-wrapper.
+You can specify any wrapper for logger synchronization. There is a helper class
+`LogP6::Wrapper::SyncAbstract` to create your synchronization wrapper.
 
-For now there is only two synchronization wrappers:
+For now, there are only two synchronization wrappers:
 
-- `LogP6::Wrapper::SyncTime::Wrapper` - checks the new configuration change each
-`X` seconds;
-- `LogP6::Wrapper::SyncEach::Wrapper` - checks the new configuration change each
-time you use logger.
+- `LogP6::Wrapper::SyncTime::Wrapper` - checks the new configuration change each `X` seconds;
+- `LogP6::Wrapper::SyncEach::Wrapper` - checks the new configuration change each time you use
+the logger.
 
 # CONFIGURATION
 
-For working with `LogP6` library you need to `use LogP6;` module. Without any
-tags it provides only `get-logger($trait)` sub for retrieving a logger.
-`:configure` tag provides factory subroutines for configuring loggers from the code.
-Another option to configure logger is using configuration file.
+For working with the `LogP6` library, you need to `use LogP6;` module. Without any tags,
+it provides only the `get-logger($trait)` sub for retrieving a logger. `:configure` tag
+provides factory subroutines for configuring loggers from the code. Another option to configure
+logger is by using a configuration file.
 
 ## Logger retrieve
 
-For retrieve a logger you need to use `LogP6` module and call
-`get-logger($trait)` sub with logger trait you need. Example:
+To retrieve a logger, you need to use `LogP6` module and call the `get-logger($trait)`
+sub with the logger trait you need. Example:
 
 ```perl6
 use LogP6;
@@ -279,21 +271,19 @@ my $log = get-logger('main');
 # using $log ...
 ```
 
-If you did not configure a `Cliche` for specified logger trait ('main' in
-the example), the default logger will be returned (see 
-[Default logger](#default-logger)). In other case the logger created by the
-cliche with matcher the trait satisfy will be returned.
+If you did not configure a `Cliche` for a specified logger trait ('main' in the example),
+the default logger would be returned (see  [Default logger](#default-logger)). In other cases,
+the logger created by the cliche with matcher the trait satisfy will be returned.
 
 ## Factory subroutines
 
-`LogP6` provides subroutines for configure loggers from the code dynamically.
-To get access to them you need to `use LogP6` with `:configure` tag. There are 
-subroutines for configuring `filters`, `writers`, `cliches` and any default
-values like `writer pattern`, `logger wrapper` or so. Concrete subroutines will
-be described in corresponding sections below. There is `get-logger-pure($trait)`
-sub for retrieve pure logger without any wrappers. Also five variables for five
-`LogP6::Level` enum values are exported as `$trace`, `$debug`, `$info`, `$warn`
-and `$error`. Example:
+`LogP6` provides subroutines for configure loggers from the code dynamically. To get access to
+them, you need to `use LogP6` with `:configure` tag. There are subroutines for configuring
+`filters`, `writers`, `cliches`, and any default values like `writer pattern`, `logger wrapper`,
+or so. Concrete subroutines will be described in the corresponding sections below. There is a
+`get-logger-pure($trait)` sub to retrieve pure logger without any wrappers. Also, five variables
+for five `LogP6::Level` enum values are exported as `$trace`, `$debug`, `$info`, `$warn` and
+`$error`. Example:
 
 ```perl6
 use LogP6 :configure;
@@ -307,13 +297,13 @@ my $pure-log = get-logger-pure('main'); # this logger will not synchronize its c
 
 ## Configuration file
 
-Better alternative (especially for production using) of configuration by factory
-subroutines is configuration file. You can specify path to it through
-`LOG_P6_JSON` system environment variable. In case the variable is empty then
-standard path `./log-p6.json` will be used (if it exists). Or you can initialize
-`LogP6` library using `init-from-file($config-path)` factory subroutine.
+A better alternative (especially for production using) of configuration by factory subroutines
+is a configuration file. You can specify a path to it through `LOG_P6_JSON` system environment
+variable. In case the variable is empty, then standard path `./log-p6.json` will be used
+(if it exists). Or you can initialize `LogP6` library using `init-from-file($config-path)` factory
+subroutine.
 
-Configuration file is `json` formatted file. Example:
+The configuration file is a `json` formatted file. Example:
 
 ```json
 {
@@ -325,21 +315,19 @@ Configuration file is `json` formatted file. Example:
   "cliches": [{ "name": "c2", "matcher": "main" }]
 }
 ```
-Concrete format for concrete objects will be described in corresponding
-sections below.
+The concrete format for concrete objects will be described in the corresponding sections below.
 
-Some object like `writers`, `wrappers` or so have a `type` filed. Each object
-has its own list of available types. There are type which can be used in any 
-object - `custom`. It uses to describe factory method or class which will be
-used to produce the object. It requires additional fields:
-- `require` - name of module with factory method or class;
-- `fqn-method` or `fqn-class` - full qualified name of method or class in
-`require` module;
-- `args` - list of named arguments which will be passed to `fqn-method()` or
-`fqn-class.new()`.
+Some objects like `writers`, `wrappers` or so have a `type` filed. Each object has its own list
+of available types. There is a type that can be used in any object - `custom`. It uses to describe
+the factory method or class which will be used to produce the object. It requires additional
+fields:
+- `require` - the name of the module with factory method or class;
+- `fqn-method` or `fqn-class` - the fully qualified name of method or class in `require` module;
+- `args` - list of named arguments which will be passed to `fqn-method()` or `fqn-class.new()`;
+- `positional` - list of positional arguments which will be passed to `fqn-method()` or `fqn-class.new()`.
 
-For example, creating IO::Handle by `create-handle` subroutine in `MyModule`
-with arguments `:path<out.txt>, :trait<rw>`:
+For example, creating IO::Handle by `create-handle` subroutine in `MyModule` with arguments
+`:path<out.txt>, :trait<rw>`:
 
 ```json
 {
@@ -350,48 +338,44 @@ with arguments `:path<out.txt>, :trait<rw>`:
     "args": { "path": "out.txt", "trait": "rw" }
   }
 }
-``` 
+```
 
 ## Writer configuration
 
 ### WriterConf
 
-`WriterConf` is a configuration object which contains all necessary information
-and algorithm for creating a concrete `writer` instance. For more
-information please look at methods' declarators in `LogP6::WriterConf`.
+`WriterConf` is a configuration object which contains all necessary information and algorithm
+for creating a concrete `writer` instance. For more information, please look at the methods'
+declarators in `LogP6::WriterConf`.
 	
 ### Standard WriterConf
 
-Standard `WriterConf` (`LogP6::WriterConf::Std`) makes a writer which writes log
-message to abstract `IO::Handle`. It has a `pattern` - string with special
-placeholders for values like `ndc`, current `Thread` name, log message and so.
-`Writer` will put all necessary values into `pattern` and write it to handle.
-Also standard `WriterConf` has boolean `auto-exceptions` property - if it is
-`True` then placeholder for exception will be concatenated to the `pattern`
-automatically. Form of the exception placeholder can be configured separately
-(see [Defaults](#defaults) and [Cliche](#cliche)).
+Standard `WriterConf` (`LogP6::WriterConf::Std`) makes a writer that writes log message to
+abstract `IO::Handle`. It has a `pattern` - string with special placeholders for values like `ndc`,
+current `Thread` name, log message, etc. `Writer` will put all necessary values into `pattern` and
+write it to handle. Also, standard `WriterConf` has boolean `auto-exceptions` property - if it is
+`True`, then the placeholder for exception will be concatenated to the `pattern` automatically.
+Form of the exception placeholder can be configured separately (see [Defaults](#defaults) and
+[Cliche](#cliche)).
 
 ### Pattern
 
-Pattern placeholders starts with `%` symbol following placeholder name. If
-placeholder has arguments they can be passed in curly brackets following
-placeholder name.
+Pattern placeholders start with `%` symbol following the placeholder name. If placeholder has
+arguments, they can be passed in curly brackets following placeholder name.
  
-Pattern can has the following placeholders:
+The pattern can have the following placeholders:
 
-- `%trait`, `%trait{short=[package-delimeter]number}`, `%trait{sprintf=pattern}` -
-for name of logger trait. Additionally you can specify one of two options of
-trait representation. `sprintf` option is useful for traits like `database`,
-`audit` or so, when you want to represent all traits with the same length. For
-example, `[%trait{sprintf=%s7}]` can be converted into `[  audit]`. `short`
-option is useful for traits like `Module::Packge1::Package2::Class`. You can
-specify package delimiter (instead of `::`) and how many packages will be
-displayed. For example, `%trait{short=[.]1` can be converted into
-`Class`, `%trait{short=[.]-1` - into `Packge1.Package2.Class` and
-`%trait{short=[.]2.4` - into `Modu.Pack.Package2.Class`. If `number` is a
-positive integer then only `number` right elements will be displayed. If
-`number` is a negative integer then `|number|` left elements will be deleted. If
-`number` is real then left elements will be cut to fractional symbols;
+- `%trait`, `%trait{short=[package-delimeter]number}`, `%trait{sprintf=pattern}` - for the name of
+the logger trait. Additionally, you can specify one of two options of trait representation.
+`sprintf` option is useful for traits like `database`, `audit`, or so when you want to represent
+all traits with the same length. For example, `[%trait{sprintf=%s7}]` can be converted into
+`[ audit]`. `short` option is useful for traits like `Module::Packge1::Package2::Class`. You can
+specify package delimiter (instead of `::`) and how many packages will be displayed. For example,
+`%trait{short=[.]1` can be converted into `Class`, `%trait{short=[.]-1` - into
+`Packge1.Package2.Class` and `%trait{short=[.]2.4` - into `Modu.Pack.Package2.Class`. If `number`
+is a positive integer, then only `number` right elements will be displayed. If `number` is a
+negative integer, then `|number|` left elements will be deleted. If `number` is real, then left
+elements will be cut to fractional symbols;
 - `%tid` - for current `Thread` id;
 - `%tname` - for current `Thread` name;
 - `%msg` - for log message;
@@ -402,22 +386,19 @@ subpattern. `$msg` - optional exception message, `$name` - optional exception
 name, `$trace` - optional exception stacktrace. For example,
 `'%x{($name "$msg") Trace: $trace}'` can be converted into
 `'(X::AdHoc "test exception") Trace: ...'`;
-- `%level{WARN=W DEBUG=D ERROR=E TRACE=T INFO=I length=2}` - log importance
-level. By default logger will use level name in upper case but you can
-specify synonyms for all or part of them in curly brackets in format
-`<LEVEL_NAME>=<sysnonym>`. You can specify a fixed length of log level name.
-Default length is 0 - write level as is. For example
-`'[%level{WARN=hmm ERROR=alarm length=5}]'` can be converted into
-`'[hmm  ]'`, `'[alarm]'`, `'[INFO ]'`, `'[DEBUG]'`;
-- `%color{TRACE=yellow DEBUG=green INFO=blue WARN=magenta ERROR=red}` - colorize
-log string after that placeholder. You can specify color for any log level.
-Level you not specified color will be use its default color (as in example
-above). For example, `%color{ERROR=green}` means
-`%color{TRACE=yellow DEBUG=green INFO=blue WARN=magenta ERROR=green}`. You can
-use `yellow`, `green`, `blue`, `magenta`, `green` color names or color code
-(more [information](https://misc.flogisoft.com/bash/tip_colors_and_formatting).
-For example `%color{TRACE=35 DEBUG=30;48;5;82 INFO=green}`. You can use `%color`
-placeholder several times;
+- `%level{WARN=W DEBUG=D ERROR=E TRACE=T INFO=I length=2}` - log importance level. By default,
+the logger will use the level name in upper case, but you can specify synonyms for all or part
+of them in curly brackets in format `<LEVEL_NAME>=<sysnonym>`. You can specify a fixed length
+of the log level name. Default length is 0 - write level as is. For example
+`'[%level{WARN=hmm ERROR=alarm length=5}]'` can be converted into `'[hmm ]'`, `'[alarm]'`,
+`'[INFO ]'`, `'[DEBUG]'`;
+- `%color{TRACE=yellow DEBUG=green INFO=blue WARN=magenta ERROR=red}` - colorize log string after
+that placeholder. You can specify a color for any log level. The level you not specified color will
+use its default color (as in the example above). For example, `%color{ERROR=green}` means
+`%color{TRACE=yellow DEBUG=green INFO=blue WARN=magenta ERROR=green}`. You can use `yellow`,
+`green`, `blue`, `magenta`, `green` color names or color code (more
+[information](https://misc.flogisoft.com/bash/tip_colors_and_formatting). For example
+`%color{TRACE=35 DEBUG=30;48;5;82 INFO=green}`. You can use `%color` placeholder several times;
 - `%color{reset}` or `%creset` - reset log string colorizing after that
 placeholder;
 - `%date{$yyyy-$yy-$MM-$MMM-$dd $hh:$mm:$ss:$mss $z}` - current date and time.
@@ -444,54 +425,49 @@ resultative log call;
 `LogP6` provides writer and handle implementation for asynchronous writing.
 
 You can use `LogP6::Handle::Async.new(IO::Handle :$delegate!, Scheduler :$scheduler = $*SCHEDULER)`
-as handle which will schedule `WRITE` method call of `delegate` handle.
+as a handle which will schedule `WRITE` method call of `delegate` handle.
 
-If is it not enough to wrap a handle then you can wrap whole writer. Use
+If it is not enough to wrap a handle, then you can wrap the whole writer. Use
 `LogP6::WriterConf::Async.new(LogP6::WriterConf :$delegate!, Scheduler :$scheduler = $*SCHEDULER), :$name, Bool :$need-callframe)`
-as writer configuration of another configuration. Final writer will schedule 
-`write` method call of `delegate` created writer with copy of current
-`logger context`. If you miss a `:name` parameter then `delegate`'s name will
-be used. Pass boolean parameter `need-callframe` if you plan to use callframe
-information in wrapped writer. Note that using callframe will slow your logging
-because it requires several `callframe()` calls on each resultative log call.
+as writer configuration of another configuration. The final writer will schedule the `write` method
+call of `delegate` created writer with a copy of the current `logger context`. If you miss a
+`:name` parameter, then `delegate`'s name will be used. Pass boolean parameter `need-callframe` if
+you plan to use callframe information in the wrapped writer. Note that using callframe will slow
+your logging because it requires several `callframe()` calls on each resultative log call.
 
 ### Writer factory subroutines
 
 `LogP6` module has the following subs for manage writers configurations:
 
-- `get-writer(Str:D $name --> LogP6::WriterConf)` - gets writer with specified
-name;
+- `get-writer(Str:D $name --> LogP6::WriterConf)` - gets writer with specified name;
 - `writer(:$name, :$pattern, :$handle, :$auto-exceptions, :create, :update, :replace --> LogP6::WriterConf)` -
-create, update or replace standard `WriterConf` with specified name. If you want
-to `:update` only concrete fields in already created configuration then the rest
-fields will not be changed. In case of `:replace` the new configuration will be
-created and replaced the old one. You can create configuration without name -
-then the configuration will not be stored, but only returned to you. The method
-returns the old writer configuration (`:update`, `:replace`) and the new one
+create, update, or replace standard `WriterConf` with a specified name. If you want to `:update`
+only concrete fields in an already created configuration, then the rest fields will not be changed.
+In the case of `:replace`, the new configuration will be created and replaced the old one. You can
+create configuration without a name - then the configuration will not be stored but only returned
+to you. The method returns the old writer configuration (`:update`, `:replace`) and the new one
 (`:create`);
-- `writer(LogP6::WriterConf:D $writer-conf, :create, :replace --> LogP6::WriterConf)` -
-save or replace any implementation of `WriterConf`. The configuration name
-will be retrieved from the `$writer-conf`. The method returns the old writer
-configuration (`:replace`) and the new one (`:create`);
-- `writer(:$name, :$remove --> LogP6::WriterConf)` - remove and return a
-configuration with specified name.
+- `writer(LogP6::WriterConf:D $writer-conf, :create, :replace --> LogP6::WriterConf)` - save or
+replace any implementation of `WriterConf`. The configuration name will be retrieved from the
+`$writer-conf`. The method returns the old writer configuration (`:replace`) and the new one
+(`:create`);
+- `writer(:$name, :$remove --> LogP6::WriterConf)` - remove and return a configuration with
+specified name.
 
 ### Writer configuration file
 
-In configuration file writer configurations have to be listed in `writers`
-array. Only `std` (for standard configuration) and `custom` types are supported.
+In the configuration file, writer configurations have to be listed in `writers` array. Only `std`
+(for standard configuration) and `custom` types are supported.
 
-In case of standard configuration all field are optional excepts `name`. Handle
-can be:
+In the case of standard configuration, all fields are optional excepts `name`. The handle can be:
 
-- `file` type for output into file. You can specify `path`,`append` (`True`
-by default) and `out-buffer` arguments;
-- `std` type for output into `$*OUT` or `$*ERR`. You can specify `path` as `out`
-or `err`.
+- `file` type for output into a file. You can specify `path`,`append` (`True` by default), and
+`out-buffer` arguments;
+- `std` type for output into `$*OUT` or `$*ERR`. You can specify `path` as `out` or `err`.
 - `custom` type.
 
-In case of `custom` writer type the result writer configuration have to returns
-not empty name.
+In the case of the `custom` writer type, the result writer configuration has to returns not empty
+name.
 
 Example:
 
@@ -509,55 +485,48 @@ Example:
 
 ### FilterConf
 
-`Filter` creates by `FilterConf` - a configuration object which contains all
-necessary information and algorithm for creating a concrete `filter` instance.
-For more information please look at methods' declarators in `LogP6::FilterConf`.
+`Filter` creates by `FilterConf` - a configuration object which contains all necessary information
+and algorithm for creating a concrete `filter` instance. For more information, please look at the
+methods' declarators in `LogP6::FilterConf`.
 
 ### Standard FilterConf
 
-Standard `FilterConf` (`LogP6::FilterConf::Std`) has array for `do-before` subs
-and array for `do-after` subs. `Filter` made by standard `FilterConf` calls 
-each `do-before` sub and stop at the first `False` returned value. If all
-`do-before` subs returned `True`, then the filter's `do-before` method returns
-`True`. The `do-after` work in the same way. Also there is `first-level-check`
-property. If it set to `True` then the sub for checking log level will be added
-automatically as the first element in `do-before` array; if the property set to
-`False` then the sub will be added automatically as the last element in
-`do-before` array.
+Standard `FilterConf` (`LogP6::FilterConf::Std`) has array for `do-before` subs and array for
+`do-after` subs. `Filter` made by standard `FilterConf` calls each `do-before` sub and stop at the
+first `False` returned value. If all `do-before` subs returned `True`, then the filter's
+`do-before` method returns `True`. The `do-after` works in the same way. Also, there is a
+`first-level-check` property. If it is set to `True`, then the sub for checking log level will be
+added automatically as the first element in `do-before` array; if the property set to `False` then
+the sub will be added automatically as the last element in `do-before` array.
 
 ### Filter factory subroutines
 
 `LogP6` module has the following subs for manage filters configurations:
 
-- `get-filter(Str:D $name --> LogP6::FilterConf)` - gets filter with specified
-name
+- `get-filter(Str:D $name --> LogP6::FilterConf)` - gets filter with specified name
 - `filter(:$name, :$level, :$first-level-check, List :$before-check, List :$after-check, :create, :update, :replace --> LogP6::FilterConf)` -
-create, update or replace standard `FilterConf` with specified name. If you want
-to `:update` only concrete fields in already created configuration then the rest
-fields will not be changed. In case of `:replace` the new configuration will be
-created and replaced the old one. You can create configuration without name -
-then the configuration will not be stored, but only returned to you. The method
-returns the old filter configuration (`:update`, `:replace`) and the new one
-(`:create`);
-- `level($level --> LogP6::FilterConf:D)` - the short form for
-`filter(:level($level), :create)`;
-- `filter(LogP6::FilterConf:D $filter-conf, :create, :replace)` -
-save or replace any implementation of `FilterConf`. The configuration name
-will be retrieved from the `$filter-conf`. The method returns the old filter
-configuration (`:replace`) and the new one (`:create`);
-- `filter(:$name, :$remove)` - remove and return a configuration with specified
-name.
+create, update, or replace standard `FilterConf` with a specified name. If you want to `:update`
+only concrete fields in already created configuration then the rest fields will not be changed.
+In the case of `:replace`, the new configuration will be created and replaced the old one. You can
+create a configuration without a name - then the configuration will not be stored but only
+returned to you. The method returns the old filter configuration (`:update`, `:replace`) and the
+new one (`:create`);
+- `level($level --> LogP6::FilterConf:D)` - the short form for `filter(:level($level), :create)`;
+- `filter(LogP6::FilterConf:D $filter-conf, :create, :replace)` - save or replace any
+implementation of `FilterConf`. The configuration name will be retrieved from the `$filter-conf`.
+The method returns the old filter configuration (`:replace`) and the new one (`:create`);
+- `filter(:$name, :$remove)` - remove and return a configuration with specified name.
 
 ### Filter configuration file
 
-In configuration file filter configurations have to be listed in `filters`
-array. Only `std` (for standard configuration) and `custom` types are supported.
+In the configuration file, filter configurations have to be listed in the `filters` array.
+Only `std` (for standard configuration) and `custom` types are supported.
 
-In case of standard configuration all field are optional excepts `name`.
-`before-check` and `after-check` are arrays with `custom` typed elements.
+In the case of standard configuration, all fields are optional excepts `name`. `before-check`
+and `after-check` are arrays with `custom` typed elements.
 
-In case of `custom` filter type the result filter configuration have to returns
-not empty name.
+In the case of the `custom` filter type, the result filter configuration has to returns not
+empty name.
 
 Example:
 
@@ -573,39 +542,34 @@ Example:
 
 ## Defaults
 
-Standard filters and writers has fields and options which affect their work.
-Some of them you can specify in factory subroutines or configuration file
-fields. If such arguments are omitted then the default values of it will be
-used. Another fields and options cannot be setter this way. For example, pattern
-for exception which will be concatenated to main pattern in standard writer when
-`auto-exceptions` sets to `True`
-(see [Standard WriterConf](#standard-writerconf)). Such properties have default
-values too. All the defaults can be set through factory subroutines or fields in
-configuration file.
+Standard filters and writers have fields and options which affect their work. Some of them you
+can specify in factory subroutines or configuration file fields. If such arguments are omitted,
+then the default values of it will be used. Other fields and options cannot be setter this way.
+For example, the pattern for an exception that will be concatenated to the main pattern in the
+standard writer when `auto-exceptions` sets to `True`
+(see [Standard WriterConf](#standard-writerconf)). Such properties have default values too. All
+the defaults can be set through factory subroutines or fields in the configuration file.
 
-Configuring default values are useful in case you what to avoid many boilerplate
-configurations.
+Configuring default values is useful in case you what to avoid many boilerplate configurations.
 
 ### Defaults factory subroutines
 
 There are the following factory subs for set defaults values:
 
-- `set-default-pattern(Str:D $pattern)` - set default pattern for standard
-`WriterConf`. Default value is `'[%date{$hh:$mm:$ss}][%level] %msg'`;
-- `set-default-auto-exceptions(Bool:D $auto-exceptions)` - set default
-`auto-exceptions` property value for standard `WriterConf`. Default value is
-`True`;
-- `set-default-handle(IO::Handle:D $handle)` - set default handle for standard
-`WriterConf`. Default value is `$*OUT`;
-- `set-default-x-pattern(Str:D $x-pattern)` - set pattern for exception which
-will be concatenated to the main pattern in standard `WriterConf` in case
-`auto-exceptions` sets to `True`
+- `set-default-pattern(Str:D $pattern)` - set default pattern for the standard `WriterConf`.
+Default value is `'[%date{$hh:$mm:$ss}][%level] %msg'`;
+- `set-default-auto-exceptions(Bool:D $auto-exceptions)` - set default `auto-exceptions` property
+value for the standard `WriterConf`. Default value is `True`;
+- `set-default-handle(IO::Handle:D $handle)` - set default handle for the standard `WriterConf`.
+Default value is `$*OUT`;
+- `set-default-x-pattern(Str:D $x-pattern)` - set pattern for exception that will be concatenated
+to the main pattern in standard `WriterConf` in case `auto-exceptions` sets to `True`
 (see [Standard WriterConf](#standard-writerconf)). Default value is
 `'%x{ Exception $name: $msg' ~ "\n" ~ '$trace}'`
-- `set-default-level(LogP6::Level:D $level)` - set default level for standard
-`WriterConf`. Default value is `LogP6::Level::error`;
+- `set-default-level(LogP6::Level:D $level)` - set default level for the standard `WriterConf`.
+Default value is `LogP6::Level::error`;
 - `set-default-first-level-check(Bool:D $first-level-check)` - set default value
-of `first-level-check` property of standard `FilterConf`
+of `first-level-check` property of the standard `FilterConf`
 (see [Standard FilterConf](#standard-filterconf)). Default value is `True`;
 - `set-default-wrapper(LogP6::Wrapper $wrapper)` - set wrapper for loggers
 (see [Logger Wrapper](#logger-wrapper)). Default value is
@@ -613,78 +577,69 @@ of `first-level-check` property of standard `FilterConf`
 
 ### Defaults configuration file
 
-You can configure default values in configuration file through the following
-json fields of a root object:
+You can configure default values in the configuration file through the following json fields of a
+root object:
 
-- `"default-pattern": <string>` - for default pattern for writers with `std`
-type;
-- `"default-auto-exceptions": <boolean>` - for default `auto-exceptions` field
-value for writers with `std` type;
-- `"default-handle": <handle>` - for default handle for writers with `std` type;
-- `"default-x-pattern": <string>` - for default exceptions pattern for writers
+- `"default-pattern": <string>` - for default pattern for writers with `std` type;
+- `"default-auto-exceptions": <boolean>` - for default `auto-exceptions` field value for writers
 with `std` type;
-- `"default-level": <level-name>` - for default level for filters with `std`
+- `"default-handle": <handle>` - for default handle for writers with `std` type;
+- `"default-x-pattern": <string>` - for default exceptions pattern for writers with `std` type;
+- `"default-level": <level-name>` - for default level for filters with `std` type;
+- `"default-first-level-check": <boolean>` - for `first-level-check` value for filters with `std`
 type;
-- `"default-first-level-check": <boolean>` - for `first-level-check` value for
-filters with `std` type;
 - `"default-wrapper": <wrapper>` - for wrapper for loggers.
 
 `Wrapper` can be:
 
-- `time` type for `LogP6::Wrapper::SyncTime::Wrapper`. It takes obligatory
-`"seconds": <num>` and optional `"config-path": <string>` addition fields;
-- `each` type for `LogP6::Wrapper::EachTime::Wrapper`. It takes optional
-`"config-path": <string>` addition field;
+- `time` type for `LogP6::Wrapper::SyncTime::Wrapper`. It takes obligatory `"seconds": <num>` and
+optional `"config-path": <string>` addition fields;
+- `each` type for `LogP6::Wrapper::EachTime::Wrapper`. It takes optional `"config-path": <string>`
+addition field;
 - `transparent` type for `LogP6::Wrapper::Transparent::Wrapper`;
 - `custom` type.
 
 ## Cliche
 
-`Cliche` is a template for creating Logger. Each `cliche` has
-`cliche's matcher` - literal or regex field. When you what to get logger for
-some `logger trait` then logger system try to find a `cliche` with `matcher` the
-`trait` satisfies (by smartmatch). If there are more then one such cliche
-then the most resent created will be picked. The picked `cliche`'s content will
-be used for creating the new logger.
+`Cliche` is a template for creating Logger. Each `cliche` has `cliche's matcher` - literal or
+regex field. When you what to get logger for some `logger trait`, then the logger system tries
+to find a `cliche` with `matcher` the `trait` satisfies (by smartmatch). If there is more than
+one such cliche, then the most recent created will be picked. The picked `cliche`'s content will
+be used for making the new logger.
 
-Cliche contains writers and filters configurations pairs called `grooves` and
-own `defaults` values which overrides global `defaults` values
-(see [Defaults](#defaults)). You can use the same writer and/or filter in
-several `grooves`. It the `grooves` list is empty or missed the created logger
-will drop the all logs you pass to it;
+Cliche contains writers and filters configurations pairs called `grooves` and own `defaults` values
+which overrides global `defaults` values (see [Defaults](#defaults)). You can use the same writer
+and/or filter in several `grooves`. If the `grooves` list is empty or missed, the created logger will
+drop all logs you pass to it;
 
 ### Cliche factory subroutines
 
 `LogP6` module has the following subs for manage cliches configurations:
 
 - `cliche(:$name!, :$matcher!, Positional :$grooves, :$wrapper, :$default-pattern, :$default-auto-exceptions, :$default-handle, :$default-x-pattern, :$default-level, :$default-first-level-check, :create, :$replace)` -
-create or replace cliche with specified name and matcher. All passed `defaults`
-overrides globals `defaults` in withing the cliche. `$grooves` is a
-`Positional` variable with alternating listed `writers` and `filters`. 
-`$grooves` will be flatted before analyze - you can pass into it a list of two
-elements lists or any structure you want. Elements of `$grooves` can be either
-a names of already stored writers and filters, already stored writers and
-filters with names or writers and filters without names. In the last case
-the writer or filter will be stored with generated UUID name automatically.
-The method returns the old cliche (`:replace`) and the new one (`:create`);
-- `cliche(LogP6::Cliche:D $cliche, :create, :replace)` - save or replace
-cliche;
+create or replace cliche with specified name and matcher. All passed `defaults` overrides globals
+`defaults` in within the cliche. `$grooves` is a `Positional` variable with alternating listed
+`writers` and `filters`. `$grooves` will be flatted before analysis - you can pass into it a list
+of two elements lists or any structure you want. Elements of `$grooves` can be either name of
+already stored writers and filters, already stored writers and filters with names, or writers and
+filters without names. In the last case, the writer or filter will be stored with a generated UUID
+name automatically. The method returns the old cliche (`:replace`) and the new one (`:create`);
+- `cliche(LogP6::Cliche:D $cliche, :create, :replace)` - save or replace cliche;
 - `cliche(:$name!, :remove)` - remove and return a cliche with specified name.
 
 ### Cliche configuration file
 
-In configuration file cliches have to be listed in `cliches` array. It has the
-following fields:
+In the configuration file, cliches have to be listed in the `cliches` array. It has the following
+fields:
 
 - `"name": <string>` - obligatory name of cliche;
-- `"matcher": <string>` - cliche matcher. If the matcher value start and ends
-with `/` symbol then the matcher is interpreted as regex; in other case it is a
-literal;
-- `"grooves": [<writer1-name>, <filter1-name>, <writer2-name>, <filter2-name>, ... ]` -
-grooves, list of writers' and filters' names;
+- `"matcher": <string>` - cliche matcher. If the matcher value starts and ends with `/` symbol,
+then the matcher is interpreted as regex; in another case, it is a literal;
+- `"grooves": [<writer1-name>, <filter1-name>, <writer2-name>, <filter2-name>, ... ]` - grooves,
+list of writers' and filters' names;
 - defaults - the same fields with the same possible values as described in
-[Defaults configuration file](#defaults-configuration-file) excepts
-`default-wrapper` - you need to use `wrapper` field name.
+[Defaults configuration file](#defaults-configuration-file) excepts `default-wrapper` - you need
+to use the `wrapper` field name.
 
 Example:
 
@@ -699,46 +654,42 @@ Example:
 
 ## Default logger
 
-In any way you configured your cliches by the factory routines or configuration
-file or did not use non of them the `default cliche` will be in the logger
-library. Default cliche corresponds the following configuration:
-`cliche(:name(''), :matcher(/.*/), grooves => (writer(:name('')), filter(:name(''))))`.
-In another words, default cliche has empty string name, matches any trait, has
-only one groove with empty (uses all defaults) writer with empty string name and
-with empty (uses all defaults) filter with empty string name. It means,
-by default you do not need to configure nothing at all. But you can change the
-default cliche or default writer and filter by factory subroutines or in
-configuration file. Note that if `LogP6` library will not find cliche with
-matcher logger trait satisfies then an exception will be thrown.
+In any way you configured your cliches by the factory routines or configuration file or did not
+use non of them, the `default cliche` will be in the logger library. Default cliche corresponds
+to the following configuration:
+`cliche(:name(''), :matcher(/.*/), grooves => (writer(:name('')), filter(:name(''))))`. In other
+words, default cliche has an empty string name, matches any trait, has only one groove with empty
+(uses all defaults) writer with an empty string name and with empty (uses all defaults) filter with
+an empty string name. It means, by default, you do not need to configure anything at all. But you
+can change the default cliche or default writer and filter by factory subroutines or in the
+configuration file. Note that if the `LogP6` library does not find cliche with matcher logger trait
+satisfies, then an exception will be thrown.
 
 ## Change configuration
 
-Sometimes you may need to change logger configuration in runtime execution. It
-can be simply done by factory subroutines. After calling any factory subroutine
-all loggers for already used `logger traits` will be recreated and you can get
-it by `get-logger($trait)` sub. If your already got logger use
-synchronisation wrapper then the wrapper will sync the logger himself correspond
-its algorithm.
+Sometimes you may need to change logger configuration in runtime execution. It can be simply done
+by factory subroutines. After calling any factory subroutine, all loggers for already used
+`logger traits` will be recreated, and you can get it by `get-logger($trait)` sub. If you already
+got logger, use synchronization wrapper, then the wrapper will sync the logger himself correspond
+to its algorithm.
 
-Another way of change configuration is using configuration file modification.
-Changes in configuration file will be detected only if you already using any of
-synchronisation wrapper (in `defaults` or in one of `cliches`). After any
-change detection all already configured configuration will be dropped and
-created the new from the file.
+Another way of change configuration is by using configuration file modification. Changes in the
+configuration file will be detected only if you are already using any of the synchronization
+wrappers (in `defaults` or one of `cliches`). After any change detection, all already configured
+configuration will be dropped and created new from the file.
 
 # EXAMPLES
 
 Lets explore a few general use cases:
 
-## Use external library which uses LogP6
+## Use an external library that uses LogP6
 
-`LogP6` can be used during library development and a user of the library wants
-fully turn off any logs from the library. Lets imagine that all libraries
-loggers traits starts with `LIBNAME` letters. In such case we can create a
-`cliche` with corresponding `matcher` and empty `grooves` - all library logs
-will be dropped.
+`LogP6` can be used during library development, and a user of the library wants entirely turn off
+any logs from the library. Let's imagine that all library loggers' traits start with `LIBNAME`
+letters. In this case, we can create a `cliche` with corresponding `matcher` and empty `grooves` -
+all library logs will be dropped.
 
-In `Perl 6`:
+In `Raku`:
 
 ```perl6
 use LogP6 :configure;
@@ -746,28 +697,30 @@ use LogP6 :configure;
 cliche(:name('turn off LIBNAME'), :matcher(/^LIBNAME .*/), :wrapper(LogP6::Wrapper::Transparent::Wrapper.new));
 ```
 
-Or in configuration file:
+Or in the configuration file:
 
 ```json
 { "cliches": [{"name": "turn off LIBNAME", "matcher": "/^LIBNAME .*/", "wrapper": {"type": "transparent"}}] }
 ```
 
-We use wrapper without synchronisation (transparent) because we do not plan to
-change configuration for the library loggers.
+We use wrapper without synchronization (transparent) because we do not plan to change the library
+loggers' configuration.
 
 ## Change console application verbosity level
 
-Lets imagine we are writing console application and we want to add flag
-`--verbose` for getting more detail output. Lets using special logger in purpose
-of application console output instead of using simple `say` and change filter
-level according user's choice:
+Let's imagine we are writing a console application, and we want to add the flag `--verbose` for
+getting a more detailed output. Lets using a particular logger for application console output
+instead of using simple `say` and change filter level according to the user's choice:
 
-In `Perl 6`:
+In `Raku`:
 
 ```perl6
 use LogP6 :configure;
 
-cliche(:name<output>, :matcher<say>, grooves => (writer(:pattern('%msg'), :handle($*OUT)), filter(:name<verbosity>, :level($info))));
+cliche(:name<output>, :matcher<say>, grooves => (
+  writer(:pattern('%msg'), :handle($*OUT)),
+  filter(:name<verbosity>, :level($info))
+));
 
 sub MAIN(Bool :$verbose) {
   filter(:name<verbosity>, :level($debug), :update) if $verbose;
@@ -777,8 +730,8 @@ sub MAIN(Bool :$verbose) {
 }
 ```
 
-In that case we do not need to use configuration file. But if you want then you
-can remove line with `cliche` creation and add the following configuration file:
+In that case, we do not need to use the configuration file. But if you want, then you can remove
+the line with `cliche` creation and add the following configuration file:
 
 ```json
 {
@@ -790,11 +743,11 @@ can remove line with `cliche` creation and add the following configuration file:
 
 ## Conditional log calls
 
-Sometimes you may need to log an information required additional calculation.
-In such cases it is useful to know will the log be written or not before
-the calculation. Logger `-on` methods created specially for that. It will return
-special object (or Any) with `log` and `logf` methods you can use to log with
-corresponding log level. Please look at the example below:
+Sometimes you may need to log information that required additional calculation. It is useful
+to know whether the log will be written or not before the calculation. Logger's `-on` methods
+were created especially for that. It will return a particular object (or Any) with `log` and
+`logf` methods you can use to log with the corresponding log level. Please look at the example
+below:
 
 ```perl6
 use LogP6 :configure;
@@ -809,12 +762,12 @@ my $str;
 # to-json will not be called here, because .debug-on returned Any for now
 .log(to-json(%map, :pretty, :sorted-keys)) with $log.debug-on;
 
-# from-json will be called here, because .warn-on returned a 'little logger'
+# from-json will be called here, because .warn-on returned a little logger
 # log will be with WARN level
 .log(from-json($str)<key>) with $log.warn-on;
 
 with $log.trace-on {
-  # this block will bot be executed for now
+  # this block will not be executed for now
   my $user-id = retrive-the-first-user-id-from-db();
   # use logf method to use sprintf-style logs
   .logf('the first user id in the database is %d', $user-id);
@@ -827,15 +780,14 @@ $log.debug-on.?log(to-json(%map, :pretty, :sorted-keys));
 
 ## Associate logs with concrete user
 
-Lets imagine we write a server application. Many users at the same time can
-connect to the server and do some action which produces log messages in log
-file. If some exception will be caught and log we want to reconstruct user's
-execution flow to understand what went wrong. But needful logs in log file will
-be alongside with logs from other users actions. In such cases we need to
-associate each log entry with some user id. Then we just can grep log file for
-the user id. For that just use `MDC`.
+Let's imagine we write a server application. Many users can connect to the server simultaneously
+and do some action, which produces log messages in a log file. If some exception will be caught
+and log, we want to reconstruct the user's execution flow to understand what went wrong. But
+needful records in the log file will be alongside logs from other users' actions. In such cases,
+we need to associate each log entry with some user id. Then we can grep the log file for the user
+id. For that, use `MDC`.
 
-In `Perl 6`:
+In `Raku`:
 
 ```perl6
 use LogP6 :configure;
@@ -868,7 +820,7 @@ sub enter(User $user) {
 }
 ```
 
-The same configuration you can write in configuration file:
+The same configuration you can write in the configuration file:
 
 ```json
 {
@@ -881,11 +833,11 @@ The same configuration you can write in configuration file:
 
 ## Filter log by its content
 
-Lets imagine we have an application which may writes sensible content to log
-file. For example, user passwords. And we want to drop such sensible logs.
-In such case we can use special sub in `do-before` action of log's `filter`.
+Imagine we have an application that may write sensible content to log files, for example,
+user passwords. And we want to drop such sensible logs. We can use a particular sub in `do-before`
+action of log's `filter`.
 
-In `Perl 6`:
+In `Raku`:
 
 ```perl6
 unit module Main;
@@ -900,9 +852,9 @@ cliche(:name<sensible>, :matcher<log>, grooves => (
 
 sub drop-passwords($context) {
   return False if $context.msg ~~ / password /;
-  # If you want remove password from the log entry instead of drop it
-  # you can remove the password from the message and store it in the context
-  # like:
+  # If you want to remove a password from the log entry instead of dropping it,
+  # you can remove the password from the message and store it in the context like:
+  #
   # $context.msg-set(remove-password($context.msg));
   True;
 }
@@ -912,7 +864,7 @@ sub connect(User $user) {
 }
 ```
 
-The same configuration you can write in configuration file:
+The same configuration you can write in the configuration file:
 
 ```json
 {
@@ -926,14 +878,13 @@ The same configuration you can write in configuration file:
 
 ## Write one log in several outputs
 
-Lets imagine we have an application which works with several types of databases.
-For example, Oracle and SQLite. We want to log of work with the databases. But
-we want store Oracle related logs in `oracle.log` and `database.log`
-files, but store SQLite related log only in `database.log`. In such case we
-need one simple logger for SQLite related logs and another one (with two
-grooves) for Oracle related logs.
+Let's imagine we have an application that works with several types of a database -- for example,
+Oracle and SQLite. We want to log work with the databases. But we want to store Oracle related
+logs in `oracle.log` and `database.log` files, and SQLite related records only in `database.log`.
+In this case, we need a straightforward logger for SQLite related logs and another one (with two
+grooves) for Oracle associated logs.
 
-In `Perl 6`:
+In `Raku`:
 
 ```perl6
 use LogP6 :configure;
@@ -956,7 +907,7 @@ sub sqlite-db-fetch() {
 }
 ```
 
-The same configuration you can write in configuration file:
+The same configuration you can write in the configuration file:
 
 ```json
 {
@@ -975,11 +926,11 @@ The same configuration you can write in configuration file:
 
 ## Write logs in journald
 
-Lets imagine you want to store logs in journald service. You can use
-`LogP6::Writer::Journald` module for that. For more information please look at
-writer module README. Example of configuration:
+Let's imagine you want to store logs in journald service. You can use `LogP6::Writer::Journald`
+module for that. For more information, please look at the writer module README.
+Example of configuration:
 
-In `Perl 6`:
+In `Raku`:
 
 ```perl6
 use LogP6 :configure;
@@ -993,7 +944,7 @@ writer(LogP6::WriterConf::Journald.new(
 ));
 ```
 
-The same configuration you can write in configuration file:
+The same configuration you can write in the configuration file:
 
 ```json
 {"writers": [{
@@ -1010,19 +961,17 @@ The same configuration you can write in configuration file:
 }]}
 ```
 
-# Write custom writer handle for your need
+## Write custom writer handle for your need
 
-Some time you may need to write log to some exotic place. In such cases you will
-need to implement your own `Writer` and its `WriterConf`. In simple cases it
-would be enough to implement your own `IO::Handle` for standard writer. For
-example, there are no de-facto must-use library for working with databases yet.
-That is why there are no special writer for it in `LogP6`. But lets try to write
-it now:
+Sometimes you may need to write log to some exotic place. In this case you will need to implement
+your own `Writer` and its `WriterConf`. In simple cases, it would be enough to implement your own
+`IO::Handle` for the standard writer. For example, there is no de-facto must-use library for
+working with databases yet. That is why there is no particular writer for it in `LogP6`. But let's
+try to write it now:
 
-Imagine we decided to use `SQLite` database and `DB::SQLite` library. We can
-ask the standard writer to prepare sql insert expression for us. Therefore we
-can only write custom `IO::Handle`. Fortunately it is easy in `Perl 6.d`
-version:
+Imagine we decided to use `SQLite` database and `DB::SQLite` library. We can ask the standard
+writer to prepare SQL insert expression for us. Therefore we can only write custom `IO::Handle`.
+Fortunately, it is easy in `6.d` version:
 
 ```perl6
 unit module MyDBHandle;
@@ -1054,7 +1003,7 @@ class DBHandle is IO::Handle {
 }
 ```
 
-It is all we need. Now we can write `LogP6` configuration. In `Perl 6`:
+It is all we need. Now we can write the `LogP6` configuration. In `Raku`:
 
 ```perl6
 use MyDBModule;
@@ -1062,10 +1011,10 @@ use LogP6 :configure;
 
 writer(
   :name<db>,
-  # pattern provides us the valid sql dml expression
+  # pattern provides us a valid sql dml expression
   :pattern('insert into logs (date, level, log) values (\'%date\', \'%level\', \'%msg%x{ - $name $msg $trace}\')'),
   # handle with corresponding database filename
-  handle => DatabaseHandle.new(:filename<database-log.sqlite>),
+  handle => DBHandle.new(:filename<database-log.sqlite>),
   # turn off auto-exceptions because it will corrupt our sql dml expression
   :!auto-exceptions
 );
@@ -1076,7 +1025,7 @@ my $log-db = get-logger('db');
 $log-db.info('database logging works well');
 ```
 
-The same configuration you can write in configuration file:
+The same configuration you can write in the configuration file:
 
 ```json
 {
@@ -1103,26 +1052,65 @@ The same configuration you can write in configuration file:
 }
 ```
 
+## Rollover log files
+
+Log files tend to grow in size. There is `IO::Handle::Rollover` module to prevent such uncontrolled
+growth. For example, you decided to store only 30MB of logs separated into three files for
+convenience. For that, you only need to create a custom handle with an `open` routine like that:
+
+In `Raku`:
+
+```perl6
+use IO::Handle::Rollover;
+my $handle = open("log.txt", :w, :rollover, :file-size<10M>, :3history-size);
+```
+
+The same initialization you can write in the configuration file:
+
+```json
+{
+...
+  "handle": {
+    "type": "custom",
+    "require": "IO::Handle::Rollover",
+    "fqn-method": "IO::Handle::Rollover::EXPORT::DEFAULT::&open",
+    "positional": [ "log.txt" ],
+    "args": {
+      "w": true,
+      "rollover": true,
+      "file-size": "10M",
+      "history-size": 3
+    }
+  }
+...
+}
+```
+
+You can use the handle as any other output handles, for example, in LogP6 writers. For more
+information, see the documentation for the `IO::Handle::Rollover` module.
+
 # BEST PRACTICE
 
-Try to use good traits for your loggers. If you use loggers in your library then
-probably using one prefix in all your traits is the best option. It allows users
-of your library manage your loggers easily.
+Try to use good traits for your loggers. If you use loggers in your library, then probably using
+one prefix in all your traits is the best option. It allows users of your library to manage your
+loggers easily.
 
-Try to choice logger trait according logger semantic or location. For example,
-you can use `$?CLASS.^name` as logger trait in any your classes or traits like
-`database`, `user management` or so.
+Try to choose a logger trait according to logger semantic or location. For example, you can use
+`$?CLASS.^name` as a logger trait in any of your classes or traits like `database`,
+`user management`, or so.
 
 If you use logger within a class then make the logger be a class field like
-`has $!log = get-logger('$?CLASS.^name');` If you use logger withing a
-subroutines logic then make a special sub for retrieve logger like
-`sub log() { state $log = get-logger('trait'); }`. Then use it like
-`log.info('msg');` It prevents any side effects caused by precompilation.
+`has $!log = get-logger('$?CLASS.^name');` If you use logger withing a subroutines logic then make
+a special sub for retrieve logger like `sub log() { state $log = get-logger('trait'); }`. Then use
+it like `log.info('msg');` It prevents any side effects caused by precompilation.
+
+# SEE OLSO
+
+- [LogP6::Writer::Journald](https://modules.raku.org/dist/LogP6-Writer-Journald:cpan:ATROXAPER)
+- [IO::Handle::Rollover](https://modules.raku.org/dist/IO-Handle-Rollover:cpan:ATROXAPER)
 
 # ROADMAP
 
-- Make IO::Handle rollover support - change log file after some period of time
-or after file size limit are reached;
 - Add a `Cro::Transform` for using `LogP6` in `cro` applications.
 
 # AUTHOR
@@ -1134,7 +1122,7 @@ are welcome.
 
 # COPYRIGHT AND LICENSE
 
-Copyright 2019 Mikhail Khorkov
+Copyright 2020 Mikhail Khorkov
 
 This library is free software; you can redistribute it and/or modify it under
 the Artistic License 2.0.

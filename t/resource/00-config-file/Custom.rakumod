@@ -16,6 +16,10 @@ sub handle1(:$file-name) is export {
 	$file-name.IO.open(:create, :append);
 }
 
+sub handle2($pos1, $pos2, :$file-name) is export {
+	$file-name.IO.open(:create, :append);
+}
+
 sub writer(:$name) is export {
 	LogP6::WriterConf::Std.new(:$name);
 }

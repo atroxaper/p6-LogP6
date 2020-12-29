@@ -212,18 +212,21 @@ class LogP6::ConfigFile {
 				if fqn-method.defined && fqn-class.defined;
 
 		my \args = self!associative(json<args>);
-		die "'args' field are not Associative in cusom definition"
+		die "'args' field are not Associative in custom definition"
 				unless args ~~ Associative;
+		my \pos = self!list(json<positional>, 'any');
+		die "'positional' field are not Positional in custom desition"
+				unless pos ~~ Positional;
 
 		return self!produce(:$use-cache, json, sub {
 			require ::(my-require);
 			with fqn-method {
 				my &method = ::(fqn-method);
-				return method(|args);
+				return method(|pos, |args);
 			}
 			with fqn-class {
 				my $class-name = ::(fqn-class);
-				return $class-name.new(|args);
+				return $class-name.new(|pos, |args);
 			}
 		});
 	}

@@ -74,6 +74,19 @@
 				"out-buffer": 1000
 			},
 			"auto-exceptions": true
+		},
+		{
+			"type": "std",
+			"name": "w7",
+			"handle": {
+				"type": "custom",
+				"require": "Custom",
+				"fqn-method": "Custom::EXPORT::DEFAULT::&handle2",
+				"positional": [ "1", 2 ],
+				"args": {
+					"file-name": "./t/resource/00-config-file/handle3.after"
+				}
+			}
 		}
 	],
 	"filters": [
