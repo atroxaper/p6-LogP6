@@ -1,5 +1,11 @@
 Version history:
 
+1.6.3   2020-12-29  'fix README'
+	- Improve language in README
+	- For now we can use 'positional' array for positional argument in custom section in config file
+	- Rename all module files s/pm6/rakumod/
+	- Change explisit array of digits to range with eager
+
 1.6.2   2020-06-22  'fix concurrency issue'
 	- fix concurrency issue with laziness of the sequence operator
 
