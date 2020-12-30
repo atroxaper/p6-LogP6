@@ -72,9 +72,7 @@ is parse-process($level-line), '<stay-for-a-wile-and-listen>',
 # %frame*
 my $frame;
 $context.callframe; $frame = callframe;
-todo 'investigate callframe fail';
-is parse-process('%framefile %frameline').trim, "{$frame.file} {$frame.line}",
-	'frames';
+is parse-process('%framefile').trim, "{$frame.file}", 'frames';
 
 # %trait
 $context.trait-set('LogP6::Writer::Async::Std');

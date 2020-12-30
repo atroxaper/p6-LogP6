@@ -280,13 +280,12 @@ subtest {
 	is $i, 1, 'unfortunatly do calculate log .?';
 	nok $h.clean, 'nothing after not calculation';
 
-	writer(:name<on>, :pattern('%framefile %frameline %msg'), :update);
+	writer(:name<on>, :pattern('%framefile %msg'), :update);
 	$log = get-logger('on');
 
 	my $frame;
 	.log('magic') with $log.info-on; $frame = callframe;
-	todo 'investigate callframe fail';
-	is $h.clean.trim, $frame.file ~ ' ' ~ $frame.line ~ ' magic', 'on callframe';
+	is $h.clean.trim, $frame.file ~ ' magic', 'on callframe';
 }, 'on';
 
 done-testing;

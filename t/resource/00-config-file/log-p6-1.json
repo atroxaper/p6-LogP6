@@ -18,12 +18,6 @@
 			"type": "std",
 			"name": "w1",
 			"pattern": "%msg",
-			"handle": {
-				"type": "file",
-				"path": "./t/resource/00-config-file/handle1.after",
-				"out-buffer": false,
-				"append": false
-			},
 			"auto-exceptions": true
 		},
 		{
@@ -36,57 +30,6 @@
 				"out-buffer": 100
 			},
 			"auto-exceptions": false
-		},
-		{
-			"type": "std",
-			"name": "w3",
-			"handle": {
-				"type": "std",
-				"path": "err"
-			}
-		},
-		{
-			"type": "std",
-			"name": "w4",
-			"handle": {
-				"type": "custom",
-				"require": "Custom",
-				"fqn-method": "Custom::EXPORT::DEFAULT::&handle1",
-				"args": {
-					"file-name": "./t/resource/00-config-file/handle2.after"
-				}
-			}
-		},
-		{
-			"type": "custom",
-			"require": "Custom",
-			"fqn-method": "Custom::EXPORT::DEFAULT::&writer",
-			"args": {
-				"name": "w5"
-			}
-		},
-		{
-			"type": "std",
-			"name": "w6",
-			"handle": {
-				"type": "file",
-				"path": "./t/resource/00-config-file/handle1.after",
-				"out-buffer": 1000
-			},
-			"auto-exceptions": true
-		},
-		{
-			"type": "std",
-			"name": "w7",
-			"handle": {
-				"type": "custom",
-				"require": "Custom",
-				"fqn-method": "Custom::EXPORT::DEFAULT::&handle2",
-				"positional": [ "1", 2 ],
-				"args": {
-					"file-name": "./t/resource/00-config-file/handle3.after"
-				}
-			}
 		}
 	],
 	"filters": [
