@@ -40,7 +40,7 @@ class LogP6::ConfigFile {
 		CATCH {
 			default {
 				die "Cannot read and create config from file $file-path. Cause "
-								~ $_.^name ~ ': ' ~ $_.gist, "\n";
+								~ $_.^name ~ ': ' ~ $_.gist;
 			}
 		}
 		return LogP6::Config.new unless $file-path.e;
@@ -123,7 +123,7 @@ class LogP6::ConfigFile {
 	}
 
 	method !string-e(\json) {
-		return json.Str.trans(['\e', '\a', '\n'] => ["\e", "\a", "\n"]) with json;
+		return json.Str.trans(['\e', '\a', '\n'] => ["\e", "\a", $?NL]) with json;
 		return Str;
 	}
 

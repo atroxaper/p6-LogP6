@@ -156,7 +156,7 @@ subtest {
 	ok defined($default-io), 'default io ok';
 	is $default-io.writed.trim, 'logdebug test ex', 'defaults ok';
 	ok defined($cliche-io), 'cliche io ok';
-	is $cliche-io.writed.trim, "goltrace X::AdHoc\ngoldebug X::AdHoc",
+	is $cliche-io.writed.lines.List, ("goltrace X::AdHoc", "goldebug X::AdHoc"),
 			'cliche ok';
 
 	my $wrapper = get-cliche('c2').wrapper;

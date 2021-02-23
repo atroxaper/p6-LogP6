@@ -14,7 +14,7 @@ $async.say('boom');
 $async.say('moob');
 sleep(1);
 
-is $delegate.clean, "boom\nmoob\n", 'delegate writes';
+is $delegate.clean.lines.List, ("boom", "moob"), 'delegate writes';
 
 $async.close;
 ok $delegate.closed, 'delegate closed';

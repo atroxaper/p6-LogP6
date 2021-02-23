@@ -21,7 +21,7 @@ $log.info('boom');
 
 sleep(1);
 
-is $handle.clean(), "boom\n", 'delegate writes';
+is $handle.clean().trim, "boom", 'delegate writes';
 $async.close;
 ok $handle.closed, 'handle closed';
 

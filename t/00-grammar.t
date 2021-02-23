@@ -34,14 +34,16 @@ sub parse-process($pattern) {
 }
 
 # simple
-is parse-process('%trait %tid-%tname %ndc-%mdc{foo}:%msg:%level*%date*%x').trim,
-		"test trait $tid-$tname 12 34-mdc-value:test message:INFO*23:54:09:123*" ~
-		"Exception X::AdHoc: test exception\n" ~ $backtrace,
+is parse-process('%trait %tid-%tname %ndc-%mdc{foo}:%msg:%level*%date*%x')
+    .lines.List,
+		("test trait $tid-$tname 12 34-mdc-value:test message:INFO*23:54:09:123*" ~
+		"Exception X::AdHoc: test exception", $backtrace),
 		'full pattern without preferences';
 
 # %x
-is parse-process('%x{$name}:%x{$msg};%x{$msg_$name_' ~ "\n" ~'$trace}').trim,
-		"X::AdHoc:test exception;test exception_X::AdHoc_\n" ~ $backtrace,
+is parse-process('%x{$name}:%x{$msg};%x{$msg_$name_' ~ "\n" ~'$trace}')
+    .lines.List,
+		("X::AdHoc:test exception;test exception_X::AdHoc_", $backtrace),
 		'%x pattern';
 
 # %date

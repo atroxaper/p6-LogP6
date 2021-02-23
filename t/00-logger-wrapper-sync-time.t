@@ -29,7 +29,7 @@ subtest {
 	$logger.info('log this yet');
 	sleep(1.2);
 	$logger.info('ignore this');
-	is $h.clean, "log this yet\n", 'mute logger is turned off';
+	is $h.clean.trim, "log this yet", 'mute logger is turned off';
 
 	cliche(:name($cliche.name), :matcher($cliche.matcher),
 					grooves => <writer filter>, :replace);
@@ -52,7 +52,7 @@ subtest {
 	$logger.info('log this yet');
 	sleep(1);
 	$logger.info('ignore this');
-	is $h.clean, "log this yet\n", 'general logger is changed level';
+	is $h.clean.trim, "log this yet", 'general logger is changed level';
 
 	filter(:name<filter>, :level($info), :replace);
 	sleep(1);

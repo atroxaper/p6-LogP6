@@ -6,6 +6,7 @@ use LogP6::ConfigFile;
 use lib './t/resource/Helpers';
 use lib './t/resource/00-config-file';
 
+# we use Unix style file paths in config file for the test
 plan :skip-all<These tests do not work on Windows> if $*DISTRO.is-win;
 plan 25;
 
@@ -13,8 +14,10 @@ CATCH { default {say .gist }}
 my $folder = '/tmp/logp6'.IO;
 mkdir $folder;
 END {
-  *.unlink for $folder.dir; 
-  $folder.rmdir;
+  if $folder {
+    *.unlink for $folder.dir;
+    $folder.rmdir;
+  }
 }
 
 my LogP6::ConfigFile $config .= new;
