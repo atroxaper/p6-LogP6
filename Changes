@@ -1,5 +1,11 @@
 Version history:
 
+1.6.4   2021-02-23  'Test on Windows'
+  - Fix tests for Windows
+  - Fix flappy test for callframes
+  - Moved from TravisCI to GitHub Actions
+  - Add CI for Windows as well as for Ubuntu
+
 1.6.3   2020-12-29  'fix README'
 	- Improve language in README
 	- For now we can use 'positional' array for positional argument in custom section in config file
