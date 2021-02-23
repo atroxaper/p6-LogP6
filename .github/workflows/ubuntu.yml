@@ -1,10 +1,13 @@
-name: build
+name: Test on Unbuntu
 
 on:
   push:
-    branches:
-      - dev
-      - master
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+  workflow_dispatch:
+
 jobs:
   build:
     name: prove
