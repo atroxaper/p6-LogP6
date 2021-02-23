@@ -1,4 +1,5 @@
-[![Build Status](https://github.com/atroxaper/p6-LogP6/workflows/build/badge.svg)](https://github.com/atroxaper/p6-LogP6/actions)
+[![Build Status](https://github.com/atroxaper/p6-LogP6/workflows/Ubuntu/badge.svg)](https://github.com/atroxaper/p6-LogP6/actions/workflows/ubuntu.yml)
+[![Build Status](https://github.com/atroxaper/p6-LogP6/workflows/Windows/badge.svg)](https://github.com/atroxaper/p6-LogP6/actions/workflows/windows.yml)
 
 # NAME
 
