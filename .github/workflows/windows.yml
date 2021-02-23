@@ -1,0 +1,68 @@
+name: Windows
+
+on:
+  push:
+    branches: [ master, dev ]
+  pull_request:
+    branches: [ master ]
+
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: prove
+    runs-on: windows-latest
+    env:
+      RAKUBREW_HOME: engine/brew
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v2
+
+      - name: Set PATH
+        shell: bash
+        run: |
+          echo "$GITHUB_WORKSPACE/engine/brew/shims" >> $GITHUB_PATH
+          echo "$GITHUB_WORKSPACE/engine" >> $GITHUB_PATH
+
+      - name: Install Rakubrew
+        uses: suisei-cn/actions-download-file@v1
+        with:
+          url: "https://rakubrew.org/win/rakubrew.exe"
+          target: engine/
+
+      - name: Install Raku
+        run: |
+          rakubrew mode shim
+          rakubrew download
+          raku -v
+
+      - uses: suisei-cn/actions-download-file@v1
+        name: Download Zef
+        with:
+          url: https://github.com/ugexe/zef/tarball/master
+          target: engine/
+
+      - name: Unpack Zef
+        shell: bash
+        run: |
+          mkdir engine/zef
+          tar -xf engine/master -C engine/zef --strip 1
+
+      - name: Install Zef [no tests]
+        working-directory: engine/zef
+        run: |
+          raku -I. bin/zef install . --/test
+          rakubrew rehash
+        env:
+          RAKUBREW_HOME: ../brew
+
+      - name: Install Prove6 [no tests]
+        run: |
+          zef install App::Prove6 --/test
+          rakubrew rehash
+
+      - name: Install dependencies [no tests]
+        run: zef install . --deps-only --/test
+
+      - name: Tests
+        run: prove6

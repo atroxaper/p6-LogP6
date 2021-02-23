@@ -63,7 +63,7 @@ is-deeply $context.mdc, %(), 'mdc-clean';
 
 # date
 my $default-date = $context.date;
-my $setted-date = DateTime.now;
+my $setted-date = DateTime.now + Duration.new(60);
 ok $default-date.defined, 'default date';
 $context.date-set($setted-date);
 is $context.date, $setted-date, 'setted date';

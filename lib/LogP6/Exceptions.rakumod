@@ -6,7 +6,7 @@ class X::LogP6::PatternIsNotValid is Exception {
 }
 
 multi sub logp6-error(Exception:D $x) is export {
-	$*ERR.print('LogP6 error: ', $x.^name, ': ', $x.message, "\n", $x.backtrace);
+	$*ERR.print('LogP6 error: ', $x.^name, ': ', $x.message, $?NL, $x.backtrace);
 }
 
 multi sub logp6-error(Str:D $x) is export {

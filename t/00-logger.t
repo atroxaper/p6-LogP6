@@ -36,8 +36,9 @@ subtest {
 	$general.info('g info');
 	$general.debug('g debug');
 
-	is $h1.clean, "g error\n", 'first filter is ok in general log';
-	is $h2.clean, "g error\ng info\ng debug\n", 'first filter nok in general log';
+	is $h1.clean.trim, "g error", 'first filter is ok in general log';
+	is $h2.clean.lines.List, ("g error", "g info", "g debug"),
+	  'first filter nok in general log';
 }, 'simple reactive check';
 
 subtest {
@@ -66,8 +67,9 @@ subtest {
 	$hard.debug('h debug');
 	$hard.trace('h trace but error');
 
-	is $h1.clean, "h error\nh warn\n", 'first filter is ok in hard log';
-	is $h2.clean, "h error\nh trace but error\n", 'first filter nok in hard log';
+	is $h1.clean.lines.List, ("h error", "h warn"), 'first filter is ok in hard log';
+	is $h2.clean.lines.List, ("h error", "h trace but error"),
+	  'first filter nok in hard log';
 }, 'difficult reactive check';
 
 subtest {
@@ -94,9 +96,10 @@ subtest {
 	$reset.warn('r warn');
 	$reset.info('r info');
 
-	is $h1.clean, "TRACE Ur error\nTRACE Ur warn\n",
+	is $h1.clean.lines.List, ("TRACE Ur error", "TRACE Ur warn"),
 		'first filter is ok in reset log';
-	is $h2.clean, "ERROR r error test exception\nWARN r warn\nINFO r info\n",
+	is $h2.clean.lines.List,
+	  ("ERROR r error test exception", "WARN r warn", "INFO r info"),
 		'first filter nok in reset log';
 }, 'reset context';
 
@@ -145,43 +148,43 @@ subtest {
 	my $ndc = get-logger('ndc');
 
 	$ndc.info('msg');
-	is $h1.clean, "msg  \n", 'empty ndc and mdc';
+	is $h1.clean.trim, "msg", 'empty ndc and mdc';
 
 	$ndc.ndc-push('n-one');
 	$ndc.info('msg');
-	is $h1.clean, "msg n-one \n", 'ndc one element';
+	is $h1.clean.trim, "msg n-one", 'ndc one element';
 
 	$ndc.ndc-push('n-two');
 	$ndc.info('msg');
-	is $h1.clean, "msg n-one n-two \n", 'ndc two elemets';
+	is $h1.clean.trim, "msg n-one n-two", 'ndc two elemets';
 
 	$ndc.mdc-put('foo', 'bar');
 	$ndc.info('msg');
-	is $h1.clean, "msg n-one n-two bar\n", 'ndc two elements and mdc';
+	is $h1.clean.trim, "msg n-one n-two bar", 'ndc two elements and mdc';
 
 	$ndc.mdc-put('bar', 'foo');
 	$ndc.info('msg');
-	is $h1.clean, "msg n-one n-two bar\n", 'ndc two elements and mdc again';
+	is $h1.clean.trim, "msg n-one n-two bar", 'ndc two elements and mdc again';
 
 	$ndc.mdc-put('oof', 'rab');
 	$ndc.info('msg');
-	is $h1.clean, "msg n-one n-two barrab\n", 'ndc two elements and mdc two';
+	is $h1.clean.trim, "msg n-one n-two barrab", 'ndc two elements and mdc two';
 
 	$ndc.mdc-remove('foo');
 	$ndc.info('msg');
-	is $h1.clean, "msg n-one n-two rab\n", 'ndc two elements and mdc second';
+	is $h1.clean.trim, "msg n-one n-two rab", 'ndc two elements and mdc second';
 
 	$ndc.mdc-clean();
 	$ndc.info('msg');
-	is $h1.clean, "msg n-one n-two \n", 'ndc two elements and mdc clean';
+	is $h1.clean.trim, "msg n-one n-two", 'ndc two elements and mdc clean';
 
 	$ndc.ndc-pop();
 	$ndc.info('msg');
-	is $h1.clean, "msg n-one \n", 'ndc pop element';
+	is $h1.clean.trim, "msg n-one", 'ndc pop element';
 
 	$ndc.ndc-clean();
 	$ndc.info('msg');
-	is $h1.clean, "msg  \n", 'ndc clean';
+	is $h1.clean.trim, "msg", 'ndc clean';
 }, 'ndc and mdc';
 
 subtest {
@@ -198,11 +201,11 @@ subtest {
 	use LogP6::Wrapper::SyncEach;
 
 	cliche(:name<frame1>, :matcher<frame1>, grooves => (
-		writer(:pattern('%msg %framename %framefile %frameline'), :handle($h1)),
+		writer(:pattern('%msg %framefile %frameline'), :handle($h1)),
 		level($info)
 	));
 	cliche(:name<frame2>, :matcher<frame2>, grooves => (
-		writer(:pattern('%msg %framename %framefile %frameline'), :handle($h1)),
+		writer(:pattern('%msg %framefile %frameline'), :handle($h1)),
 		level($info)
 	), :wrapper(LogP6::Wrapper::SyncEach::Wrapper.new));
 	my $frame1 = get-logger('frame1');
@@ -210,11 +213,10 @@ subtest {
 
 	$frame1.info('line 1');
 	my $l1 = $h1.clean;
-	$frame1.infof('line 2');
-	$frame2.infof('line 2');
-	my @l2 = $h1.clean.trim.split("\n");
+	$frame1.infof('line 2'); $frame2.infof('line 2');
+	my @l2 = $h1.clean.lines.List;
 	isnt $l1, @l2[0], 'frames are different';
-	is @l2[1].substr(0, *-1), @l2[0].substr(0, *-1), 'frames are the same';
+	is @l2[1], @l2[0], 'frames are the same';
 }, 'different frame';
 
 subtest {

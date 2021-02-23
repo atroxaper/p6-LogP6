@@ -1,7 +1,7 @@
 {
   "name": "LogP6",
   "description": "Full customisable logging library inspired by idea of separate logging and its configuration.",
-  "version": "1.6.3",
+  "version": "1.6.4",
   "perl": "6.d",
   "authors": [
     "Mikhail Khorkov"
